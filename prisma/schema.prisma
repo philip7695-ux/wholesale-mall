@@ -198,11 +198,11 @@ model Order {
 }
 
 model OrderItem {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   orderId   String
-  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   quantity  Int
   price     Int            // 주문 시점 가격 스냅샷
 

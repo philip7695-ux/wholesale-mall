@@ -35,6 +35,8 @@ export async function POST(
 
   // 주문 상품을 장바구니로 복원
   for (const item of order.items) {
+    if (!item.variantId) continue
+
     const existing = await prisma.cartItem.findUnique({
       where: {
         userId_variantId: {

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart } from "lucide-react"
+import { ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -136,7 +136,7 @@ export function ProductDetail({ product }: { product: Product }) {
       <div className="grid gap-6 md:grid-cols-2">
         {/* 이미지 갤러리 */}
         <div className="space-y-3">
-          <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
             {mainImage ? (
               <img
                 src={mainImage}
@@ -147,6 +147,31 @@ export function ProductDetail({ product }: { product: Product }) {
               <div className="flex h-full items-center justify-center text-muted-foreground">
                 No Image
               </div>
+            )}
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={() => {
+                    const idx = allImages.indexOf(mainImage)
+                    setMainImage(allImages[(idx - 1 + allImages.length) % allImages.length])
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60 transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    const idx = allImages.indexOf(mainImage)
+                    setMainImage(allImages[(idx + 1) % allImages.length])
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60 transition-colors"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white">
+                  {allImages.indexOf(mainImage) + 1} / {allImages.length}
+                </div>
+              </>
             )}
           </div>
           {/* 썸네일 리스트 */}
