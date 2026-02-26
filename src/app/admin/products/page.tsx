@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { DeleteProductButton } from "@/components/admin/delete-product-button"
+import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
 
 export default async function AdminProductsPage() {
   const products = await prisma.product.findMany({
@@ -30,6 +31,8 @@ export default async function AdminProductsPage() {
           </Button>
         </Link>
       </div>
+
+      <ProductBulkUpload />
 
       {products.length === 0 ? (
         <Card>

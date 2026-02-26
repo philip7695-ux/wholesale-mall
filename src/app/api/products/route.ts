@@ -40,11 +40,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, description, categoryId, thumbnail, images, sizeSpec, isActive, colors, sizes, variants } = body
+    const { name, code, description, categoryId, thumbnail, images, sizeSpec, isActive, colors, sizes, variants } = body
 
     const product = await prisma.product.create({
       data: {
         name,
+        code: code || null,
         description,
         categoryId,
         thumbnail,

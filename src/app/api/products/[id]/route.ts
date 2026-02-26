@@ -37,13 +37,13 @@ export async function PUT(
 
   const { id } = await params
   const body = await request.json()
-  const { name, description, categoryId, thumbnail, images, sizeSpec, isActive, colors, sizes, variants } = body
+  const { name, code, description, categoryId, thumbnail, images, sizeSpec, isActive, colors, sizes, variants } = body
 
   try {
     // Update basic product info
     await prisma.product.update({
       where: { id },
-      data: { name, description, categoryId, thumbnail, images: images || [], sizeSpec: sizeSpec || null, isActive },
+      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], sizeSpec: sizeSpec || null, isActive },
     })
 
     // Replace colors, sizes, and variants

@@ -37,6 +37,7 @@ interface ProductFormProps {
   categories: Category[]
   initialData?: {
     id: string
+    code: string | null
     name: string
     description: string | null
     categoryId: string
@@ -54,6 +55,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const router = useRouter()
   const isEdit = !!initialData
 
+  const [code, setCode] = useState(initialData?.code || "")
   const [name, setName] = useState(initialData?.name || "")
   const [description, setDescription] = useState(initialData?.description || "")
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "")
@@ -178,6 +180,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
     try {
       const body = {
         name,
+        code: code.trim() || null,
         description,
         categoryId,
         thumbnail: images[0] || null,
@@ -220,7 +223,11 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
           <CardTitle>기본 정보</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>상품코드</Label>
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="예: ST001" />
+            </div>
             <div className="space-y-2">
               <Label>상품명 *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
