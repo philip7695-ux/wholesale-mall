@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/utils"
 import Link from "next/link"
 import { OrderExportButton } from "@/components/admin/order-export-button"
+import { OrderDeleteButton } from "@/components/admin/order-delete-button"
 
 const statusLabels: Record<string, string> = {
   PENDING: "주문접수",
@@ -64,8 +65,11 @@ export default async function AdminOrdersPage() {
                         {order.items.length}개 상품 | {new Date(order.createdAt).toLocaleString("ko-KR")}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center gap-3">
                       <p className="text-lg font-bold">{formatPrice(order.totalAmount)}</p>
+                      {order.status === "CANCELLED" && (
+                        <OrderDeleteButton orderId={order.id} />
+                      )}
                     </div>
                   </div>
                 </CardContent>
