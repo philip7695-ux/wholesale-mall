@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { writeFile, mkdir } from "fs/promises"
-import path from "path"
+import { createClient } from "@supabase/supabase-js"
+
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -19,16 +25,31 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // 파일명: 타임스탬프 + 랜덤 + 확장자
-    const ext = path.extname(file.name) || ".jpg"
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`
+    const ext = file.name.split(".").pop() || "jpg"
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const filePath = `products/${fileName}`
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads")
-    await mkdir(uploadDir, { recursive: true })
-    await writeFile(path.join(uploadDir, fileName), buffer)
+    const supabase = getSupabase()
 
-    return NextResponse.json({ url: `/uploads/${fileName}` })
-  } catch {
+    const { error } = await supabase.storage
+      .from("images")
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (error) {
+      console.error("Supabase upload error:", error)
+      return NextResponse.json({ error: "업로드 실패: " + error.message }, { status: 500 })
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("images")
+      .getPublicUrl(filePath)
+
+    return NextResponse.json({ url: urlData.publicUrl })
+  } catch (e: any) {
+    console.error("Upload error:", e)
     return NextResponse.json(
       { error: "업로드 중 오류가 발생했습니다." },
       { status: 500 },
