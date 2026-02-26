@@ -20,7 +20,6 @@ interface Category {
 interface ColorInput {
   name: string
   colorCode: string
-  images: string[]
 }
 
 interface SizeInput {
@@ -42,6 +41,7 @@ interface ProductFormProps {
     description: string | null
     categoryId: string
     thumbnail: string | null
+    images: string[]
     sizeSpec: string | null
     isActive: boolean
     colors: { name: string; colorCode: string | null; images: string[] }[]
@@ -57,15 +57,14 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [name, setName] = useState(initialData?.name || "")
   const [description, setDescription] = useState(initialData?.description || "")
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "")
-  const [thumbnail, setThumbnail] = useState(initialData?.thumbnail || "")
+  const [images, setImages] = useState<string[]>(initialData?.images || [])
   const [sizeSpec, setSizeSpec] = useState(initialData?.sizeSpec || "")
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true)
   const [colors, setColors] = useState<ColorInput[]>(
     initialData?.colors.map((c) => ({
       name: c.name,
       colorCode: c.colorCode || "",
-      images: c.images,
-    })) || [{ name: "", colorCode: "", images: [] }],
+    })) || [{ name: "", colorCode: "" }],
   )
   const [sizes, setSizes] = useState<SizeInput[]>(
     initialData?.sizes.map((s) => ({ name: s.name })) || [{ name: "" }],
@@ -95,7 +94,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  async function uploadImage(file: File): Promise<string> {
+  async function uploadFile(file: File): Promise<string> {
     const formData = new FormData()
     formData.append("file", file)
     const res = await fetch("/api/upload", { method: "POST", body: formData })
@@ -104,45 +103,28 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
     return data.url
   }
 
-  async function handleThumbnailUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadImage(file)
-      setThumbnail(url)
-    } catch {
-      toast.error("이미지 업로드에 실패했습니다.")
-    }
-    setUploading(false)
-  }
-
-  async function handleColorImageUpload(colorIndex: number, e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
     if (!files || files.length === 0) return
     setUploading(true)
-    const uploadedUrls: string[] = []
     for (const file of Array.from(files)) {
       try {
-        const url = await uploadImage(file)
-        uploadedUrls.push(url)
+        const url = await uploadFile(file)
+        setImages((prev) => [...prev, url])
       } catch {
         toast.error(`${file.name} 업로드 실패`)
       }
-    }
-    if (uploadedUrls.length > 0) {
-      setColors((prev) =>
-        prev.map((c, i) =>
-          i === colorIndex ? { ...c, images: [...c.images, ...uploadedUrls] } : c,
-        ),
-      )
     }
     e.target.value = ""
     setUploading(false)
   }
 
+  function removeImage(index: number) {
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
   function addColor() {
-    setColors([...colors, { name: "", colorCode: "", images: [] }])
+    setColors([...colors, { name: "", colorCode: "" }])
   }
 
   function removeColor(index: number) {
@@ -198,10 +180,11 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         name,
         description,
         categoryId,
-        thumbnail,
+        thumbnail: images[0] || null,
+        images,
         sizeSpec: sizeSpec || null,
         isActive,
-        colors: validColors,
+        colors: validColors.map((c) => ({ ...c, images: [] })),
         sizes: validSizes,
         variants,
       }
@@ -262,29 +245,56 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             <Label>상품 설명</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
-          <div className="flex items-center gap-4">
-            <div className="space-y-2">
-              <Label>대표 이미지</Label>
-              <div className="flex items-center gap-3">
-                {thumbnail && (
-                  <img src={thumbnail} alt="thumbnail" className="h-16 w-16 rounded object-cover" />
-                )}
-                <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
-                  <Upload className="h-4 w-4" />
-                  {uploading ? "업로드중..." : "이미지 선택"}
-                  <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} />
-                </label>
-              </div>
+
+          {/* 상품 이미지 (여러장) */}
+          <div className="space-y-2">
+            <Label>상품 이미지 (첫번째 사진이 대표 이미지)</Label>
+            <div className="flex flex-wrap gap-3">
+              {images.map((img, i) => (
+                <div key={i} className="relative">
+                  <img src={img} alt="" className="h-20 w-20 rounded-md object-cover border" />
+                  {i === 0 && (
+                    <span className="absolute -top-1.5 -left-1.5 rounded bg-primary px-1 text-[10px] text-primary-foreground">
+                      대표
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-white"
+                    onClick={() => removeImage(i)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed hover:bg-muted transition-colors">
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground mt-1">
+                  {uploading ? "업로드중" : "추가"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                />
+              </label>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              <Label htmlFor="isActive">판매 활성</Label>
-            </div>
+            {images.length > 0 && (
+              <p className="text-xs text-muted-foreground">{images.length}장 업로드됨</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
+            <Label htmlFor="isActive">판매 활성</Label>
           </div>
         </CardContent>
       </Card>
@@ -297,73 +307,34 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             <Plus className="mr-1 h-3 w-3" /> 컬러 추가
           </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {colors.map((color, i) => (
-            <div key={i} className="space-y-3 rounded-md border p-4">
-              <div className="flex items-center gap-3">
-                <Input
-                  placeholder="컬러명 (예: 블랙)"
-                  value={color.name}
-                  onChange={(e) => {
-                    const next = [...colors]
-                    next[i].name = e.target.value
-                    setColors(next)
-                  }}
-                  className="flex-1"
-                />
-                <Input
-                  type="color"
-                  value={color.colorCode || "#000000"}
-                  onChange={(e) => {
-                    const next = [...colors]
-                    next[i].colorCode = e.target.value
-                    setColors(next)
-                  }}
-                  className="h-10 w-14 p-1"
-                />
-                {colors.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(i)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div>
-                <div className="mb-2 flex flex-wrap gap-2">
-                  {color.images.map((img, j) => (
-                    <div key={j} className="relative">
-                      <img src={img} alt="" className="h-16 w-16 rounded object-cover" />
-                      <button
-                        type="button"
-                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-white"
-                        onClick={() => {
-                          const next = [...colors]
-                          next[i].images = next[i].images.filter((_, k) => k !== j)
-                          setColors(next)
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
-                    <Upload className="h-4 w-4" />
-                    {uploading ? "업로드중..." : "이미지 추가 (여러장 가능)"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleColorImageUpload(i, e)}
-                      disabled={uploading}
-                    />
-                  </label>
-                  {color.images.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{color.images.length}장</span>
-                  )}
-                </div>
-              </div>
+            <div key={i} className="flex items-center gap-3">
+              <Input
+                placeholder="컬러명 (예: 블랙)"
+                value={color.name}
+                onChange={(e) => {
+                  const next = [...colors]
+                  next[i].name = e.target.value
+                  setColors(next)
+                }}
+                className="flex-1"
+              />
+              <Input
+                type="color"
+                value={color.colorCode || "#000000"}
+                onChange={(e) => {
+                  const next = [...colors]
+                  next[i].colorCode = e.target.value
+                  setColors(next)
+                }}
+                className="h-10 w-14 p-1"
+              />
+              {colors.length > 1 && (
+                <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(i)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           ))}
         </CardContent>

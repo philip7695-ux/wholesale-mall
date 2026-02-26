@@ -26,6 +26,7 @@ interface Product {
   name: string
   description: string | null
   thumbnail: string | null
+  images: string[]
   sizeSpec: string | null
   category: { name: string }
   colors: { id: string; name: string; colorCode: string | null; images: string[] }[]
@@ -37,27 +38,19 @@ export function ProductDetail({ product }: { product: Product }) {
   const { data: session } = useSession()
   const router = useRouter()
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.id || "")
-  const [mainImage, setMainImage] = useState(
-    product.colors[0]?.images[0] || product.thumbnail || "",
-  )
+  const allImages = product.images.length > 0
+    ? product.images
+    : product.thumbnail
+      ? [product.thumbnail]
+      : []
+  const [mainImage, setMainImage] = useState(allImages[0] || "")
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
 
   const currentColor = product.colors.find((c) => c.id === selectedColor)
-  const allImages = currentColor?.images.length
-    ? currentColor.images
-    : product.thumbnail
-      ? [product.thumbnail]
-      : []
 
   function handleColorSelect(colorId: string) {
     setSelectedColor(colorId)
-    const color = product.colors.find((c) => c.id === colorId)
-    if (color?.images.length) {
-      setMainImage(color.images[0])
-    } else if (product.thumbnail) {
-      setMainImage(product.thumbnail)
-    }
   }
 
   function getVariant(colorId: string, sizeId: string): Variant | undefined {

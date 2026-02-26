@@ -60,7 +60,8 @@ model Product {
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
   thumbnail   String?
-  sizeSpec    String?  // 사이즈 스펙 (JSON or text)
+  images      String[]  // 상품 이미지 목록
+  sizeSpec    String?   // 사이즈 스펙 (JSON or text)
   isActive    Boolean @default(true)
   sortOrder   Int     @default(0)
 
