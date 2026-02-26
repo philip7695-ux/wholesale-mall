@@ -34,13 +34,22 @@ export default function LoginPage() {
     if (result?.error) {
       setError("이메일 또는 비밀번호가 올바르지 않습니다.")
     } else {
-      const session = await getSession()
-      if (session?.user?.role === "ADMIN") {
-        router.push("/admin")
-      } else {
-        router.push("/")
+      // 세션을 가져와서 role 확인 (재시도 포함)
+      let role = ""
+      for (let i = 0; i < 3; i++) {
+        const session = await getSession()
+        if (session?.user?.role) {
+          role = session.user.role
+          break
+        }
+        await new Promise(r => setTimeout(r, 500))
       }
       router.refresh()
+      if (role === "ADMIN") {
+        router.replace("/admin")
+      } else {
+        router.replace("/")
+      }
     }
   }
 
