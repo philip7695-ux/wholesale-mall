@@ -119,16 +119,25 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
   async function handleColorImageUpload(colorIndex: number, e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
-    if (!files) return
+    if (!files || files.length === 0) return
     setUploading(true)
-    try {
-      const urls = await Promise.all(Array.from(files).map(uploadImage))
-      const newColors = [...colors]
-      newColors[colorIndex].images = [...newColors[colorIndex].images, ...urls]
-      setColors(newColors)
-    } catch {
-      toast.error("이미지 업로드에 실패했습니다.")
+    const uploadedUrls: string[] = []
+    for (const file of Array.from(files)) {
+      try {
+        const url = await uploadImage(file)
+        uploadedUrls.push(url)
+      } catch {
+        toast.error(`${file.name} 업로드 실패`)
+      }
     }
+    if (uploadedUrls.length > 0) {
+      setColors((prev) =>
+        prev.map((c, i) =>
+          i === colorIndex ? { ...c, images: [...c.images, ...uploadedUrls] } : c,
+        ),
+      )
+    }
+    e.target.value = ""
     setUploading(false)
   }
 
@@ -337,17 +346,23 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                     </div>
                   ))}
                 </div>
-                <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
-                  <Upload className="h-4 w-4" />
-                  이미지 업로드
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleColorImageUpload(i, e)}
-                  />
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                    <Upload className="h-4 w-4" />
+                    {uploading ? "업로드중..." : "이미지 추가 (여러장 가능)"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleColorImageUpload(i, e)}
+                      disabled={uploading}
+                    />
+                  </label>
+                  {color.images.length > 0 && (
+                    <span className="text-xs text-muted-foreground">{color.images.length}장</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
