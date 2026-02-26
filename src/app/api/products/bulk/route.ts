@@ -8,6 +8,7 @@ interface ExcelRow {
   "상품명*": string
   "카테고리*": string
   "설명"?: string
+  "혼용률"?: string
   "컬러명*": string
   "컬러코드"?: string
   "사이즈*": string
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Validate rows and group by product name
     const failed: FailedRow[] = []
-    const productGroups = new Map<string, { code: string; category: string; description: string; variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[] }>()
+    const productGroups = new Map<string, { code: string; category: string; description: string; material: string; variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[] }>()
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
       }
 
       const description = String(row["설명"] ?? "").trim()
+      const material = String(row["혼용률"] ?? "").trim()
       const colorCode = String(row["컬러코드"] ?? "").trim()
       const stock = Number(row["재고"] ?? 0)
 
@@ -98,14 +100,18 @@ export async function POST(request: NextRequest) {
           code,
           category,
           description,
+          material,
           variants: [],
         })
       }
 
       const group = productGroups.get(name)!
-      // Use description from first row that has it
+      // Use description/material from first row that has it
       if (description && !group.description) {
         group.description = description
+      }
+      if (material && !group.material) {
+        group.material = material
       }
 
       group.variants.push({
@@ -174,6 +180,7 @@ export async function POST(request: NextRequest) {
             name: productName,
             code: group.code || null,
             description: group.description || null,
+            material: group.material || null,
             categoryId,
             images: [],
             isActive: true,

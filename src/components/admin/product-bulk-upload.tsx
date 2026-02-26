@@ -22,20 +22,8 @@ export function ProductBulkUpload() {
   const [result, setResult] = useState<UploadResult | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const res = await fetch("/api/products/template")
-      if (!res.ok) throw new Error("템플릿 다운로드 실패")
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = "상품_대량등록_템플릿.xlsx"
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      toast.error("템플릿 다운로드에 실패했습니다.")
-    }
+  const handleDownloadTemplate = () => {
+    window.open("/api/products/template", "_blank")
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

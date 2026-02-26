@@ -43,6 +43,7 @@ interface ProductFormProps {
     categoryId: string
     thumbnail: string | null
     images: string[]
+    material: string | null
     sizeSpec: string | null
     isActive: boolean
     colors: { name: string; colorCode: string | null; images: string[] }[]
@@ -60,6 +61,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [description, setDescription] = useState(initialData?.description || "")
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "")
   const [images, setImages] = useState<string[]>(initialData?.images || [])
+  const [material, setMaterial] = useState(initialData?.material || "")
   const [sizeSpec, setSizeSpec] = useState(initialData?.sizeSpec || "")
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true)
   const [colors, setColors] = useState<ColorInput[]>(
@@ -185,6 +187,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         categoryId,
         thumbnail: images[0] || null,
         images,
+        material: material.trim() || null,
         sizeSpec: sizeSpec || null,
         isActive,
         colors: validColors.map((c) => ({ ...c, images: [] })),
@@ -251,6 +254,10 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
           <div className="space-y-2">
             <Label>상품 설명</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label>혼용률</Label>
+            <Input value={material} onChange={(e) => setMaterial(e.target.value)} placeholder="예: 면 100%, 폴리에스터 80% 면 20%" />
           </div>
 
           {/* 상품 이미지 (여러장) */}
