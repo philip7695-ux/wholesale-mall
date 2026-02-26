@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
@@ -24,13 +24,19 @@ const paymentMethodLabels: Record<string, string> = {
   VIRTUAL_ACCOUNT: "가상계좌",
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const idsParam = request.nextUrl.searchParams.get("ids")
+  const where = idsParam
+    ? { id: { in: idsParam.split(",").filter(Boolean) } }
+    : {}
+
   const orders = await prisma.order.findMany({
+    where,
     include: {
       user: {
         select: {
