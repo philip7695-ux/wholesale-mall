@@ -37,6 +37,28 @@ export function OrderStatusForm({
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
   const [loading, setLoading] = useState(false)
 
+  async function handleDelete() {
+    if (!confirm("정말 이 주문을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}?permanent=true`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "삭제 실패")
+      }
+
+      toast.success("주문이 삭제되었습니다.")
+      router.push("/admin/orders")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "삭제에 실패했습니다.")
+    }
+    setLoading(false)
+  }
+
   async function handleSave() {
     setLoading(true)
     try {
@@ -91,6 +113,16 @@ export function OrderStatusForm({
         <Button onClick={handleSave} disabled={loading} className="w-full">
           {loading ? "저장중..." : "상태 변경"}
         </Button>
+        {(status === "CANCELLED" || currentStatus === "CANCELLED") && (
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? "삭제중..." : "주문 영구 삭제"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

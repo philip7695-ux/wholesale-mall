@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/utils"
 import Link from "next/link"
+import { OrderExportButton } from "@/components/admin/order-export-button"
 
 const statusLabels: Record<string, string> = {
   PENDING: "주문접수",
@@ -32,7 +33,10 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">주문 관리</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">주문 관리</h1>
+        {orders.length > 0 && <OrderExportButton />}
+      </div>
 
       {orders.length === 0 ? (
         <Card>

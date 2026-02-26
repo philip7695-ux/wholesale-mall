@@ -39,7 +39,7 @@ export async function GET(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth()
@@ -48,18 +48,39 @@ export async function DELETE(
   }
 
   const { id } = await params
+  const { searchParams } = new URL(request.url)
+  const permanent = searchParams.get("permanent") === "true"
+
   const order = await prisma.order.findUnique({ where: { id } })
 
   if (!order) {
     return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
-  // 본인 주문이거나 관리자만 삭제 가능
+  // 본인 주문이거나 관리자만 가능
   if (session.user.role !== "ADMIN" && order.userId !== session.user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  // PENDING 상태만 취소 가능 (관리자는 아무 상태나 가능)
+  // 영구 삭제 (관리자 전용, 취소된 주문만)
+  if (permanent) {
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+    if (order.status !== "CANCELLED") {
+      return NextResponse.json(
+        { error: "취소된 주문만 삭제할 수 있습니다." },
+        { status: 400 },
+      )
+    }
+
+    await prisma.orderItem.deleteMany({ where: { orderId: id } })
+    await prisma.order.delete({ where: { id } })
+
+    return NextResponse.json({ message: "주문이 삭제되었습니다." })
+  }
+
+  // 취소 처리
   if (session.user.role !== "ADMIN" && order.status !== "PENDING") {
     return NextResponse.json(
       { error: "접수 상태의 주문만 취소할 수 있습니다." },
