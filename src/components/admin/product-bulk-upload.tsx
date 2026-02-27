@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle } from "lucide-react"
@@ -17,6 +18,7 @@ interface ImageUploadResult {
 }
 
 export function ProductBulkUpload() {
+  const t = useTranslations("admin")
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<UploadResult | null>(null)
@@ -30,7 +32,7 @@ export function ProductBulkUpload() {
     const selected = e.target.files?.[0]
     if (selected) {
       if (!selected.name.endsWith(".xlsx") && !selected.name.endsWith(".xls")) {
-        toast.error("엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.")
+        toast.error(t("bulkExcelOnly"))
         return
       }
       setFile(selected)
@@ -55,20 +57,20 @@ export function ProductBulkUpload() {
 
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || "업로드 실패")
+        throw new Error(err.error || t("bulkUploadFail"))
       }
 
       const data: UploadResult = await res.json()
       setResult(data)
 
       if (data.success > 0) {
-        toast.success(`${data.success}개 상품이 등록되었습니다.`)
+        toast.success(t("bulkProductsRegistered", { count: data.success }))
       }
       if (data.failed.length > 0) {
-        toast.error(`${data.failed.length}건의 오류가 있습니다.`)
+        toast.error(t("bulkErrors", { count: data.failed.length }))
       }
     } catch (err: any) {
-      toast.error(err.message || "업로드 중 오류가 발생했습니다.")
+      toast.error(err.message || t("bulkUploadError"))
     } finally {
       setUploading(false)
     }
@@ -109,7 +111,7 @@ export function ProductBulkUpload() {
         formData.append("files", f)
       }
 
-      setImageProgress(`업로드 중... (${imageFiles.length}개 파일)`)
+      setImageProgress(t("bulkImageUploading", { count: imageFiles.length }))
 
       const res = await fetch("/api/products/bulk-images", {
         method: "POST",
@@ -118,7 +120,7 @@ export function ProductBulkUpload() {
 
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || "업로드 실패")
+        throw new Error(err.error || t("bulkUploadFail"))
       }
 
       const data: ImageUploadResult = await res.json()
@@ -126,13 +128,13 @@ export function ProductBulkUpload() {
       setImageProgress("")
 
       if (data.success > 0) {
-        toast.success(`${data.success}개 이미지가 업로드되었습니다.`)
+        toast.success(t("bulkImagesUploaded", { count: data.success }))
       }
       if (data.failed.length > 0) {
-        toast.error(`${data.failed.length}건의 오류가 있습니다.`)
+        toast.error(t("bulkErrors", { count: data.failed.length }))
       }
     } catch (err: any) {
-      toast.error(err.message || "이미지 업로드 중 오류가 발생했습니다.")
+      toast.error(err.message || t("bulkImageUploadError"))
       setImageProgress("")
     } finally {
       setImageUploading(false)
@@ -152,13 +154,13 @@ export function ProductBulkUpload() {
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5 text-green-600" />
-          <span className="font-medium">엑셀 대량 등록</span>
+          <span className="font-medium">{t("bulkExcelUpload")}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
             <Download className="mr-1 h-4 w-4" />
-            템플릿 다운로드
+            {t("bulkDownloadTemplate")}
           </Button>
 
           <input
@@ -174,7 +176,7 @@ export function ProductBulkUpload() {
             onClick={() => inputRef.current?.click()}
           >
             <Upload className="mr-1 h-4 w-4" />
-            파일 선택
+            {t("bulkSelectFile")}
           </Button>
 
           {file && (
@@ -189,7 +191,7 @@ export function ProductBulkUpload() {
 
         {file && !result && (
           <Button size="sm" onClick={handleUpload} disabled={uploading} className="w-fit">
-            {uploading ? "업로드 중..." : "대량 등록 시작"}
+            {uploading ? t("bulkUploading") : t("bulkStartUpload")}
           </Button>
         )}
 
@@ -198,26 +200,26 @@ export function ProductBulkUpload() {
             {result.success > 0 && (
               <div className="flex items-center gap-1 text-green-600">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>{result.success}개 상품 등록 성공</span>
+                <span>{t("bulkProductSuccess", { count: result.success })}</span>
               </div>
             )}
             {result.failed.length > 0 && (
               <div className="space-y-1">
                 <div className="flex items-center gap-1 text-red-600">
                   <AlertCircle className="h-4 w-4" />
-                  <span>{result.failed.length}건 오류</span>
+                  <span>{t("bulkErrorCount", { count: result.failed.length })}</span>
                 </div>
                 <ul className="ml-5 list-disc space-y-0.5 text-red-600">
                   {result.failed.map((f, i) => (
                     <li key={i}>
-                      {f.row > 0 ? `행 ${f.row}: ` : ""}{f.error}
+                      {f.row > 0 ? t("bulkRowError", { row: f.row, error: f.error }) : f.error}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
             <Button variant="outline" size="sm" onClick={handleReset}>
-              다시 업로드
+              {t("bulkReupload")}
             </Button>
           </div>
         )}
@@ -229,12 +231,12 @@ export function ProductBulkUpload() {
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex items-center gap-2">
           <ImagePlus className="h-5 w-5 text-blue-600" />
-          <span className="font-medium">이미지 대량 업로드</span>
+          <span className="font-medium">{t("bulkImageUpload")}</span>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          파일명 규칙: <code className="rounded bg-muted px-1">상품코드_순서.확장자</code> (예: ST001_1.jpg, ST001_2.jpg, AB02_1.png)
-          <br />순서 1번이 대표 이미지(썸네일)로 설정됩니다.
+          {t("bulkImageFileRule")}
+          <br />{t("bulkImageThumbnailHint")}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -252,12 +254,12 @@ export function ProductBulkUpload() {
             onClick={() => imageInputRef.current?.click()}
           >
             <ImagePlus className="mr-1 h-4 w-4" />
-            이미지 선택
+            {t("bulkSelectImages")}
           </Button>
 
           {imageFiles.length > 0 && (
             <>
-              <span className="text-sm text-muted-foreground">{imageFiles.length}개 파일 선택됨</span>
+              <span className="text-sm text-muted-foreground">{t("bulkFilesSelected", { count: imageFiles.length })}</span>
               <Button variant="ghost" size="sm" onClick={handleImageReset} className="h-6 w-6 p-0">
                 <X className="h-4 w-4" />
               </Button>
@@ -273,7 +275,7 @@ export function ProductBulkUpload() {
               ))}
             </div>
             <Button size="sm" onClick={handleImageUpload} disabled={imageUploading} className="w-fit">
-              {imageUploading ? imageProgress || "업로드 중..." : "이미지 대량 업로드 시작"}
+              {imageUploading ? imageProgress || t("bulkUploading") : t("bulkStartImageUpload")}
             </Button>
           </div>
         )}
@@ -283,14 +285,14 @@ export function ProductBulkUpload() {
             {imageResult.success > 0 && (
               <div className="flex items-center gap-1 text-green-600">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>{imageResult.success}개 이미지 업로드 성공</span>
+                <span>{t("bulkImageSuccess", { count: imageResult.success })}</span>
               </div>
             )}
             {imageResult.failed.length > 0 && (
               <div className="space-y-1">
                 <div className="flex items-center gap-1 text-red-600">
                   <AlertCircle className="h-4 w-4" />
-                  <span>{imageResult.failed.length}건 오류</span>
+                  <span>{t("bulkErrorCount", { count: imageResult.failed.length })}</span>
                 </div>
                 <ul className="ml-5 list-disc space-y-0.5 text-red-600">
                   {imageResult.failed.map((f, i) => (
@@ -302,7 +304,7 @@ export function ProductBulkUpload() {
               </div>
             )}
             <Button variant="outline" size="sm" onClick={handleImageReset}>
-              다시 업로드
+              {t("bulkReupload")}
             </Button>
           </div>
         )}

@@ -1,0 +1,17 @@
+{
+  "title": "장바구니",
+  "empty": "장바구니가 비어있습니다.",
+  "goShopping": "쇼핑하러 가기",
+  "optionsAndQty": "{options}개 옵션 · 총 {qty}장",
+  "size": "사이즈",
+  "unitPrice": "단가",
+  "quantity": "수량",
+  "amount": "금액",
+  "productSummary": "상품 {count}건 · {qty}장",
+  "totalPayment": "총 결제금액",
+  "order": "주문하기",
+  "deleted": "삭제되었습니다.",
+  "productDeleted": "상품이 삭제되었습니다.",
+  "qtyUnit": "{qty}장",
+  "subtotalUnit": "{qty}장 · {price}"
+}

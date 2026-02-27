@@ -1,6 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/navigation"
+import { useTranslations } from "next-intl"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
@@ -22,6 +23,8 @@ export function ProductSearch({
   currentSearch?: string
 }) {
   const router = useRouter()
+  const t = useTranslations("shop")
+  const tc = useTranslations("common")
   const [search, setSearch] = useState(currentSearch || "")
 
   function handleSearch(e: React.FormEvent) {
@@ -41,7 +44,7 @@ export function ProductSearch({
           size="sm"
           onClick={() => router.push("/products")}
         >
-          전체
+          {tc("all")}
         </Button>
         {categories.map((cat) => (
           <Button
@@ -58,7 +61,7 @@ export function ProductSearch({
       {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <Input
-          placeholder="상품명 검색..."
+          placeholder={t("searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"

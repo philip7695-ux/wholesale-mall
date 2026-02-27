@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/navigation"
+import { useTranslations, useLocale } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,6 +38,9 @@ interface Product {
 export function ProductDetail({ product }: { product: Product }) {
   const { data: session } = useSession()
   const router = useRouter()
+  const t = useTranslations("product")
+  const tc = useTranslations("common")
+  const locale = useLocale()
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.id || "")
   const allImages = product.images.length > 0
     ? product.images
@@ -72,7 +76,6 @@ export function ProductDetail({ product }: { product: Product }) {
     return sum
   }
 
-  // 선택된 컬러의 수량 합계
   function colorQuantity(colorId: string) {
     let qty = 0
     for (const size of product.sizes) {
@@ -96,7 +99,7 @@ export function ProductDetail({ product }: { product: Product }) {
       })
 
     if (items.length === 0) {
-      toast.error("수량을 입력해주세요.")
+      toast.error(t("enterQuantity"))
       return
     }
 
@@ -113,10 +116,10 @@ export function ProductDetail({ product }: { product: Product }) {
         throw new Error(data.error)
       }
 
-      toast.success("장바구니에 추가되었습니다.")
+      toast.success(t("addedToCart"))
       setQuantities({})
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "오류가 발생했습니다.")
+      toast.error(err instanceof Error ? err.message : tc("error"))
     }
     setLoading(false)
   }
@@ -195,7 +198,7 @@ export function ProductDetail({ product }: { product: Product }) {
           {sizeSpecData && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">사이즈 스펙 (cm)</CardTitle>
+                <CardTitle className="text-sm">{t("sizeSpecCm")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -224,7 +227,7 @@ export function ProductDetail({ product }: { product: Product }) {
           {product.sizeSpec && !sizeSpecData && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">사이즈 스펙</CardTitle>
+                <CardTitle className="text-sm">{t("sizeSpec")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap text-sm text-muted-foreground">{product.sizeSpec}</p>
@@ -246,7 +249,7 @@ export function ProductDetail({ product }: { product: Product }) {
 
           {/* 컬러 선택 */}
           <div className="space-y-2">
-            <p className="text-sm font-medium">컬러 선택</p>
+            <p className="text-sm font-medium">{t("colorSelect")}</p>
             <div className="flex flex-wrap gap-2">
               {product.colors.map((color) => {
                 const qty = colorQuantity(color.id)
@@ -285,7 +288,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     className="inline-block h-3 w-3 rounded-full border"
                     style={{ backgroundColor: currentColor.colorCode || "#ccc" }}
                   />
-                  {currentColor.name} - 사이즈별 수량
+                  {t("sizeQuantity", { colorName: currentColor.name })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -298,7 +301,7 @@ export function ProductDetail({ product }: { product: Product }) {
                       <div key={size.id} className="flex items-center gap-3">
                         <span className="w-14 text-sm font-medium">{size.name}</span>
                         <span className="w-20 text-xs text-muted-foreground">
-                          {formatPrice(variant.price)}
+                          {formatPrice(variant.price, locale)}
                         </span>
                         <Input
                           type="number"
@@ -313,7 +316,7 @@ export function ProductDetail({ product }: { product: Product }) {
                         />
                         {(quantities[key] || 0) > 0 && (
                           <span className="text-sm font-medium">
-                            {formatPrice(variant.price * (quantities[key] || 0))}
+                            {formatPrice(variant.price * (quantities[key] || 0), locale)}
                           </span>
                         )}
                       </div>
@@ -341,13 +344,13 @@ export function ProductDetail({ product }: { product: Product }) {
                           />
                           {color.name}
                         </span>
-                        <span>{qty}장</span>
+                        <span>{qty}{tc("pieces")}</span>
                       </div>
                     )
                   })}
                   <div className="flex justify-between border-t pt-1 font-bold">
-                    <span>합계 {totalQuantity()}장</span>
-                    <span className="text-primary">{formatPrice(totalAmount())}</span>
+                    <span>{t("totalSummary", { count: totalQuantity() })}</span>
+                    <span className="text-primary">{formatPrice(totalAmount(), locale)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -363,10 +366,10 @@ export function ProductDetail({ product }: { product: Product }) {
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
             {loading
-              ? "추가중..."
+              ? t("adding")
               : totalQuantity() > 0
-                ? `장바구니 담기 (${totalQuantity()}장 · ${formatPrice(totalAmount())})`
-                : "장바구니 담기"}
+                ? t("addToCartWithQty", { count: totalQuantity(), price: formatPrice(totalAmount(), locale) })
+                : t("addToCart")}
           </Button>
         </div>
       </div>

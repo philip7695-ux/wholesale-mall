@@ -1,0 +1,17 @@
+{
+  "title": "カート",
+  "empty": "カートが空です。",
+  "goShopping": "ショッピングへ",
+  "optionsAndQty": "{options}個オプション · 計{qty}枚",
+  "size": "サイズ",
+  "unitPrice": "単価",
+  "quantity": "数量",
+  "amount": "金額",
+  "productSummary": "商品{count}件 · {qty}枚",
+  "totalPayment": "合計金額",
+  "order": "注文する",
+  "deleted": "削除しました。",
+  "productDeleted": "商品を削除しました。",
+  "qtyUnit": "{qty}枚",
+  "subtotalUnit": "{qty}枚 · {price}"
+}

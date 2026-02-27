@@ -1,0 +1,14 @@
+{
+  "sizeSpecCm": "サイズスペック (cm)",
+  "sizeSpec": "サイズスペック",
+  "colorSelect": "カラー選択",
+  "sizeQuantity": "{colorName} - サイズ別数量",
+  "totalSummary": "合計 {count}枚",
+  "addToCart": "カートに入れる",
+  "addToCartWithQty": "カートに入れる ({count}枚 · {price})",
+  "adding": "追加中...",
+  "enterQuantity": "数量を入力してください。",
+  "addedToCart": "カートに追加しました。",
+  "composition": "混用率",
+  "compositionPlaceholder": "例：綿 100%、ポリエステル 80% 綿 20%"
+}

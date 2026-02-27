@@ -1,0 +1,14 @@
+{
+  "sizeSpecCm": "사이즈 스펙 (cm)",
+  "sizeSpec": "사이즈 스펙",
+  "colorSelect": "컬러 선택",
+  "sizeQuantity": "{colorName} - 사이즈별 수량",
+  "totalSummary": "합계 {count}장",
+  "addToCart": "장바구니 담기",
+  "addToCartWithQty": "장바구니 담기 ({count}장 · {price})",
+  "adding": "추가중...",
+  "enterQuantity": "수량을 입력해주세요.",
+  "addedToCart": "장바구니에 추가되었습니다.",
+  "composition": "혼용률",
+  "compositionPlaceholder": "예: 면 100%, 폴리에스터 80% 면 20%"
+}

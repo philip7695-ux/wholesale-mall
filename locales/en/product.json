@@ -1,0 +1,14 @@
+{
+  "sizeSpecCm": "Size Spec (cm)",
+  "sizeSpec": "Size Spec",
+  "colorSelect": "Select Color",
+  "sizeQuantity": "{colorName} - Quantity by Size",
+  "totalSummary": "Total {count} pcs",
+  "addToCart": "Add to Cart",
+  "addToCartWithQty": "Add to Cart ({count} pcs · {price})",
+  "adding": "Adding...",
+  "enterQuantity": "Please enter a quantity.",
+  "addedToCart": "Added to cart.",
+  "composition": "Composition",
+  "compositionPlaceholder": "e.g. Cotton 100%, Polyester 80% Cotton 20%"
+}

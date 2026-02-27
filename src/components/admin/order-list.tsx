@@ -1,30 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { Link, useRouter } from "@/i18n/navigation"
+import { useTranslations, useLocale } from "next-intl"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Download, Trash2 } from "lucide-react"
-import { formatPrice } from "@/lib/utils"
+import { formatPrice, formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
-
-const statusLabels: Record<string, string> = {
-  PENDING: "주문접수",
-  CONFIRMED: "주문확인",
-  SHIPPING: "배송중",
-  DELIVERED: "배송완료",
-  CANCELLED: "취소됨",
-}
-
-const paymentLabels: Record<string, string> = {
-  PENDING: "입금대기",
-  PAID: "결제완료",
-  FAILED: "실패",
-  REFUNDED: "환불",
-}
 
 interface OrderItem {
   id: string
@@ -48,8 +33,26 @@ interface Order {
 
 export function OrderList({ orders }: { orders: Order[] }) {
   const router = useRouter()
+  const t = useTranslations("admin")
+  const tc = useTranslations("common")
+  const locale = useLocale()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<string | null>(null)
+
+  const statusLabels: Record<string, string> = {
+    PENDING: t("orderStatusPending"),
+    CONFIRMED: t("orderStatusConfirmed"),
+    SHIPPING: t("orderStatusShipping"),
+    DELIVERED: t("orderStatusDelivered"),
+    CANCELLED: t("orderStatusCancelled"),
+  }
+
+  const paymentLabels: Record<string, string> = {
+    PENDING: t("paymentStatusPending"),
+    PAID: t("paymentStatusPaid"),
+    FAILED: t("paymentStatusFailed"),
+    REFUNDED: t("paymentStatusRefunded"),
+  }
 
   const allSelected = orders.length > 0 && selected.size === orders.length
 
@@ -80,7 +83,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
         ? `?ids=${Array.from(selected).join(",")}`
         : ""
       const res = await fetch(`/api/orders/export${params}`)
-      if (!res.ok) throw new Error("다운로드 실패")
+      if (!res.ok) throw new Error(t("orderExportFail"))
 
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -88,14 +91,14 @@ export function OrderList({ orders }: { orders: Order[] }) {
       a.href = url
       const disposition = res.headers.get("Content-Disposition") || ""
       const match = disposition.match(/filename\*=UTF-8''(.+)/)
-      a.download = match ? decodeURIComponent(match[1]) : "주문목록.xlsx"
+      a.download = match ? decodeURIComponent(match[1]) : t("orderExportFilename")
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-      toast.success("엑셀 파일이 다운로드되었습니다.")
+      toast.success(t("orderExportSuccess"))
     } catch {
-      toast.error("엑셀 다운로드에 실패했습니다.")
+      toast.error(t("orderExportError"))
     }
     setLoading(null)
   }
@@ -104,7 +107,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!confirm("정말 이 주문을 영구 삭제하시겠습니까?")) return
+    if (!confirm(t("orderDeleteConfirm"))) return
 
     setLoading(orderId)
     try {
@@ -113,9 +116,9 @@ export function OrderList({ orders }: { orders: Order[] }) {
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || "삭제 실패")
+        throw new Error(data.error || t("orderDeleteFail"))
       }
-      toast.success("주문이 삭제되었습니다.")
+      toast.success(t("orderDeleted"))
       setSelected((prev) => {
         const next = new Set(prev)
         next.delete(orderId)
@@ -123,19 +126,19 @@ export function OrderList({ orders }: { orders: Order[] }) {
       })
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "삭제에 실패했습니다.")
+      toast.error(err instanceof Error ? err.message : t("orderDeleteError"))
     }
     setLoading(null)
   }
 
   return (
     <>
-      {/* 상단 툴바 */}
+      {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">주문 관리</h1>
+          <h1 className="text-2xl font-bold">{t("orderMgmt")}</h1>
           {selected.size > 0 && (
-            <Badge variant="secondary">{selected.size}건 선택</Badge>
+            <Badge variant="secondary">{t("orderSelectedCount", { count: selected.size })}</Badge>
           )}
         </div>
         <Button
@@ -145,14 +148,14 @@ export function OrderList({ orders }: { orders: Order[] }) {
         >
           <Download className="mr-2 h-4 w-4" />
           {loading === "export"
-            ? "다운로드중..."
+            ? t("orderDownloading")
             : selected.size > 0
-              ? `선택 ${selected.size}건 엑셀 다운로드`
-              : "전체 엑셀 다운로드"}
+              ? t("orderExportSelected", { count: selected.size })
+              : t("orderExportAll")}
         </Button>
       </div>
 
-      {/* 전체 선택 */}
+      {/* Select All */}
       <div className="flex items-center gap-2 px-1">
         <Checkbox
           id="select-all"
@@ -160,11 +163,11 @@ export function OrderList({ orders }: { orders: Order[] }) {
           onCheckedChange={toggleAll}
         />
         <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
-          전체 선택
+          {t("selectAll")}
         </label>
       </div>
 
-      {/* 주문 목록 */}
+      {/* Order List */}
       <div className="space-y-3">
         {orders.map((order) => (
           <div key={order.id} className="flex items-start gap-3">
@@ -188,11 +191,11 @@ export function OrderList({ orders }: { orders: Order[] }) {
                         {order.user.name} ({order.user.email})
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {order.items.length}개 상품 | {new Date(order.createdAt).toLocaleString("ko-KR")}
+                        {t("orderItemCount", { count: order.items.length })} | {formatDateTime(order.createdAt, locale)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-lg font-bold">{formatPrice(order.totalAmount)}</p>
+                      <p className="text-lg font-bold">{formatPrice(order.totalAmount, locale)}</p>
                       {order.status === "CANCELLED" && (
                         <Button
                           variant="destructive"
@@ -201,7 +204,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
                           disabled={loading === order.id}
                         >
                           <Trash2 className="mr-1 h-3.5 w-3.5" />
-                          {loading === order.id ? "삭제중..." : "삭제"}
+                          {loading === order.id ? t("orderDeleting") : tc("delete")}
                         </Button>
                       )}
                     </div>

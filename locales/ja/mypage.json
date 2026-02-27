@@ -1,0 +1,23 @@
+{
+  "title": "マイページ",
+  "myInfo": "会員情報",
+  "editInfo": "情報編集",
+  "nameLabel": "名前",
+  "emailLabel": "メール",
+  "accountStatus": "アカウント状態",
+  "approved": "承認済み",
+  "pendingApproval": "承認待ち",
+  "viewOrders": "注文履歴を見る",
+  "viewCart": "カートを見る",
+  "editTitle": "会員情報編集",
+  "basicInfo": "基本情報",
+  "nameRequired": "名前 *",
+  "changePassword": "パスワード変更",
+  "currentPassword": "現在のパスワード",
+  "newPassword": "新しいパスワード",
+  "confirmNewPassword": "新しいパスワード確認",
+  "newPasswordMismatch": "新しいパスワードが一致しません。",
+  "editSuccess": "情報が更新されました。",
+  "editFail": "更新に失敗しました。",
+  "change": "変更する"
+}

@@ -1,0 +1,16 @@
+{
+  "logo": "WholeSale",
+  "menu": "Menu",
+  "productList": "Products",
+  "cart": "Cart",
+  "orders": "Orders",
+  "mypage": "My Page",
+  "heroTitle": "Wholesale Clothing Mall",
+  "heroDesc1": "Discover the latest trend clothing at wholesale prices.",
+  "heroDesc2": "B2B mall exclusively for business members.",
+  "browseProducts": "Browse Products",
+  "searchPlaceholder": "Search products...",
+  "noProducts": "No products found.",
+  "productsTitle": "Product List",
+  "goToShop": "Go to Shop"
+}

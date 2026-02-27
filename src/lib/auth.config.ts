@@ -1,7 +1,27 @@
 import type { NextAuthConfig } from "next-auth"
 
+const locales = ["ko", "en", "zh", "ja"]
+
+function stripLocalePrefix(pathname: string): string {
+  for (const locale of locales) {
+    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+      return pathname.slice(locale.length + 1) || "/"
+    }
+  }
+  return pathname
+}
+
+function getLocaleFromPath(pathname: string): string {
+  for (const locale of locales) {
+    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+      return locale
+    }
+  }
+  return "ko"
+}
+
 export const authConfig: NextAuthConfig = {
-  providers: [], // Credentials provider는 auth.ts에서 추가 (Node.js 런타임 필요)
+  providers: [],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -20,20 +40,29 @@ export const authConfig: NextAuthConfig = {
     },
     authorized({ auth, request: { nextUrl } }) {
       const { pathname } = nextUrl
+      const strippedPath = stripLocalePrefix(pathname)
 
-      // 인증/API는 항상 허용
+      // Auth/API routes are always allowed
       if (
-        pathname.startsWith("/auth") ||
-        pathname.startsWith("/api")
+        strippedPath.startsWith("/auth") ||
+        strippedPath.startsWith("/api")
       ) {
         return true
       }
 
-      // 그 외 모든 페이지는 로그인 필수
-      if (!auth) return false
+      // All other pages require login
+      if (!auth) {
+        const locale = getLocaleFromPath(pathname)
+        const loginUrl = new URL(
+          locale === "ko" ? "/auth/login" : `/${locale}/auth/login`,
+          nextUrl.origin,
+        )
+        loginUrl.searchParams.set("callbackUrl", pathname)
+        return Response.redirect(loginUrl)
+      }
 
-      // Admin routes는 ADMIN 역할 필요
-      if (pathname.startsWith("/admin")) {
+      // Admin routes require ADMIN role
+      if (strippedPath.startsWith("/admin")) {
         return auth.user.role === "ADMIN"
       }
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Check, X, Trash2 } from "lucide-react"
@@ -13,6 +14,8 @@ export function MemberApprovalButton({
   currentStatus: string
 }) {
   const router = useRouter()
+  const t = useTranslations("admin")
+  const tc = useTranslations("common")
 
   async function handleApproval(approvalStatus: string) {
     const res = await fetch(`/api/admin/members/${memberId}`, {
@@ -22,33 +25,33 @@ export function MemberApprovalButton({
     })
 
     if (res.ok) {
-      toast.success(approvalStatus === "APPROVED" ? "승인되었습니다." : "거절되었습니다.")
+      toast.success(approvalStatus === "APPROVED" ? t("memberApproved") : t("memberRejected"))
       router.refresh()
     } else {
-      toast.error("처리 중 오류가 발생했습니다.")
+      toast.error(t("memberProcessError"))
     }
   }
 
   async function handleDelete() {
-    if (!confirm("정말 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return
+    if (!confirm(t("memberDeleteConfirm"))) return
 
     const res = await fetch(`/api/admin/members/${memberId}`, {
       method: "DELETE",
     })
 
     if (res.ok) {
-      toast.success("회원이 삭제되었습니다.")
+      toast.success(t("memberDeleted"))
       router.refresh()
     } else {
       const data = await res.json()
-      toast.error(data.error || "삭제 중 오류가 발생했습니다.")
+      toast.error(data.error || t("memberDeleteError"))
     }
   }
 
   if (currentStatus === "APPROVED") {
     return (
       <Button variant="destructive" size="sm" onClick={handleDelete}>
-        <Trash2 className="mr-1 h-3 w-3" /> 삭제
+        <Trash2 className="mr-1 h-3 w-3" /> {tc("delete")}
       </Button>
     )
   }
@@ -56,15 +59,15 @@ export function MemberApprovalButton({
   return (
     <div className="flex gap-2">
       <Button size="sm" onClick={() => handleApproval("APPROVED")}>
-        <Check className="mr-1 h-3 w-3" /> 승인
+        <Check className="mr-1 h-3 w-3" /> {t("memberApprove")}
       </Button>
       {currentStatus !== "REJECTED" ? (
         <Button variant="destructive" size="sm" onClick={() => handleApproval("REJECTED")}>
-          <X className="mr-1 h-3 w-3" /> 거절
+          <X className="mr-1 h-3 w-3" /> {t("memberReject")}
         </Button>
       ) : (
         <Button variant="destructive" size="sm" onClick={handleDelete}>
-          <Trash2 className="mr-1 h-3 w-3" /> 삭제
+          <Trash2 className="mr-1 h-3 w-3" /> {tc("delete")}
         </Button>
       )}
     </div>

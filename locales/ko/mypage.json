@@ -1,0 +1,23 @@
+{
+  "title": "마이페이지",
+  "myInfo": "내 정보",
+  "editInfo": "정보 수정",
+  "nameLabel": "이름",
+  "emailLabel": "이메일",
+  "accountStatus": "계정 상태",
+  "approved": "승인됨",
+  "pendingApproval": "승인대기",
+  "viewOrders": "주문 내역 보기",
+  "viewCart": "장바구니 보기",
+  "editTitle": "내 정보 수정",
+  "basicInfo": "기본 정보",
+  "nameRequired": "이름 *",
+  "changePassword": "비밀번호 변경",
+  "currentPassword": "현재 비밀번호",
+  "newPassword": "새 비밀번호",
+  "confirmNewPassword": "새 비밀번호 확인",
+  "newPasswordMismatch": "새 비밀번호가 일치하지 않습니다.",
+  "editSuccess": "정보가 수정되었습니다.",
+  "editFail": "수정에 실패했습니다.",
+  "change": "변경하기"
+}

@@ -1,0 +1,14 @@
+{
+  "sizeSpecCm": "尺码规格 (cm)",
+  "sizeSpec": "尺码规格",
+  "colorSelect": "选择颜色",
+  "sizeQuantity": "{colorName} - 各尺码数量",
+  "totalSummary": "共计 {count}件",
+  "addToCart": "加入购物车",
+  "addToCartWithQty": "加入购物车 ({count}件 · {price})",
+  "adding": "添加中...",
+  "enterQuantity": "请输入数量。",
+  "addedToCart": "已加入购物车。",
+  "composition": "成分",
+  "compositionPlaceholder": "例：棉 100%，涤纶 80% 棉 20%"
+}

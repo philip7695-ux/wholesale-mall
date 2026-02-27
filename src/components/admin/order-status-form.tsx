@@ -1,27 +1,13 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { toast } from "sonner"
-
-const orderStatuses = [
-  { value: "PENDING", label: "주문접수" },
-  { value: "CONFIRMED", label: "주문확인" },
-  { value: "SHIPPING", label: "배송중" },
-  { value: "DELIVERED", label: "배송완료" },
-  { value: "CANCELLED", label: "취소" },
-]
-
-const paymentStatuses = [
-  { value: "PENDING", label: "입금대기" },
-  { value: "PAID", label: "결제완료" },
-  { value: "FAILED", label: "실패" },
-  { value: "REFUNDED", label: "환불" },
-]
 
 export function OrderStatusForm({
   orderId,
@@ -33,12 +19,28 @@ export function OrderStatusForm({
   currentPaymentStatus: string
 }) {
   const router = useRouter()
+  const t = useTranslations("admin")
   const [status, setStatus] = useState(currentStatus)
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
   const [loading, setLoading] = useState(false)
 
+  const orderStatuses = [
+    { value: "PENDING", label: t("orderStatusPending") },
+    { value: "CONFIRMED", label: t("orderStatusConfirmed") },
+    { value: "SHIPPING", label: t("orderStatusShipping") },
+    { value: "DELIVERED", label: t("orderStatusDelivered") },
+    { value: "CANCELLED", label: t("orderStatusCancelled") },
+  ]
+
+  const paymentStatuses = [
+    { value: "PENDING", label: t("paymentStatusPending") },
+    { value: "PAID", label: t("paymentStatusPaid") },
+    { value: "FAILED", label: t("paymentStatusFailed") },
+    { value: "REFUNDED", label: t("paymentStatusRefunded") },
+  ]
+
   async function handleDelete() {
-    if (!confirm("정말 이 주문을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return
+    if (!confirm(t("orderPermanentDeleteConfirm"))) return
 
     setLoading(true)
     try {
@@ -48,13 +50,13 @@ export function OrderStatusForm({
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || "삭제 실패")
+        throw new Error(data.error || t("orderDeleteFail"))
       }
 
-      toast.success("주문이 삭제되었습니다.")
+      toast.success(t("orderDeleted"))
       router.push("/admin/orders")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "삭제에 실패했습니다.")
+      toast.error(err instanceof Error ? err.message : t("orderDeleteError"))
     }
     setLoading(false)
   }
@@ -70,10 +72,10 @@ export function OrderStatusForm({
 
       if (!res.ok) throw new Error()
 
-      toast.success("상태가 변경되었습니다.")
+      toast.success(t("orderStatusChanged"))
       router.refresh()
     } catch {
-      toast.error("상태 변경에 실패했습니다.")
+      toast.error(t("orderStatusChangeFail"))
     }
     setLoading(false)
   }
@@ -81,11 +83,11 @@ export function OrderStatusForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>상태 관리</CardTitle>
+        <CardTitle>{t("orderStatusMgmt")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label>주문 상태</Label>
+          <Label>{t("orderStatusLabel")}</Label>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger>
               <SelectValue />
@@ -98,7 +100,7 @@ export function OrderStatusForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>결제 상태</Label>
+          <Label>{t("paymentStatusLabel")}</Label>
           <Select value={paymentStatus} onValueChange={setPaymentStatus}>
             <SelectTrigger>
               <SelectValue />
@@ -111,7 +113,7 @@ export function OrderStatusForm({
           </Select>
         </div>
         <Button onClick={handleSave} disabled={loading} className="w-full">
-          {loading ? "저장중..." : "상태 변경"}
+          {loading ? t("orderSaving") : t("orderChangeStatus")}
         </Button>
         {(status === "CANCELLED" || currentStatus === "CANCELLED") && (
           <Button
@@ -120,7 +122,7 @@ export function OrderStatusForm({
             disabled={loading}
             className="w-full"
           >
-            {loading ? "삭제중..." : "주문 영구 삭제"}
+            {loading ? t("orderDeleting") : t("orderPermanentDelete")}
           </Button>
         )}
       </CardContent>

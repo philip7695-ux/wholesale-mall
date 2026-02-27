@@ -1,0 +1,23 @@
+{
+  "title": "个人中心",
+  "myInfo": "我的信息",
+  "editInfo": "编辑信息",
+  "nameLabel": "姓名",
+  "emailLabel": "邮箱",
+  "accountStatus": "账户状态",
+  "approved": "已审核",
+  "pendingApproval": "待审核",
+  "viewOrders": "查看订单",
+  "viewCart": "查看购物车",
+  "editTitle": "编辑我的信息",
+  "basicInfo": "基本信息",
+  "nameRequired": "姓名 *",
+  "changePassword": "修改密码",
+  "currentPassword": "当前密码",
+  "newPassword": "新密码",
+  "confirmNewPassword": "确认新密码",
+  "newPasswordMismatch": "新密码不一致。",
+  "editSuccess": "信息已更新。",
+  "editFail": "更新失败。",
+  "change": "修改"
+}

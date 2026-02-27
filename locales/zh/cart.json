@@ -1,0 +1,17 @@
+{
+  "title": "购物车",
+  "empty": "购物车为空。",
+  "goShopping": "去购物",
+  "optionsAndQty": "{options}个选项 · 共{qty}件",
+  "size": "尺码",
+  "unitPrice": "单价",
+  "quantity": "数量",
+  "amount": "金额",
+  "productSummary": "{count}种商品 · {qty}件",
+  "totalPayment": "总计",
+  "order": "下单",
+  "deleted": "已删除。",
+  "productDeleted": "商品已删除。",
+  "qtyUnit": "{qty}件",
+  "subtotalUnit": "{qty}件 · {price}"
+}

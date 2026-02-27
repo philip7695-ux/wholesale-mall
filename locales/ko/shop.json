@@ -1,0 +1,16 @@
+{
+  "logo": "도매몰",
+  "menu": "메뉴",
+  "productList": "상품목록",
+  "cart": "장바구니",
+  "orders": "주문내역",
+  "mypage": "마이페이지",
+  "heroTitle": "의류 도매 쇼핑몰",
+  "heroDesc1": "최신 트렌드 의류를 도매가로 만나보세요.",
+  "heroDesc2": "사업자 회원 전용 B2B 쇼핑몰입니다.",
+  "browseProducts": "상품 보러가기",
+  "searchPlaceholder": "상품명 검색...",
+  "noProducts": "상품이 없습니다.",
+  "productsTitle": "상품 목록",
+  "goToShop": "쇼핑몰로 이동"
+}

@@ -1,0 +1,16 @@
+{
+  "logo": "卸売モール",
+  "menu": "メニュー",
+  "productList": "商品一覧",
+  "cart": "カート",
+  "orders": "注文履歴",
+  "mypage": "マイページ",
+  "heroTitle": "アパレル卸売モール",
+  "heroDesc1": "最新トレンドの衣類を卸売価格でお届けします。",
+  "heroDesc2": "事業者会員専用B2Bモールです。",
+  "browseProducts": "商品を見る",
+  "searchPlaceholder": "商品名で検索...",
+  "noProducts": "商品が見つかりません。",
+  "productsTitle": "商品一覧",
+  "goToShop": "ショップへ"
+}

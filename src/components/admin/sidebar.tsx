@@ -1,25 +1,29 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, usePathname } from "@/i18n/navigation"
 import { signOut } from "next-auth/react"
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
-
-const navItems = [
-  { href: "/admin", label: "대시보드" },
-  { href: "/admin/products", label: "상품 관리" },
-  { href: "/admin/orders", label: "주문 관리" },
-  { href: "/admin/members", label: "회원 관리" },
-]
+import { LanguageSelector } from "@/components/language-selector"
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const t = useTranslations("admin")
+  const ts = useTranslations("shop")
+  const tc = useTranslations("common")
+
+  const navItems = [
+    { href: "/admin", label: t("dashboard") },
+    { href: "/admin/products", label: t("productMgmt") },
+    { href: "/admin/orders", label: t("orderMgmt") },
+    { href: "/admin/members", label: t("memberMgmt") },
+  ]
 
   return (
     <aside className="flex h-screen w-60 flex-shrink-0 flex-col border-r bg-white">
       <div className="flex h-14 items-center border-b px-4">
         <Link href="/admin" className="text-lg font-bold">
-          관리자
+          {t("logo")}
         </Link>
       </div>
       <nav className="flex-1 space-y-1 p-3">
@@ -46,13 +50,14 @@ export function AdminSidebar() {
       </nav>
       <div className="space-y-1 border-t p-3">
         <Link href="/" className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
-          쇼핑몰로 이동
+          {ts("goToShop")}
         </Link>
+        <LanguageSelector />
         <button
           onClick={() => signOut({ callbackUrl: "/auth/login" })}
           className="w-full rounded-md px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50"
         >
-          로그아웃
+          {tc("logout")}
         </button>
       </div>
     </aside>

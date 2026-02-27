@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -54,6 +55,9 @@ interface ProductFormProps {
 
 export function ProductForm({ categories, initialData }: ProductFormProps) {
   const router = useRouter()
+  const t = useTranslations("admin")
+  const tp = useTranslations("product")
+  const tc = useTranslations("common")
   const isEdit = !!initialData
 
   const [code, setCode] = useState(initialData?.code || "")
@@ -116,7 +120,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         const url = await uploadFile(file)
         setImages((prev) => [...prev, url])
       } catch {
-        toast.error(`${file.name} 업로드 실패`)
+        toast.error(t("uploadFail", { name: file.name }))
       }
     }
     e.target.value = ""
@@ -154,7 +158,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name || !categoryId) {
-      toast.error("상품명과 카테고리를 입력해주세요.")
+      toast.error(t("productNameRequired"))
       return
     }
 
@@ -162,7 +166,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
     const validSizes = sizes.filter((s) => s.name.trim())
 
     if (validColors.length === 0 || validSizes.length === 0) {
-      toast.error("최소 1개의 컬러와 사이즈를 입력해주세요.")
+      toast.error(t("colorSizeRequired"))
       return
     }
 
@@ -209,11 +213,11 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         throw new Error(data.error)
       }
 
-      toast.success(isEdit ? "상품이 수정되었습니다." : "상품이 등록되었습니다.")
+      toast.success(isEdit ? t("productUpdated") : t("productCreated"))
       router.push("/admin/products")
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "오류가 발생했습니다.")
+      toast.error(err instanceof Error ? err.message : tc("error"))
     }
     setLoading(false)
   }
@@ -223,23 +227,23 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Basic Info */}
       <Card>
         <CardHeader>
-          <CardTitle>기본 정보</CardTitle>
+          <CardTitle>{t("basicInfo")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label>상품코드</Label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="예: ST001" />
+              <Label>{t("productCode")}</Label>
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("productCodePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>상품명 *</Label>
+              <Label>{t("productName")} *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label>카테고리 *</Label>
+              <Label>{t("category")} *</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="카테고리 선택" />
+                  <SelectValue placeholder={t("categoryPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
@@ -252,24 +256,24 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>상품 설명</Label>
+            <Label>{t("productDesc")}</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
           <div className="space-y-2">
-            <Label>혼용률</Label>
-            <Input value={material} onChange={(e) => setMaterial(e.target.value)} placeholder="예: 면 100%, 폴리에스터 80% 면 20%" />
+            <Label>{tp("composition")}</Label>
+            <Input value={material} onChange={(e) => setMaterial(e.target.value)} placeholder={tp("compositionPlaceholder")} />
           </div>
 
-          {/* 상품 이미지 (여러장) */}
+          {/* Product Images */}
           <div className="space-y-2">
-            <Label>상품 이미지 (첫번째 사진이 대표 이미지)</Label>
+            <Label>{t("productImages")}</Label>
             <div className="flex flex-wrap gap-3">
               {images.map((img, i) => (
                 <div key={i} className="relative">
                   <img src={img} alt="" className="h-20 w-20 rounded-md object-cover border" />
                   {i === 0 && (
                     <span className="absolute -top-1.5 -left-1.5 rounded bg-primary px-1 text-[10px] text-primary-foreground">
-                      대표
+                      {t("mainImage")}
                     </span>
                   )}
                   <button
@@ -284,7 +288,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
               <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed hover:bg-muted transition-colors">
                 <Upload className="h-5 w-5 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground mt-1">
-                  {uploading ? "업로드중" : "추가"}
+                  {uploading ? t("uploading") : t("add")}
                 </span>
                 <input
                   type="file"
@@ -297,7 +301,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
               </label>
             </div>
             {images.length > 0 && (
-              <p className="text-xs text-muted-foreground">{images.length}장 업로드됨</p>
+              <p className="text-xs text-muted-foreground">{t("imagesUploaded", { count: images.length })}</p>
             )}
           </div>
 
@@ -308,7 +312,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
             />
-            <Label htmlFor="isActive">판매 활성</Label>
+            <Label htmlFor="isActive">{t("saleActive")}</Label>
           </div>
         </CardContent>
       </Card>
@@ -316,16 +320,16 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Colors */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>컬러</CardTitle>
+          <CardTitle>{t("color")}</CardTitle>
           <Button type="button" variant="outline" size="sm" onClick={addColor}>
-            <Plus className="mr-1 h-3 w-3" /> 컬러 추가
+            <Plus className="mr-1 h-3 w-3" /> {t("addColor")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
           {colors.map((color, i) => (
             <div key={i} className="flex items-center gap-3">
               <Input
-                placeholder="컬러명 (예: 블랙)"
+                placeholder={t("colorPlaceholder")}
                 value={color.name}
                 onChange={(e) => {
                   const next = [...colors]
@@ -357,9 +361,9 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Sizes */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>사이즈</CardTitle>
+          <CardTitle>{t("size")}</CardTitle>
           <Button type="button" variant="outline" size="sm" onClick={addSize}>
-            <Plus className="mr-1 h-3 w-3" /> 사이즈 추가
+            <Plus className="mr-1 h-3 w-3" /> {t("addSize")}
           </Button>
         </CardHeader>
         <CardContent>
@@ -367,7 +371,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             {sizes.map((size, i) => (
               <div key={i} className="flex items-center gap-1">
                 <Input
-                  placeholder="예: FREE, S, M"
+                  placeholder={t("sizePlaceholder")}
                   value={size.name}
                   onChange={(e) => {
                     const next = [...sizes]
@@ -390,20 +394,17 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Size Spec (optional) */}
       <Card>
         <CardHeader>
-          <CardTitle>사이즈 스펙 (선택사항)</CardTitle>
+          <CardTitle>{t("sizeSpecOptional")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             value={sizeSpec}
             onChange={(e) => setSizeSpec(e.target.value)}
             rows={4}
-            placeholder={`예시 (JSON 형식):
-{"headers":["사이즈","총장","어깨","가슴","소매"],"rows":[{"사이즈":"S","총장":"65","어깨":"42","가슴":"96","소매":"58"},{"사이즈":"M","총장":"67","어깨":"44","가슴":"100","소매":"60"}]}
-
-또는 일반 텍스트로 입력해도 됩니다.`}
+            placeholder={t("sizeSpecHint")}
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            JSON 형식으로 입력하면 테이블로 표시됩니다. 일반 텍스트도 가능합니다.
+            {t("sizeSpecTextHint")}
           </p>
         </CardContent>
       </Card>
@@ -411,11 +412,11 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Price & Stock Matrix */}
       <Card>
         <CardHeader>
-          <CardTitle>가격 / 재고 매트릭스</CardTitle>
+          <CardTitle>{t("priceStockMatrix")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex items-center gap-3">
-            <Label>기본 가격 (원)</Label>
+            <Label>{t("basePrice")}</Label>
             <Input
               type="number"
               value={defaultPrice}
@@ -436,14 +437,14 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 setVariantPrices(next)
               }}
             >
-              전체 적용
+              {t("applyAll")}
             </Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="px-2 py-1 text-left">컬러 \ 사이즈</th>
+                  <th className="px-2 py-1 text-left">{t("colorSizeHeader")}</th>
                   {sizes.filter((s) => s.name).map((size, i) => (
                     <th key={i} className="px-2 py-1 text-center">{size.name}</th>
                   ))}
@@ -458,7 +459,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                         <div className="flex flex-col gap-1">
                           <Input
                             type="number"
-                            placeholder="가격"
+                            placeholder={t("price")}
                             value={getVariantPrice(color.name, size.name) || ""}
                             onChange={(e) => {
                               setVariantPrices((prev) => ({
@@ -470,7 +471,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                           />
                           <Input
                             type="number"
-                            placeholder="재고"
+                            placeholder={t("stock")}
                             value={getVariantStock(color.name, size.name) || ""}
                             onChange={(e) => {
                               setVariantStocks((prev) => ({
@@ -493,10 +494,10 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={() => router.back()}>
-          취소
+          {tc("cancel")}
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? "저장중..." : isEdit ? "상품 수정" : "상품 등록"}
+          {loading ? tc("saving") : isEdit ? t("editProduct") : t("addProduct")}
         </Button>
       </div>
     </form>

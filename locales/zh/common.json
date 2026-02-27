@@ -1,0 +1,23 @@
+{
+  "login": "登录",
+  "logout": "退出",
+  "cancel": "取消",
+  "save": "保存",
+  "delete": "删除",
+  "edit": "编辑",
+  "loading": "加载中...",
+  "error": "发生错误。",
+  "confirm": "确认",
+  "done": "完成",
+  "goBack": "返回",
+  "noImage": "无图片",
+  "pieces": "件",
+  "items": "个",
+  "saving": "保存中...",
+  "deleting": "删除中...",
+  "processing": "处理中...",
+  "currency": "元",
+  "retry": "重试",
+  "search": "搜索",
+  "all": "全部"
+}

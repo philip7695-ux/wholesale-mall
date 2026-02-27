@@ -1,0 +1,17 @@
+{
+  "title": "Cart",
+  "empty": "Your cart is empty.",
+  "goShopping": "Go Shopping",
+  "optionsAndQty": "{options} options · {qty} pcs total",
+  "size": "Size",
+  "unitPrice": "Unit Price",
+  "quantity": "Qty",
+  "amount": "Amount",
+  "productSummary": "{count} products · {qty} pcs",
+  "totalPayment": "Total",
+  "order": "Place Order",
+  "deleted": "Deleted.",
+  "productDeleted": "Product removed.",
+  "qtyUnit": "{qty} pcs",
+  "subtotalUnit": "{qty} pcs · {price}"
+}

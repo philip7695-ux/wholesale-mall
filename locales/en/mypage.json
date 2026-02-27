@@ -1,0 +1,23 @@
+{
+  "title": "My Page",
+  "myInfo": "My Information",
+  "editInfo": "Edit Info",
+  "nameLabel": "Name",
+  "emailLabel": "Email",
+  "accountStatus": "Account Status",
+  "approved": "Approved",
+  "pendingApproval": "Pending",
+  "viewOrders": "View Orders",
+  "viewCart": "View Cart",
+  "editTitle": "Edit My Info",
+  "basicInfo": "Basic Information",
+  "nameRequired": "Name *",
+  "changePassword": "Change Password",
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmNewPassword": "Confirm New Password",
+  "newPasswordMismatch": "New passwords do not match.",
+  "editSuccess": "Information updated successfully.",
+  "editFail": "Failed to update information.",
+  "change": "Change"
+}

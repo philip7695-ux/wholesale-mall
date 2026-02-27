@@ -1,0 +1,23 @@
+{
+  "login": "로그인",
+  "logout": "로그아웃",
+  "cancel": "취소",
+  "save": "저장",
+  "delete": "삭제",
+  "edit": "수정",
+  "loading": "로딩중...",
+  "error": "오류가 발생했습니다.",
+  "confirm": "확인",
+  "done": "완료",
+  "goBack": "돌아가기",
+  "noImage": "No Image",
+  "pieces": "장",
+  "items": "개",
+  "saving": "저장중...",
+  "deleting": "삭제중...",
+  "processing": "처리 중...",
+  "currency": "원",
+  "retry": "다시 시도",
+  "search": "검색",
+  "all": "전체"
+}

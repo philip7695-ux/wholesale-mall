@@ -1,14 +1,18 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "@/i18n/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { ShoppingCart, Menu, X, User, LogOut, Package } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
+import { LanguageSelector } from "@/components/language-selector"
 import { useState } from "react"
 
 export function ShopHeader() {
   const { data: session } = useSession()
+  const t = useTranslations("shop")
+  const tc = useTranslations("common")
   const [open, setOpen] = useState(false)
 
   return (
@@ -22,21 +26,21 @@ export function ShopHeader() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64">
-            <SheetTitle className="sr-only">메뉴</SheetTitle>
+            <SheetTitle className="sr-only">{t("menu")}</SheetTitle>
             <nav className="flex flex-col gap-4 pt-8">
               <Link href="/products" onClick={() => setOpen(false)} className="text-lg font-medium">
-                상품목록
+                {t("productList")}
               </Link>
               {session && (
                 <>
                   <Link href="/cart" onClick={() => setOpen(false)} className="text-lg font-medium">
-                    장바구니
+                    {t("cart")}
                   </Link>
                   <Link href="/orders" onClick={() => setOpen(false)} className="text-lg font-medium">
-                    주문내역
+                    {t("orders")}
                   </Link>
                   <Link href="/mypage" onClick={() => setOpen(false)} className="text-lg font-medium">
-                    마이페이지
+                    {t("mypage")}
                   </Link>
                 </>
               )}
@@ -46,18 +50,19 @@ export function ShopHeader() {
 
         {/* Logo */}
         <Link href="/" className="text-xl font-bold">
-          도매몰
+          {t("logo")}
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-6 md:flex">
           <Link href="/products" className="text-sm font-medium hover:text-primary">
-            상품목록
+            {t("productList")}
           </Link>
         </nav>
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
+          <LanguageSelector />
           {session ? (
             <>
               <Link href="/cart">
@@ -81,7 +86,7 @@ export function ShopHeader() {
             </>
           ) : (
             <Link href="/auth/login">
-              <Button size="sm">로그인</Button>
+              <Button size="sm">{tc("login")}</Button>
             </Link>
           )}
         </div>
