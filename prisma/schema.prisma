@@ -6,7 +6,180 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Auth & Users ───────────────────────────────────────────
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  password        String
+  name            String
+  phone           String?
+  role            UserRole       @default(BUYER)
+  approvalStatus  ApprovalStatus @default(PENDING)
+  businessName    String?
+  businessNumber  String?
+  businessAddress String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  buyerGrade      BuyerGrade     @default(BRONZE)
+  cartItems       CartItem[]
+  orders          Order[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  categoryId  String
+  thumbnail   String?
+  isActive    Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  sizeSpec    String?
+  images      String[]
+  code        String?          @unique
+  material    String?
+  moq         Int              @default(0)
+  colorMoq    Int              @default(0)
+  category    Category         @relation(fields: [categoryId], references: [id])
+  colors      ProductColor[]
+  sizes       ProductSize[]
+  variants    ProductVariant[]
+
+  @@index([categoryId])
+}
+
+model ProductColor {
+  id        String           @id @default(cuid())
+  productId String
+  name      String
+  colorCode String?
+  images    String[]
+  sortOrder Int              @default(0)
+  moq       Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variants  ProductVariant[]
+
+  @@index([productId])
+}
+
+model ProductSize {
+  id        String           @id @default(cuid())
+  productId String
+  name      String
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variants  ProductVariant[]
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id         String       @id @default(cuid())
+  productId  String
+  colorId    String
+  sizeId     String
+  price      Int
+  stock      Int          @default(0)
+  sku        String?      @unique
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  color      ProductColor @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size       ProductSize  @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, colorId, sizeId])
+  @@index([productId])
+}
+
+model CartItem {
+  id        String         @id @default(cuid())
+  userId    String
+  variantId String
+  quantity  Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, variantId])
+  @@index([userId])
+}
+
+model Order {
+  id              String         @id @default(cuid())
+  orderNumber     String         @unique
+  invoiceNumber   String?        @unique
+  userId          String
+  status               OrderStatus    @default(ORDER_PLACED)
+  totalAmount          Int
+  paymentMethod        PaymentMethod?
+  paymentStatus        PaymentStatus  @default(PENDING)
+  paymentKey           String?
+  recipientName        String?
+  recipientPhone       String?
+  shippingAddress      String?
+  shippingMemo         String?
+  trackingNumber       String?
+  shippingCarrier      String?
+  invoiceSentAt        DateTime?
+  awaitingPaymentAt    DateTime?
+  paymentConfirmedAt   DateTime?
+  preparingAt          DateTime?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  currency        String         @default("KRW")
+  exchangeRate    Float          @default(1)
+  gradeDiscount   Float          @default(0)
+  user            User           @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  paymentConfirmations PaymentConfirmation[]
+
+  @@index([userId])
+  @@index([orderNumber])
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  currency  String   @unique
+  rate      Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  variantId   String?
+  quantity    Int
+  price       Int
+  productName String
+  colorName   String
+  sizeName    String
+  createdAt   DateTime        @default(now())
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+}
 
 enum UserRole {
   ADMIN
@@ -19,143 +192,22 @@ enum ApprovalStatus {
   REJECTED
 }
 
-model User {
-  id             String         @id @default(cuid())
-  email          String         @unique
-  password       String
-  name           String
-  phone          String?
-  role           UserRole       @default(BUYER)
-  approvalStatus ApprovalStatus @default(PENDING)
-
-  // Buyer business info
-  businessName   String?
-  businessNumber String?
-  businessAddress String?
-
-  cartItems  CartItem[]
-  orders     Order[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum BuyerGrade {
+  BRONZE
+  SILVER
+  GOLD
+  VIP
 }
-
-// ─── Products ───────────────────────────────────────────────
-
-model Category {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  slug     String    @unique
-  sortOrder Int      @default(0)
-  products Product[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Product {
-  id          String  @id @default(cuid())
-  code        String? @unique
-  name        String
-  description String?
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  thumbnail   String?
-  images      String[]  // 상품 이미지 목록
-  material    String?   // 혼용률 (예: 면 100%, 폴리에스터 80% 면 20%)
-  sizeSpec    String?   // 사이즈 스펙 (JSON or text)
-  isActive    Boolean @default(true)
-  sortOrder   Int     @default(0)
-
-  colors   ProductColor[]
-  sizes    ProductSize[]
-  variants ProductVariant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([categoryId])
-}
-
-model ProductColor {
-  id        String   @id @default(cuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  colorCode String?
-  images    String[] // Cloudinary URLs
-  sortOrder Int      @default(0)
-
-  variants ProductVariant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-}
-
-model ProductSize {
-  id        String  @id @default(cuid())
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  sortOrder Int     @default(0)
-
-  variants ProductVariant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-}
-
-model ProductVariant {
-  id        String       @id @default(cuid())
-  productId String
-  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  colorId   String
-  color     ProductColor @relation(fields: [colorId], references: [id], onDelete: Cascade)
-  sizeId    String
-  size      ProductSize  @relation(fields: [sizeId], references: [id], onDelete: Cascade)
-  price     Int          // 원 단위
-  stock     Int          @default(0)
-  sku       String?      @unique
-
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([productId, colorId, sizeId])
-  @@index([productId])
-}
-
-// ─── Cart ───────────────────────────────────────────────────
-
-model CartItem {
-  id        String         @id @default(cuid())
-  userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  quantity  Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, variantId])
-  @@index([userId])
-}
-
-// ─── Orders ─────────────────────────────────────────────────
 
 enum OrderStatus {
-  PENDING    // 주문 접수
-  CONFIRMED  // 주문 확인
-  SHIPPING   // 배송중
-  DELIVERED  // 배송완료
-  CANCELLED  // 취소
+  ORDER_PLACED
+  INVOICE_SENT
+  AWAITING_PAYMENT
+  PAYMENT_CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }
 
 enum PaymentMethod {
@@ -171,49 +223,42 @@ enum PaymentStatus {
   REFUNDED
 }
 
-model Order {
-  id            String        @id @default(cuid())
-  orderNumber   String        @unique
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  status        OrderStatus   @default(PENDING)
-  totalAmount   Int
-
-  // Payment
-  paymentMethod PaymentMethod?
-  paymentStatus PaymentStatus @default(PENDING)
-  paymentKey    String?       // 토스페이먼츠 결제키
-
-  // Shipping
-  recipientName    String?
-  recipientPhone   String?
-  shippingAddress  String?
-  shippingMemo     String?
-
-  items     OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([orderNumber])
-}
-
-model OrderItem {
-  id        String          @id @default(cuid())
-  orderId   String
-  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variantId String?
-  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  quantity  Int
-  price     Int            // 주문 시점 가격 스냅샷
-
-  // Denormalized for easy display
-  productName String
-  colorName   String
-  sizeName    String
-
-  createdAt DateTime @default(now())
+model PaymentConfirmation {
+  id              String                     @id @default(cuid())
+  orderId         String
+  receiptImage    String
+  transferDate    DateTime
+  amount          Int
+  senderName      String
+  status          PaymentConfirmationStatus  @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  order           Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+enum PaymentConfirmationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+model WiseConfig {
+  id        String   @id @default(cuid())
+  profileId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WiseWebhookLog {
+  id         String   @id @default(cuid())
+  deliveryId String   @unique
+  eventType  String
+  payload    String
+  matched    Boolean  @default(false)
+  orderId    String?
+  error      String?
+  createdAt  DateTime @default(now())
 }

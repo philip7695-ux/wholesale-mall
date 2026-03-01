@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MemberApprovalButton } from "@/components/admin/member-approval-button"
-import { formatDate } from "@/lib/utils"
+import { MemberGradeSelect } from "@/components/admin/member-grade-select"
+import { formatDate, formatPrice } from "@/lib/utils"
+import { getExchangeRate } from "@/lib/currency.server"
 
 const approvalVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   PENDING: "outline",
@@ -15,9 +17,17 @@ const approvalVariant: Record<string, "default" | "secondary" | "destructive" | 
   REJECTED: "destructive",
 }
 
+const gradeVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  BRONZE: "outline",
+  SILVER: "secondary",
+  GOLD: "default",
+  VIP: "destructive",
+}
+
 export default async function AdminMembersPage() {
   const t = await getTranslations("admin")
   const locale = await getLocale()
+  const { rate } = await getExchangeRate(locale)
 
   const approvalLabels: Record<string, string> = {
     PENDING: t("approvalPending"),
@@ -36,8 +46,13 @@ export default async function AdminMembersPage() {
       businessName: true,
       businessNumber: true,
       approvalStatus: true,
+      buyerGrade: true,
       createdAt: true,
       _count: { select: { orders: true } },
+      orders: {
+        where: { status: "DELIVERED" },
+        select: { totalAmount: true },
+      },
     },
   })
 
@@ -58,35 +73,52 @@ export default async function AdminMembersPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {members.map((member: any) => (
-            <Card key={member.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">{member.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
+          {members.map((member: any) => {
+            const totalSpending = member.orders.reduce((sum: number, o: any) => sum + o.totalAmount, 0)
+            return (
+              <Card key={member.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">{member.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{member.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={gradeVariant[member.buyerGrade]}>
+                        {member.buyerGrade}
+                      </Badge>
+                      <Badge variant={approvalVariant[member.approvalStatus]}>
+                        {approvalLabels[member.approvalStatus]}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge variant={approvalVariant[member.approvalStatus]}>
-                    {approvalLabels[member.approvalStatus]}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    {member.businessName && <p>{t("businessPrefix")}{member.businessName}</p>}
-                    {member.businessNumber && <p>{t("businessNumberPrefix")}{member.businessNumber}</p>}
-                    {member.phone && <p>{t("phonePrefix")}{member.phone}</p>}
-                    <p>{t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      {member.businessName && <p>{t("businessPrefix")}{member.businessName}</p>}
+                      {member.businessNumber && <p>{t("businessNumberPrefix")}{member.businessNumber}</p>}
+                      {member.phone && <p>{t("phonePrefix")}{member.phone}</p>}
+                      <p>{t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</p>
+                      {totalSpending > 0 && (
+                        <p>{t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <MemberGradeSelect
+                        memberId={member.id}
+                        currentGrade={member.buyerGrade}
+                      />
+                      <MemberApprovalButton
+                        memberId={member.id}
+                        currentStatus={member.approvalStatus}
+                      />
+                    </div>
                   </div>
-                  <MemberApprovalButton
-                    memberId={member.id}
-                    currentStatus={member.approvalStatus}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>

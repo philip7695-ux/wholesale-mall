@@ -19,5 +19,17 @@
   "newPasswordMismatch": "새 비밀번호가 일치하지 않습니다.",
   "editSuccess": "정보가 수정되었습니다.",
   "editFail": "수정에 실패했습니다.",
-  "change": "변경하기"
+  "change": "변경하기",
+  "gradeTitle": "회원 등급",
+  "gradeLabel": "현재 등급",
+  "discountRate": "할인율",
+  "totalSpending": "누적 주문 금액",
+  "nextGrade": "다음 등급",
+  "remaining": "남은 금액",
+  "gradeMaxReached": "최고 등급입니다",
+  "gradeBronze": "Bronze",
+  "gradeSilver": "Silver",
+  "gradeGold": "Gold",
+  "gradeVip": "VIP",
+  "gradeDiscount": "{rate}% 할인"
 }

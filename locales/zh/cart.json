@@ -13,5 +13,8 @@
   "deleted": "已删除。",
   "productDeleted": "商品已删除。",
   "qtyUnit": "{qty}件",
-  "subtotalUnit": "{qty}件 · {price}"
+  "subtotalUnit": "{qty}件 · {price}",
+  "moqWarning": "有商品未达到最低订购量",
+  "moqProductWarning": "{productName}: 最少需要{required}件 (当前{actual}件)",
+  "moqColorWarning": "{productName} - {colorName}: 最少需要{required}件 (当前{actual}件)"
 }

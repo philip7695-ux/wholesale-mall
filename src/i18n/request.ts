@@ -13,6 +13,8 @@ const namespaces = [
   "admin",
   "error",
   "categories",
+  "colors",
+  "sizeSpec",
 ] as const
 
 export default getRequestConfig(async ({ requestLocale }) => {

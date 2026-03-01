@@ -19,5 +19,17 @@
   "newPasswordMismatch": "新密码不一致。",
   "editSuccess": "信息已更新。",
   "editFail": "更新失败。",
-  "change": "修改"
+  "change": "修改",
+  "gradeTitle": "会员等级",
+  "gradeLabel": "当前等级",
+  "discountRate": "折扣率",
+  "totalSpending": "累计消费金额",
+  "nextGrade": "下一等级",
+  "remaining": "还差",
+  "gradeMaxReached": "已达最高等级",
+  "gradeBronze": "Bronze",
+  "gradeSilver": "Silver",
+  "gradeGold": "Gold",
+  "gradeVip": "VIP",
+  "gradeDiscount": "折扣{rate}%"
 }

@@ -26,7 +26,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  if (order.status !== "PENDING") {
+  if (order.status !== "ORDER_PLACED") {
     return NextResponse.json(
       { error: "접수 상태의 주문만 수정할 수 있습니다." },
       { status: 400 },
@@ -65,7 +65,7 @@ export async function POST(
   // 주문 취소
   await prisma.order.update({
     where: { id },
-    data: { status: "CANCELLED" },
+    data: { status: "CANCELLED", cancelledAt: new Date() },
   })
 
   return NextResponse.json({ message: "주문이 장바구니로 복원되었습니다." })

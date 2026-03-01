@@ -13,7 +13,7 @@ export async function GET() {
     include: {
       variant: {
         include: {
-          product: true,
+          product: { include: { colors: true } },
           color: true,
           size: true,
         },

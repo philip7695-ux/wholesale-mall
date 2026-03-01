@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { checkAndPromoteGrade } from "@/lib/grade.server"
+import { STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
 
 export async function GET(
   _request: Request,
@@ -81,7 +83,7 @@ export async function DELETE(
   }
 
   // 취소 처리
-  if (session.user.role !== "ADMIN" && order.status !== "PENDING") {
+  if (session.user.role !== "ADMIN" && order.status !== "ORDER_PLACED") {
     return NextResponse.json(
       { error: "접수 상태의 주문만 취소할 수 있습니다." },
       { status: 400 },
@@ -90,7 +92,7 @@ export async function DELETE(
 
   await prisma.order.update({
     where: { id },
-    data: { status: "CANCELLED" },
+    data: { status: "CANCELLED", cancelledAt: new Date() },
   })
 
   return NextResponse.json({ message: "주문이 취소되었습니다." })
@@ -106,16 +108,32 @@ export async function PUT(
   }
 
   const { id } = await params
-  const { status, paymentStatus } = await request.json()
+  const { status, paymentStatus, trackingNumber, shippingCarrier } = await request.json()
 
-  const data: Record<string, string> = {}
-  if (status) data.status = status
+  const data: Record<string, unknown> = {}
+  if (status) {
+    data.status = status
+    // 상태별 타임스탬프 자동 기록
+    const tsField = STATUS_TIMESTAMP_FIELD[status]
+    if (tsField && tsField !== "createdAt") {
+      data[tsField] = new Date()
+    }
+  }
   if (paymentStatus) data.paymentStatus = paymentStatus
+  if (trackingNumber !== undefined) data.trackingNumber = trackingNumber
+  if (shippingCarrier !== undefined) data.shippingCarrier = shippingCarrier
 
   const order = await prisma.order.update({
     where: { id },
     data,
+    select: { id: true, userId: true, status: true, paymentStatus: true },
   })
 
-  return NextResponse.json(order)
+  // DELIVERED로 변경 시 자동 승급 체크
+  let promotedGrade: string | null = null
+  if (status === "DELIVERED") {
+    promotedGrade = await checkAndPromoteGrade(order.userId)
+  }
+
+  return NextResponse.json({ ...order, promotedGrade })
 }

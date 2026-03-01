@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { useState } from "react"
+import { translateCategory } from "@/lib/translate"
 
 interface Category {
   id: string
@@ -25,6 +26,7 @@ export function ProductSearch({
   const router = useRouter()
   const t = useTranslations("shop")
   const tc = useTranslations("common")
+  const tCat = useTranslations("categories")
   const [search, setSearch] = useState(currentSearch || "")
 
   function handleSearch(e: React.FormEvent) {
@@ -53,7 +55,7 @@ export function ProductSearch({
             size="sm"
             onClick={() => router.push(`/products?category=${cat.slug}`)}
           >
-            {cat.name}
+            {translateCategory(cat.slug, tCat)}
           </Button>
         ))}
       </div>

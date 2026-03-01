@@ -19,5 +19,17 @@
   "newPasswordMismatch": "新しいパスワードが一致しません。",
   "editSuccess": "情報が更新されました。",
   "editFail": "更新に失敗しました。",
-  "change": "変更する"
+  "change": "変更する",
+  "gradeTitle": "会員ランク",
+  "gradeLabel": "現在のランク",
+  "discountRate": "割引率",
+  "totalSpending": "累計注文金額",
+  "nextGrade": "次のランク",
+  "remaining": "残り",
+  "gradeMaxReached": "最高ランクです",
+  "gradeBronze": "Bronze",
+  "gradeSilver": "Silver",
+  "gradeGold": "Gold",
+  "gradeVip": "VIP",
+  "gradeDiscount": "{rate}%オフ"
 }

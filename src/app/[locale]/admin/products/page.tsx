@@ -8,13 +8,17 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
+import { translateCategory } from "@/lib/translate"
 import { DeleteProductButton } from "@/components/admin/delete-product-button"
 import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
+import { getExchangeRate } from "@/lib/currency.server"
 
 export default async function AdminProductsPage() {
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
+  const tCat = await getTranslations("categories")
   const locale = await getLocale()
+  const { rate } = await getExchangeRate(locale)
 
   const products = await prisma.product.findMany({
     include: {
@@ -65,7 +69,7 @@ export default async function AdminProductsPage() {
                     <div>
                       <CardTitle className="text-base">{product.name}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        {product.category.name} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
+                        {translateCategory(product.category.slug, tCat)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
                       </p>
                     </div>
                   </div>
@@ -74,7 +78,7 @@ export default async function AdminProductsPage() {
                       {product.isActive ? t("active") : t("inactive")}
                     </Badge>
                     <span className="text-sm font-medium">
-                      {minPrice > 0 ? formatPrice(minPrice, locale) : "-"}~
+                      {minPrice > 0 ? formatPrice(minPrice, locale, rate) : "-"}~
                     </span>
                   </div>
                 </CardHeader>

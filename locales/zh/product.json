@@ -10,5 +10,15 @@
   "enterQuantity": "请输入数量。",
   "addedToCart": "已加入购物车。",
   "composition": "成分",
-  "compositionPlaceholder": "例：棉 100%，涤纶 80% 棉 20%"
+  "compositionPlaceholder": "例：棉 100%，涤纶 80% 棉 20%",
+  "originalPrice": "原价",
+  "discountedPrice": "折扣价",
+  "gradeDiscountBadge": "{rate}%会员折扣",
+  "moqTitle": "最低订购量 (MOQ)",
+  "moqProduct": "商品总计: 最少{qty}件",
+  "moqColor": "{colorName}: 最少{qty}件",
+  "moqGradeRelaxed": "{rate}%会员MOQ优惠已应用",
+  "moqNotMet": "未达到最低订购量",
+  "moqProductError": "最少需要{required}件 (当前{actual}件)",
+  "moqColorError": "{colorName}: 最少需要{required}件 (当前{actual}件)"
 }

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface CartItem {
   id: string
@@ -27,6 +28,7 @@ export default function NewOrderPage() {
   const t = useTranslations("order")
   const tc = useTranslations("common")
   const locale = useLocale()
+  const { rate } = useCurrency()
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -65,6 +67,7 @@ export default function NewOrderPage() {
           shippingAddress: formData.get("shippingAddress"),
           shippingMemo: formData.get("shippingMemo"),
           paymentMethod: "BANK_TRANSFER",
+          locale,
         }),
       })
 
@@ -109,14 +112,14 @@ export default function NewOrderPage() {
                   <div>
                     <span>{item.quantity}{tc("items")}</span>
                     <span className="ml-3 font-medium">
-                      {formatPrice(item.variant.price * item.quantity, locale)}
+                      {formatPrice(item.variant.price * item.quantity, locale, rate)}
                     </span>
                   </div>
                 </div>
               ))}
               <div className="flex justify-between border-t pt-3 font-bold">
                 <span>{t("totalAmount")}</span>
-                <span className="text-primary">{formatPrice(totalAmount, locale)}</span>
+                <span className="text-primary">{formatPrice(totalAmount, locale, rate)}</span>
               </div>
             </div>
           </CardContent>
@@ -165,7 +168,7 @@ export default function NewOrderPage() {
         </Card>
 
         <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-          {submitting ? t("orderProcessing") : t("orderButton", { price: formatPrice(totalAmount, locale) })}
+          {submitting ? t("orderProcessing") : t("orderButton", { price: formatPrice(totalAmount, locale, rate) })}
         </Button>
       </form>
     </div>

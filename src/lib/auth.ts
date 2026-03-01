@@ -35,6 +35,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role,
           approvalStatus: user.approvalStatus,
+          buyerGrade: user.buyerGrade,
         }
       },
     }),

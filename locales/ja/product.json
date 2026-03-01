@@ -10,5 +10,15 @@
   "enterQuantity": "数量を入力してください。",
   "addedToCart": "カートに追加しました。",
   "composition": "混用率",
-  "compositionPlaceholder": "例：綿 100%、ポリエステル 80% 綿 20%"
+  "compositionPlaceholder": "例：綿 100%、ポリエステル 80% 綿 20%",
+  "originalPrice": "定価",
+  "discountedPrice": "割引価格",
+  "gradeDiscountBadge": "{rate}%ランク割引",
+  "moqTitle": "最小注文数量 (MOQ)",
+  "moqProduct": "商品全体: 最低{qty}枚",
+  "moqColor": "{colorName}: 最低{qty}枚",
+  "moqGradeRelaxed": "{rate}%ランクMOQ緩和適用中",
+  "moqNotMet": "最小注文数量未達",
+  "moqProductError": "最低{required}枚必要 (現在{actual}枚)",
+  "moqColorError": "{colorName}: 最低{required}枚必要 (現在{actual}枚)"
 }

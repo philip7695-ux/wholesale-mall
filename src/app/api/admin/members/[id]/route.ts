@@ -12,11 +12,15 @@ export async function PUT(
   }
 
   const { id } = await params
-  const { approvalStatus } = await request.json()
+  const { approvalStatus, buyerGrade } = await request.json()
+
+  const data: Record<string, string> = {}
+  if (approvalStatus) data.approvalStatus = approvalStatus
+  if (buyerGrade) data.buyerGrade = buyerGrade
 
   const user = await prisma.user.update({
     where: { id },
-    data: { approvalStatus },
+    data,
   })
 
   return NextResponse.json(user)

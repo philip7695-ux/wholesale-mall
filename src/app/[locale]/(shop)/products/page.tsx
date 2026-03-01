@@ -6,6 +6,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { formatPrice } from "@/lib/utils"
 import { ProductSearch } from "@/components/shop/product-search"
 import { getTranslations, getLocale } from "next-intl/server"
+import { translateCategory } from "@/lib/translate"
+import { getExchangeRate } from "@/lib/currency.server"
+import { auth } from "@/lib/auth"
+import { GRADE_DISCOUNT } from "@/lib/grade"
+import { Badge } from "@/components/ui/badge"
 
 export default async function ProductsPage({
   searchParams,
@@ -13,6 +18,7 @@ export default async function ProductsPage({
   searchParams: Promise<{ category?: string; search?: string; page?: string }>
 }) {
   const t = await getTranslations("shop")
+  const tCat = await getTranslations("categories")
   const locale = await getLocale()
   const params = await searchParams
   const category = params.category
@@ -23,6 +29,11 @@ export default async function ProductsPage({
   const where: Record<string, unknown> = { isActive: true }
   if (category) where.category = { slug: category }
   if (search) where.name = { contains: search, mode: "insensitive" }
+
+  const { rate } = await getExchangeRate(locale)
+  const session = await auth()
+  const buyerGrade = session?.user?.buyerGrade || "BRONZE"
+  const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
 
   const [products, categories, total] = await Promise.all([
     prisma.product.findMany({
@@ -74,7 +85,7 @@ export default async function ProductsPage({
                       )}
                     </div>
                     <CardContent className="p-3">
-                      <p className="text-xs text-muted-foreground">{product.category.name}</p>
+                      <p className="text-xs text-muted-foreground">{translateCategory(product.category.slug, tCat)}</p>
                       <h3 className="mt-1 text-sm font-medium leading-tight line-clamp-2">
                         {product.name}
                       </h3>
@@ -91,7 +102,20 @@ export default async function ProductsPage({
                         )}
                       </div>
                       <p className="mt-2 text-sm font-bold">
-                        {minPrice > 0 ? formatPrice(minPrice, locale) : "-"}
+                        {minPrice > 0 ? (
+                          discountRate > 0 ? (
+                            <>
+                              <span className="text-muted-foreground font-normal line-through text-xs">
+                                {formatPrice(minPrice, locale, rate)}
+                              </span>{" "}
+                              <span className="text-primary">
+                                {formatPrice(Math.round(minPrice * (1 - discountRate)), locale, rate)}
+                              </span>
+                            </>
+                          ) : (
+                            formatPrice(minPrice, locale, rate)
+                          )
+                        ) : "-"}
                       </p>
                     </CardContent>
                   </Card>

@@ -1,33 +1,89 @@
 "use client"
 
 import { useRouter } from "@/i18n/navigation"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
 import { toast } from "sonner"
+import { FileDown } from "lucide-react"
+import { formatPrice, formatDateTime } from "@/lib/utils"
+import { useCurrency } from "@/hooks/use-currency"
+
+interface PaymentConfirmationData {
+  id: string
+  receiptImage: string
+  transferDate: string
+  amount: number
+  senderName: string
+  status: "PENDING" | "CONFIRMED" | "REJECTED"
+  rejectionReason: string | null
+  createdAt: string
+}
 
 export function OrderStatusForm({
   orderId,
   currentStatus,
   currentPaymentStatus,
+  currentTrackingNumber,
+  currentShippingCarrier,
+  invoiceNumber,
+  paymentConfirmation,
 }: {
   orderId: string
   currentStatus: string
   currentPaymentStatus: string
+  currentTrackingNumber?: string | null
+  currentShippingCarrier?: string | null
+  invoiceNumber?: string | null
+  paymentConfirmation?: PaymentConfirmationData | null
 }) {
   const router = useRouter()
   const t = useTranslations("admin")
+  const locale = useLocale()
+  const { rate } = useCurrency()
   const [status, setStatus] = useState(currentStatus)
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
+  const [trackingNumber, setTrackingNumber] = useState(currentTrackingNumber || "")
+  const [shippingCarrier, setShippingCarrier] = useState(currentShippingCarrier || "")
   const [loading, setLoading] = useState(false)
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState("")
+  const [confirmLoading, setConfirmLoading] = useState(false)
+
+  async function handleInvoice() {
+    setInvoiceLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}/invoice`)
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = res.headers.get("Content-Disposition")?.split("filename=")[1] || `invoice-${orderId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success(t("invoiceDownloaded"))
+      router.refresh()
+    } catch {
+      toast.error(t("invoiceDownloadFail"))
+    }
+    setInvoiceLoading(false)
+  }
 
   const orderStatuses = [
-    { value: "PENDING", label: t("orderStatusPending") },
-    { value: "CONFIRMED", label: t("orderStatusConfirmed") },
-    { value: "SHIPPING", label: t("orderStatusShipping") },
+    { value: "ORDER_PLACED", label: t("orderStatusOrderPlaced") },
+    { value: "INVOICE_SENT", label: t("orderStatusInvoiceSent") },
+    { value: "AWAITING_PAYMENT", label: t("orderStatusAwaitingPayment") },
+    { value: "PAYMENT_CONFIRMED", label: t("orderStatusPaymentConfirmed") },
+    { value: "PREPARING", label: t("orderStatusPreparing") },
+    { value: "SHIPPED", label: t("orderStatusShipped") },
     { value: "DELIVERED", label: t("orderStatusDelivered") },
     { value: "CANCELLED", label: t("orderStatusCancelled") },
   ]
@@ -64,13 +120,24 @@ export function OrderStatusForm({
   async function handleSave() {
     setLoading(true)
     try {
+      const body: Record<string, string> = { status, paymentStatus }
+      if (status === "SHIPPED" || trackingNumber) {
+        body.trackingNumber = trackingNumber
+        body.shippingCarrier = shippingCarrier
+      }
+
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, paymentStatus }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) throw new Error()
+
+      const data = await res.json()
+      if (data.promotedGrade) {
+        toast.success(t("gradeAutoPromoted"))
+      }
 
       toast.success(t("orderStatusChanged"))
       router.refresh()
@@ -80,52 +147,167 @@ export function OrderStatusForm({
     setLoading(false)
   }
 
+  async function handlePaymentAction(action: "confirm" | "reject") {
+    setConfirmLoading(true)
+    try {
+      const body: Record<string, string> = { action }
+      if (action === "reject" && rejectionReason) {
+        body.rejectionReason = rejectionReason
+      }
+
+      const res = await fetch(`/api/orders/${orderId}/payment-confirmation`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error)
+      }
+
+      toast.success(action === "confirm" ? t("paymentConfirmed") : t("paymentRejected"))
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("paymentConfirmFail"))
+    }
+    setConfirmLoading(false)
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("orderStatusMgmt")}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>{t("orderStatusLabel")}</Label>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {orderStatuses.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>{t("paymentStatusLabel")}</Label>
-          <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {paymentStatuses.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={handleSave} disabled={loading} className="w-full">
-          {loading ? t("orderSaving") : t("orderChangeStatus")}
-        </Button>
-        {(status === "CANCELLED" || currentStatus === "CANCELLED") && (
+    <div className="space-y-6">
+      {/* Payment Confirmation Info */}
+      {paymentConfirmation?.status === "PENDING" && (
+        <Card className="border-yellow-300">
+          <CardHeader>
+            <CardTitle>{t("paymentConfirmRequest")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("senderName")}</span>
+                <span>{paymentConfirmation.senderName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("transferAmount")}</span>
+                <span>{formatPrice(paymentConfirmation.amount, locale, rate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("transferDate")}</span>
+                <span>{formatDateTime(paymentConfirmation.transferDate, locale)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("receiptImage")}</span>
+                <a href={paymentConfirmation.receiptImage} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  {t("receiptImageView")}
+                </a>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handlePaymentAction("confirm")}
+                disabled={confirmLoading}
+                className="flex-1"
+              >
+                {t("confirmPayment")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handlePaymentAction("reject")}
+                disabled={confirmLoading}
+                className="flex-1"
+              >
+                {t("rejectPayment")}
+              </Button>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t("rejectionReason")}</Label>
+              <Textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder={t("rejectionReasonPlaceholder")}
+                rows={2}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("orderStatusMgmt")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>{t("orderStatusLabel")}</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {orderStatuses.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(status === "SHIPPED" || status === "DELIVERED") && (
+            <div className="space-y-2">
+              <Label>{t("trackingShippingCarrier")}</Label>
+              <Input
+                value={shippingCarrier}
+                onChange={(e) => setShippingCarrier(e.target.value)}
+                placeholder={t("trackingShippingCarrier")}
+              />
+              <Label>{t("trackingNumber")}</Label>
+              <Input
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder={t("trackingNumber")}
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>{t("paymentStatusLabel")}</Label>
+            <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentStatuses.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={loading}
+            variant="outline"
+            onClick={handleInvoice}
+            disabled={invoiceLoading}
             className="w-full"
           >
-            {loading ? t("orderDeleting") : t("orderPermanentDelete")}
+            <FileDown className="mr-2 h-4 w-4" />
+            {invoiceLoading
+              ? t("invoiceGenerating")
+              : invoiceNumber
+                ? t("invoiceRedownload")
+                : t("invoiceGenerate")}
           </Button>
-        )}
-      </CardContent>
-    </Card>
+          <Button onClick={handleSave} disabled={loading} className="w-full">
+            {loading ? t("orderSaving") : t("orderChangeStatus")}
+          </Button>
+          {(status === "CANCELLED" || currentStatus === "CANCELLED") && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? t("orderDeleting") : t("orderPermanentDelete")}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

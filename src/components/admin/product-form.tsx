@@ -11,6 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, X, Upload } from "lucide-react"
 import { toast } from "sonner"
+import { translateCategory } from "@/lib/translate"
+import { useCurrency } from "@/hooks/use-currency"
+import { getCurrencyForLocale, convertPrice } from "@/lib/currency"
 
 interface Category {
   id: string
@@ -21,6 +24,7 @@ interface Category {
 interface ColorInput {
   name: string
   colorCode: string
+  moq: number
 }
 
 interface SizeInput {
@@ -47,7 +51,9 @@ interface ProductFormProps {
     material: string | null
     sizeSpec: string | null
     isActive: boolean
-    colors: { name: string; colorCode: string | null; images: string[] }[]
+    moq: number
+    colorMoq: number
+    colors: { name: string; colorCode: string | null; images: string[]; moq: number }[]
     sizes: { name: string }[]
     variants: { color: { name: string }; size: { name: string }; price: number; stock: number }[]
   }
@@ -58,7 +64,14 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const t = useTranslations("admin")
   const tp = useTranslations("product")
   const tc = useTranslations("common")
+  const tCat = useTranslations("categories")
   const isEdit = !!initialData
+  const { currency, rate } = useCurrency()
+
+  // KRW → locale 통화 변환 (표시용)
+  const toLocal = (krw: number) => rate > 0 && rate !== 1 ? Math.round(krw / rate * 100) / 100 : krw
+  // locale 통화 → KRW 변환 (저장용)
+  const toKRW = (local: number) => rate > 0 && rate !== 1 ? Math.round(local * rate) : local
 
   const [code, setCode] = useState(initialData?.code || "")
   const [name, setName] = useState(initialData?.name || "")
@@ -68,11 +81,14 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [material, setMaterial] = useState(initialData?.material || "")
   const [sizeSpec, setSizeSpec] = useState(initialData?.sizeSpec || "")
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true)
+  const [moq, setMoq] = useState(initialData?.moq || 0)
+  const [colorMoq, setColorMoq] = useState(initialData?.colorMoq || 0)
   const [colors, setColors] = useState<ColorInput[]>(
     initialData?.colors.map((c) => ({
       name: c.name,
       colorCode: c.colorCode || "",
-    })) || [{ name: "", colorCode: "" }],
+      moq: c.moq || 0,
+    })) || [{ name: "", colorCode: "", moq: 0 }],
   )
   const [sizes, setSizes] = useState<SizeInput[]>(
     initialData?.sizes.map((s) => ({ name: s.name })) || [{ name: "" }],
@@ -132,7 +148,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   }
 
   function addColor() {
-    setColors([...colors, { name: "", colorCode: "" }])
+    setColors([...colors, { name: "", colorCode: "", moq: 0 }])
   }
 
   function removeColor(index: number) {
@@ -194,6 +210,8 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         material: material.trim() || null,
         sizeSpec: sizeSpec || null,
         isActive,
+        moq,
+        colorMoq,
         colors: validColors.map((c) => ({ ...c, images: [] })),
         sizes: validSizes,
         variants,
@@ -248,7 +266,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 <SelectContent>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {translateCategory(cat.slug, tCat)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -412,15 +430,16 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Price & Stock Matrix */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("priceStockMatrix")}</CardTitle>
+          <CardTitle>{t("priceStockMatrix")} ({currency})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex items-center gap-3">
-            <Label>{t("basePrice")}</Label>
+            <Label>{t("basePrice")} ({currency})</Label>
             <Input
               type="number"
-              value={defaultPrice}
-              onChange={(e) => setDefaultPrice(parseInt(e.target.value) || 0)}
+              step={rate !== 1 ? "0.01" : "1"}
+              value={toLocal(defaultPrice) || ""}
+              onChange={(e) => setDefaultPrice(toKRW(parseFloat(e.target.value) || 0))}
               className="w-32"
             />
             <Button
@@ -459,12 +478,13 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                         <div className="flex flex-col gap-1">
                           <Input
                             type="number"
+                            step={rate !== 1 ? "0.01" : "1"}
                             placeholder={t("price")}
-                            value={getVariantPrice(color.name, size.name) || ""}
+                            value={toLocal(getVariantPrice(color.name, size.name)) || ""}
                             onChange={(e) => {
                               setVariantPrices((prev) => ({
                                 ...prev,
-                                [`${color.name}-${size.name}`]: parseInt(e.target.value) || 0,
+                                [`${color.name}-${size.name}`]: toKRW(parseFloat(e.target.value) || 0),
                               }))
                             }}
                             className="h-8 w-24 text-xs"
@@ -489,6 +509,73 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* MOQ Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("moqSettings")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("productMoq")}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={moq || ""}
+                onChange={(e) => setMoq(parseInt(e.target.value) || 0)}
+                placeholder="0"
+                className="w-32"
+              />
+              <p className="text-xs text-muted-foreground">{t("productMoqHint")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("colorMoq")}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={colorMoq || ""}
+                onChange={(e) => setColorMoq(parseInt(e.target.value) || 0)}
+                placeholder="0"
+                className="w-32"
+              />
+              <p className="text-xs text-muted-foreground">{t("colorMoqHint")}</p>
+            </div>
+          </div>
+          {colors.some((c) => c.name.trim()) && (
+            <div className="space-y-2">
+              <Label>{t("colorMoqOverride")}</Label>
+              <p className="text-xs text-muted-foreground">{t("colorMoqOverrideHint")}</p>
+              <div className="space-y-2">
+                {colors.filter((c) => c.name.trim()).map((color, i) => {
+                  const originalIndex = colors.indexOf(color)
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span
+                        className="inline-block h-4 w-4 rounded-full border"
+                        style={{ backgroundColor: color.colorCode || "#ccc" }}
+                      />
+                      <span className="w-24 text-sm">{color.name}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={color.moq || ""}
+                        onChange={(e) => {
+                          const next = [...colors]
+                          next[originalIndex].moq = parseInt(e.target.value) || 0
+                          setColors(next)
+                        }}
+                        placeholder="0"
+                        className="h-8 w-24 text-sm"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

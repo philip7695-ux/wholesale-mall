@@ -11,15 +11,22 @@ function getSupabase() {
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
+    const uploadType = formData.get("type") as string | null
+
     if (!file) {
       return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
+    }
+
+    // receipt 타입이 아니면 ADMIN만 허용
+    if (uploadType !== "receipt" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const bytes = await file.arrayBuffer()
@@ -27,7 +34,7 @@ export async function POST(request: Request) {
 
     const ext = file.name.split(".").pop() || "jpg"
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const filePath = `products/${fileName}`
+    const filePath = uploadType === "receipt" ? `receipts/${fileName}` : `products/${fileName}`
 
     const supabase = getSupabase()
 

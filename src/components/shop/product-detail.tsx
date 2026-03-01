@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react"
+import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
+import { translateCategory, translateColor, translateSizeSpecHeader } from "@/lib/translate"
 import { toast } from "sonner"
+import { useCurrency } from "@/hooks/use-currency"
+import { GRADE_DISCOUNT, GRADE_MOQ_RATE, getEffectiveMoq } from "@/lib/grade"
+import { checkMoq } from "@/lib/moq"
 
 interface Variant {
   id: string
@@ -29,8 +33,10 @@ interface Product {
   thumbnail: string | null
   images: string[]
   sizeSpec: string | null
-  category: { name: string }
-  colors: { id: string; name: string; colorCode: string | null; images: string[] }[]
+  moq: number
+  colorMoq: number
+  category: { name: string; slug: string }
+  colors: { id: string; name: string; colorCode: string | null; images: string[]; moq: number }[]
   sizes: { id: string; name: string }[]
   variants: Variant[]
 }
@@ -40,7 +46,14 @@ export function ProductDetail({ product }: { product: Product }) {
   const router = useRouter()
   const t = useTranslations("product")
   const tc = useTranslations("common")
+  const tCat = useTranslations("categories")
+  const tColor = useTranslations("colors")
+  const tSpec = useTranslations("sizeSpec")
   const locale = useLocale()
+  const { rate } = useCurrency()
+  const tProd = useTranslations("product")
+  const buyerGrade = session?.user?.buyerGrade || "BRONZE"
+  const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.id || "")
   const allImages = product.images.length > 0
     ? product.images
@@ -65,7 +78,7 @@ export function ProductDetail({ product }: { product: Product }) {
     return Object.values(quantities).reduce((sum, q) => sum + q, 0)
   }
 
-  function totalAmount() {
+  function totalAmountOriginal() {
     let sum = 0
     for (const [key, qty] of Object.entries(quantities)) {
       if (qty <= 0) continue
@@ -76,6 +89,11 @@ export function ProductDetail({ product }: { product: Product }) {
     return sum
   }
 
+  function totalAmount() {
+    const original = totalAmountOriginal()
+    return discountRate > 0 ? Math.round(original * (1 - discountRate)) : original
+  }
+
   function colorQuantity(colorId: string) {
     let qty = 0
     for (const size of product.sizes) {
@@ -83,6 +101,23 @@ export function ProductDetail({ product }: { product: Product }) {
     }
     return qty
   }
+
+  // MOQ 검증
+  const hasMoq = product.moq > 0 || product.colorMoq > 0 || product.colors.some((c) => c.moq > 0)
+  const moqGradeRate = GRADE_MOQ_RATE[buyerGrade] ?? 1.0
+  const moqRelaxed = moqGradeRate < 1.0
+
+  const moqResult = hasMoq
+    ? checkMoq({
+        productMoq: product.moq,
+        colorMoq: product.colorMoq,
+        colors: product.colors.map((c) => ({ colorId: c.id, colorName: translateColor(c.name, tColor), moq: c.moq })),
+        quantities: Object.fromEntries(
+          product.colors.map((color) => [color.id, colorQuantity(color.id)]),
+        ),
+        grade: buyerGrade,
+      })
+    : null
 
   async function handleAddToCart() {
     if (!session) {
@@ -100,6 +135,11 @@ export function ProductDetail({ product }: { product: Product }) {
 
     if (items.length === 0) {
       toast.error(t("enterQuantity"))
+      return
+    }
+
+    if (moqResult && !moqResult.valid) {
+      toast.error(t("moqNotMet"))
       return
     }
 
@@ -206,7 +246,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     <thead>
                       <tr className="border-b">
                         {sizeSpecData.headers.map((h) => (
-                          <th key={h} className="px-2 py-1.5 text-center font-medium">{h}</th>
+                          <th key={h} className="px-2 py-1.5 text-center font-medium">{translateSizeSpecHeader(h, tSpec)}</th>
                         ))}
                       </tr>
                     </thead>
@@ -239,7 +279,14 @@ export function ProductDetail({ product }: { product: Product }) {
         {/* 상품 정보 + 컬러 선택 + 주문 */}
         <div className="space-y-4">
           <div>
-            <Badge variant="secondary">{product.category.name}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{translateCategory(product.category.slug, tCat)}</Badge>
+              {discountRate > 0 && (
+                <Badge variant="destructive">
+                  {tProd("gradeDiscountBadge", { rate: Math.round(discountRate * 100) })}
+                </Badge>
+              )}
+            </div>
             <h1 className="mt-2 text-2xl font-bold">{product.name}</h1>
           </div>
 
@@ -267,7 +314,7 @@ export function ProductDetail({ product }: { product: Product }) {
                       className="inline-block h-4 w-4 rounded-full border"
                       style={{ backgroundColor: color.colorCode || "#ccc" }}
                     />
-                    {color.name}
+                    {translateColor(color.name, tColor)}
                     {qty > 0 && (
                       <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
                         {qty}
@@ -279,6 +326,37 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
+          {/* MOQ 안내 */}
+          {hasMoq && moqResult && (
+            <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
+              <CardContent className="py-3">
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium text-amber-800 dark:text-amber-200">{t("moqTitle")}</p>
+                  {moqResult.productMoqRequired > 0 && (
+                    <p className="text-amber-700 dark:text-amber-300">
+                      {t("moqProduct", { qty: moqResult.productMoqRequired })}
+                    </p>
+                  )}
+                  {product.colors.map((color) => {
+                    const rawColorMoq = color.moq > 0 ? color.moq : product.colorMoq
+                    if (rawColorMoq <= 0) return null
+                    const effectiveMoq = getEffectiveMoq(rawColorMoq, buyerGrade)
+                    return (
+                      <p key={color.id} className="text-amber-700 dark:text-amber-300">
+                        {t("moqColor", { colorName: translateColor(color.name, tColor), qty: effectiveMoq })}
+                      </p>
+                    )
+                  })}
+                  {moqRelaxed && (
+                    <p className="text-amber-600 dark:text-amber-400 text-xs">
+                      {t("moqGradeRelaxed", { rate: Math.round((1 - moqGradeRate) * 100) })}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* 선택된 컬러의 사이즈/수량 입력 */}
           {currentColor && (
             <Card>
@@ -288,7 +366,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     className="inline-block h-3 w-3 rounded-full border"
                     style={{ backgroundColor: currentColor.colorCode || "#ccc" }}
                   />
-                  {t("sizeQuantity", { colorName: currentColor.name })}
+                  {t("sizeQuantity", { colorName: translateColor(currentColor.name, tColor) })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -300,8 +378,18 @@ export function ProductDetail({ product }: { product: Product }) {
                     return (
                       <div key={size.id} className="flex items-center gap-3">
                         <span className="w-14 text-sm font-medium">{size.name}</span>
-                        <span className="w-20 text-xs text-muted-foreground">
-                          {formatPrice(variant.price, locale)}
+                        <span className="w-24 text-xs text-muted-foreground">
+                          {discountRate > 0 ? (
+                            <>
+                              <span className="line-through">{formatPrice(variant.price, locale, rate)}</span>
+                              {" "}
+                              <span className="text-primary font-medium">
+                                {formatPrice(Math.round(variant.price * (1 - discountRate)), locale, rate)}
+                              </span>
+                            </>
+                          ) : (
+                            formatPrice(variant.price, locale, rate)
+                          )}
                         </span>
                         <Input
                           type="number"
@@ -316,7 +404,11 @@ export function ProductDetail({ product }: { product: Product }) {
                         />
                         {(quantities[key] || 0) > 0 && (
                           <span className="text-sm font-medium">
-                            {formatPrice(variant.price * (quantities[key] || 0), locale)}
+                            {formatPrice(
+                              Math.round(variant.price * (1 - discountRate)) * (quantities[key] || 0),
+                              locale,
+                              rate,
+                            )}
                           </span>
                         )}
                       </div>
@@ -342,7 +434,7 @@ export function ProductDetail({ product }: { product: Product }) {
                             className="inline-block h-2.5 w-2.5 rounded-full border"
                             style={{ backgroundColor: color.colorCode || "#ccc" }}
                           />
-                          {color.name}
+                          {translateColor(color.name, tColor)}
                         </span>
                         <span>{qty}{tc("pieces")}</span>
                       </div>
@@ -350,8 +442,32 @@ export function ProductDetail({ product }: { product: Product }) {
                   })}
                   <div className="flex justify-between border-t pt-1 font-bold">
                     <span>{t("totalSummary", { count: totalQuantity() })}</span>
-                    <span className="text-primary">{formatPrice(totalAmount(), locale)}</span>
+                    <span className="text-primary">{formatPrice(totalAmount(), locale, rate)}</span>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* MOQ 미달 에러 메시지 */}
+          {moqResult && !moqResult.valid && totalQuantity() > 0 && (
+            <Card className="border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-950/30">
+              <CardContent className="py-3">
+                <div className="space-y-1 text-sm">
+                  <p className="flex items-center gap-1.5 font-medium text-red-800 dark:text-red-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    {t("moqNotMet")}
+                  </p>
+                  {moqResult.productMoqRequired > 0 && moqResult.productQtyTotal < moqResult.productMoqRequired && (
+                    <p className="text-red-700 dark:text-red-300">
+                      {t("moqProductError", { required: moqResult.productMoqRequired, actual: moqResult.productQtyTotal })}
+                    </p>
+                  )}
+                  {moqResult.colorErrors.map((err) => (
+                    <p key={err.colorId} className="text-red-700 dark:text-red-300">
+                      {t("moqColorError", { colorName: err.colorName, required: err.required, actual: err.actual })}
+                    </p>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -360,7 +476,7 @@ export function ProductDetail({ product }: { product: Product }) {
           {/* 장바구니 담기 */}
           <Button
             onClick={handleAddToCart}
-            disabled={loading || totalQuantity() === 0}
+            disabled={loading || totalQuantity() === 0 || (moqResult != null && !moqResult.valid)}
             className="w-full"
             size="lg"
           >
@@ -368,7 +484,7 @@ export function ProductDetail({ product }: { product: Product }) {
             {loading
               ? t("adding")
               : totalQuantity() > 0
-                ? t("addToCartWithQty", { count: totalQuantity(), price: formatPrice(totalAmount(), locale) })
+                ? t("addToCartWithQty", { count: totalQuantity(), price: formatPrice(totalAmount(), locale, rate) })
                 : t("addToCart")}
           </Button>
         </div>

@@ -3,19 +3,12 @@
 import { useEffect, useState } from "react"
 import { Link, useRouter } from "@/i18n/navigation"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatPrice, formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
-
-const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  PENDING: "outline",
-  CONFIRMED: "secondary",
-  SHIPPING: "default",
-  DELIVERED: "default",
-  CANCELLED: "destructive",
-}
+import { useCurrency } from "@/hooks/use-currency"
+import { STATUS_COLOR } from "@/lib/order-status"
 
 interface Order {
   id: string
@@ -31,13 +24,17 @@ export default function OrdersPage() {
   const t = useTranslations("order")
   const tc = useTranslations("common")
   const locale = useLocale()
+  const { rate } = useCurrency()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
   const statusLabels: Record<string, string> = {
-    PENDING: t("statusPending"),
-    CONFIRMED: t("statusConfirmed"),
-    SHIPPING: t("statusShipping"),
+    ORDER_PLACED: t("statusOrderPlaced"),
+    INVOICE_SENT: t("statusInvoiceSent"),
+    AWAITING_PAYMENT: t("statusAwaitingPayment"),
+    PAYMENT_CONFIRMED: t("statusPaymentConfirmed"),
+    PREPARING: t("statusPreparing"),
+    SHIPPED: t("statusShipped"),
     DELIVERED: t("statusDelivered"),
     CANCELLED: t("statusCancelled"),
   }
@@ -114,11 +111,11 @@ export default function OrdersPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <Badge variant={statusVariant[order.status]}>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>
                         {statusLabels[order.status]}
-                      </Badge>
-                      <p className="mt-1 font-bold">{formatPrice(order.totalAmount, locale)}</p>
-                      {order.status === "PENDING" && (
+                      </span>
+                      <p className="mt-1 font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
+                      {order.status === "ORDER_PLACED" && (
                         <div className="mt-2 flex gap-1">
                           <Button
                             variant="outline"

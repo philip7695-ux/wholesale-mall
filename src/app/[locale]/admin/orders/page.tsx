@@ -12,6 +12,10 @@ export default async function AdminOrdersPage() {
     include: {
       user: { select: { name: true, email: true } },
       items: true,
+      paymentConfirmations: {
+        where: { status: "PENDING" },
+        select: { id: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -34,6 +38,8 @@ export default async function AdminOrdersPage() {
     ...o,
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
+    hasPaymentRequest: o.paymentConfirmations.length > 0,
+    paymentConfirmations: undefined,
     items: o.items.map((item) => ({
       ...item,
       createdAt: item.createdAt.toISOString(),

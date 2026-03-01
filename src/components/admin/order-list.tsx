@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Download, Trash2 } from "lucide-react"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
+import { useCurrency } from "@/hooks/use-currency"
+import { STATUS_COLOR } from "@/lib/order-status"
 
 interface OrderItem {
   id: string
@@ -29,6 +31,7 @@ interface Order {
   createdAt: string
   user: { name: string; email: string }
   items: OrderItem[]
+  hasPaymentRequest?: boolean
 }
 
 export function OrderList({ orders }: { orders: Order[] }) {
@@ -36,13 +39,17 @@ export function OrderList({ orders }: { orders: Order[] }) {
   const t = useTranslations("admin")
   const tc = useTranslations("common")
   const locale = useLocale()
+  const { rate } = useCurrency()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<string | null>(null)
 
   const statusLabels: Record<string, string> = {
-    PENDING: t("orderStatusPending"),
-    CONFIRMED: t("orderStatusConfirmed"),
-    SHIPPING: t("orderStatusShipping"),
+    ORDER_PLACED: t("orderStatusOrderPlaced"),
+    INVOICE_SENT: t("orderStatusInvoiceSent"),
+    AWAITING_PAYMENT: t("orderStatusAwaitingPayment"),
+    PAYMENT_CONFIRMED: t("orderStatusPaymentConfirmed"),
+    PREPARING: t("orderStatusPreparing"),
+    SHIPPED: t("orderStatusShipped"),
     DELIVERED: t("orderStatusDelivered"),
     CANCELLED: t("orderStatusCancelled"),
   }
@@ -184,8 +191,11 @@ export function OrderList({ orders }: { orders: Order[] }) {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{order.orderNumber}</span>
-                        <Badge variant="outline">{statusLabels[order.status]}</Badge>
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>{statusLabels[order.status]}</span>
                         <Badge variant="secondary">{paymentLabels[order.paymentStatus]}</Badge>
+                        {order.hasPaymentRequest && (
+                          <Badge variant="default" className="bg-yellow-500 text-white">{t("pendingPaymentBadge")}</Badge>
+                        )}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {order.user.name} ({order.user.email})
@@ -195,7 +205,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-lg font-bold">{formatPrice(order.totalAmount, locale)}</p>
+                      <p className="text-lg font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
                       {order.status === "CANCELLED" && (
                         <Button
                           variant="destructive"

@@ -6,9 +6,18 @@ import { useTranslations, useLocale } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Trash2, Pencil } from "lucide-react"
+import { Trash2, Pencil, AlertTriangle } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
+import { useCurrency } from "@/hooks/use-currency"
+import { useSession } from "next-auth/react"
+import { checkMoq, type MoqCheckResult } from "@/lib/moq"
+
+interface ProductColor {
+  id: string
+  name: string
+  moq: number
+}
 
 interface CartItem {
   id: string
@@ -16,8 +25,16 @@ interface CartItem {
   variant: {
     id: string
     price: number
-    product: { id: string; name: string; thumbnail: string | null }
-    color: { name: string; colorCode: string | null }
+    colorId: string
+    product: {
+      id: string
+      name: string
+      thumbnail: string | null
+      moq: number
+      colorMoq: number
+      colors: ProductColor[]
+    }
+    color: { id: string; name: string; colorCode: string | null }
     size: { name: string }
   }
 }
@@ -87,6 +104,9 @@ export default function CartPage() {
   const t = useTranslations("cart")
   const tc = useTranslations("common")
   const locale = useLocale()
+  const { rate } = useCurrency()
+  const { data: session } = useSession()
+  const buyerGrade = session?.user?.buyerGrade || "BRONZE"
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
@@ -147,6 +167,33 @@ export default function CartPage() {
   )
   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0)
 
+  // MOQ 검증 (상품 그룹별)
+  const moqWarnings: { productName: string; result: MoqCheckResult }[] = []
+  for (const group of groups) {
+    const firstItem = group.items[0]
+    const product = firstItem.variant.product
+    if (product.moq <= 0 && product.colorMoq <= 0 && !product.colors.some((c) => c.moq > 0)) continue
+
+    const colorQuantities: Record<string, number> = {}
+    for (const item of group.items) {
+      const cid = item.variant.colorId ?? item.variant.color.id
+      colorQuantities[cid] = (colorQuantities[cid] || 0) + item.quantity
+    }
+
+    const result = checkMoq({
+      productMoq: product.moq,
+      colorMoq: product.colorMoq,
+      colors: product.colors.map((c) => ({ colorId: c.id, colorName: c.name, moq: c.moq })),
+      quantities: colorQuantities,
+      grade: buyerGrade,
+    })
+
+    if (!result.valid) {
+      moqWarnings.push({ productName: group.productName, result })
+    }
+  }
+  const hasMoqWarnings = moqWarnings.length > 0
+
   if (loading) {
     return <div className="py-10 text-center text-muted-foreground">{tc("loading")}</div>
   }
@@ -195,7 +242,7 @@ export default function CartPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <p className="text-lg font-bold">{formatPrice(group.subtotal, locale)}</p>
+                        <p className="text-lg font-bold">{formatPrice(group.subtotal, locale, rate)}</p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -230,7 +277,7 @@ export default function CartPage() {
                             )}
                             <span className="text-sm font-medium">{colorGroup.colorName}</span>
                             <span className="text-xs text-muted-foreground">
-                              {t("subtotalUnit", { qty: colorGroup.totalQty, price: formatPrice(colorGroup.subtotal, locale) })}
+                              {t("subtotalUnit", { qty: colorGroup.totalQty, price: formatPrice(colorGroup.subtotal, locale, rate) })}
                             </span>
                           </div>
                           {/* 사이즈 행 */}
@@ -248,7 +295,7 @@ export default function CartPage() {
                               {colorGroup.items.map((item) => (
                                 <tr key={item.id} className="border-b last:border-0">
                                   <td className="px-3 py-1.5">{item.variant.size.name}</td>
-                                  <td className="px-3 py-1.5 text-right">{formatPrice(item.variant.price, locale)}</td>
+                                  <td className="px-3 py-1.5 text-right">{formatPrice(item.variant.price, locale, rate)}</td>
                                   <td className="px-3 py-1.5 text-right">
                                     {isEditing ? (
                                       <Input
@@ -265,7 +312,7 @@ export default function CartPage() {
                                     )}
                                   </td>
                                   <td className="px-3 py-1.5 text-right font-medium">
-                                    {formatPrice(item.variant.price * item.quantity, locale)}
+                                    {formatPrice(item.variant.price * item.quantity, locale, rate)}
                                   </td>
                                   {isEditing && (
                                     <td className="px-1 py-1.5 text-center">
@@ -287,16 +334,44 @@ export default function CartPage() {
             })}
           </div>
 
+          {/* MOQ 경고 */}
+          {hasMoqWarnings && (
+            <Card className="border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-950/30">
+              <CardContent className="py-3">
+                <div className="space-y-1 text-sm">
+                  <p className="flex items-center gap-1.5 font-medium text-red-800 dark:text-red-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    {t("moqWarning")}
+                  </p>
+                  {moqWarnings.map(({ productName, result }) => (
+                    <div key={productName}>
+                      {result.productMoqRequired > 0 && result.productQtyTotal < result.productMoqRequired && (
+                        <p className="text-red-700 dark:text-red-300">
+                          {t("moqProductWarning", { productName, required: result.productMoqRequired, actual: result.productQtyTotal })}
+                        </p>
+                      )}
+                      {result.colorErrors.map((err) => (
+                        <p key={err.colorId} className="text-red-700 dark:text-red-300">
+                          {t("moqColorWarning", { productName, colorName: err.colorName, required: err.required, actual: err.actual })}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* 주문 요약 */}
           <Card>
             <CardContent className="space-y-3 py-4">
               <div className="flex justify-between text-sm">
                 <span>{t("productSummary", { count: groups.length, qty: totalQty })}</span>
-                <span>{formatPrice(totalAmount, locale)}</span>
+                <span>{formatPrice(totalAmount, locale, rate)}</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-lg font-bold">
                 <span>{t("totalPayment")}</span>
-                <span className="text-primary">{formatPrice(totalAmount, locale)}</span>
+                <span className="text-primary">{formatPrice(totalAmount, locale, rate)}</span>
               </div>
               <Button
                 className="w-full"

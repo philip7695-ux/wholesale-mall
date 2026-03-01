@@ -10,5 +10,15 @@
   "enterQuantity": "수량을 입력해주세요.",
   "addedToCart": "장바구니에 추가되었습니다.",
   "composition": "혼용률",
-  "compositionPlaceholder": "예: 면 100%, 폴리에스터 80% 면 20%"
+  "compositionPlaceholder": "예: 면 100%, 폴리에스터 80% 면 20%",
+  "originalPrice": "정가",
+  "discountedPrice": "할인가",
+  "gradeDiscountBadge": "{rate}% 등급 할인",
+  "moqTitle": "최소주문수량 (MOQ)",
+  "moqProduct": "상품 전체: 최소 {qty}장",
+  "moqColor": "{colorName}: 최소 {qty}장",
+  "moqGradeRelaxed": "{rate}% 등급 MOQ 완화 적용중",
+  "moqNotMet": "최소주문수량 미달",
+  "moqProductError": "전체 최소 {required}장 필요 (현재 {actual}장)",
+  "moqColorError": "{colorName}: 최소 {required}장 필요 (현재 {actual}장)"
 }

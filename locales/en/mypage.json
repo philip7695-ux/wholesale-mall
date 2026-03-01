@@ -19,5 +19,17 @@
   "newPasswordMismatch": "New passwords do not match.",
   "editSuccess": "Information updated successfully.",
   "editFail": "Failed to update information.",
-  "change": "Change"
+  "change": "Change",
+  "gradeTitle": "Member Grade",
+  "gradeLabel": "Current Grade",
+  "discountRate": "Discount Rate",
+  "totalSpending": "Total Spending",
+  "nextGrade": "Next Grade",
+  "remaining": "Remaining",
+  "gradeMaxReached": "Highest grade reached",
+  "gradeBronze": "Bronze",
+  "gradeSilver": "Silver",
+  "gradeGold": "Gold",
+  "gradeVip": "VIP",
+  "gradeDiscount": "{rate}% OFF"
 }

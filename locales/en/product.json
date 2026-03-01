@@ -10,5 +10,15 @@
   "enterQuantity": "Please enter a quantity.",
   "addedToCart": "Added to cart.",
   "composition": "Composition",
-  "compositionPlaceholder": "e.g. Cotton 100%, Polyester 80% Cotton 20%"
+  "compositionPlaceholder": "e.g. Cotton 100%, Polyester 80% Cotton 20%",
+  "originalPrice": "Original",
+  "discountedPrice": "Discounted",
+  "gradeDiscountBadge": "{rate}% Grade Discount",
+  "moqTitle": "Minimum Order Quantity (MOQ)",
+  "moqProduct": "Product total: min. {qty} pcs",
+  "moqColor": "{colorName}: min. {qty} pcs",
+  "moqGradeRelaxed": "{rate}% grade MOQ relaxation applied",
+  "moqNotMet": "MOQ not met",
+  "moqProductError": "Min. {required} pcs required (current {actual} pcs)",
+  "moqColorError": "{colorName}: min. {required} pcs required (current {actual} pcs)"
 }

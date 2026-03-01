@@ -27,6 +27,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.role = (user as any).role
         token.approvalStatus = (user as any).approvalStatus
+        token.buyerGrade = (user as any).buyerGrade
       }
       return token
     },
@@ -35,6 +36,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.sub!
         session.user.role = token.role as string
         session.user.approvalStatus = token.approvalStatus as string
+        session.user.buyerGrade = (token.buyerGrade as string) || "BRONZE"
       }
       return session
     },
@@ -74,5 +76,20 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24시간 (JWT 토큰 자체 만료)
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-authjs.session-token"
+        : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        // maxAge 생략 → session cookie (브라우저 닫으면 삭제)
+      },
+    },
   },
 }

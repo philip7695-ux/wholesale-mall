@@ -37,13 +37,13 @@ export async function PUT(
 
   const { id } = await params
   const body = await request.json()
-  const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, colors, sizes, variants } = body
+  const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, moq, colorMoq, colors, sizes, variants } = body
 
   try {
     // Update basic product info
     await prisma.product.update({
       where: { id },
-      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive },
+      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined },
     })
 
     // Replace colors, sizes, and variants
@@ -51,12 +51,13 @@ export async function PUT(
       await prisma.productColor.deleteMany({ where: { productId: id } })
       if (colors.length > 0) {
         await prisma.productColor.createMany({
-          data: colors.map((c: { name: string; colorCode?: string; images?: string[]; sortOrder?: number }, i: number) => ({
+          data: colors.map((c: { name: string; colorCode?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
             productId: id,
             name: c.name,
             colorCode: c.colorCode,
             images: c.images || [],
             sortOrder: c.sortOrder ?? i,
+            moq: c.moq ?? 0,
           })),
         })
       }
