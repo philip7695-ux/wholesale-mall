@@ -41,7 +41,7 @@ export async function GET() {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent("상품_대량등록_템플릿.xlsx")}`,
+      "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent("상품_대량등록_템플릿.xlsx")}`,
     },
   })
 }
