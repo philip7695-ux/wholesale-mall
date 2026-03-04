@@ -1,5 +1,5 @@
-import { NextIntlClientProvider } from "next-intl"
 import { getMessages, getTranslations } from "next-intl/server"
+import { IntlProvider } from "@/components/intl-provider"
 import { setRequestLocale } from "next-intl/server"
 import { routing } from "@/i18n/routing"
 import { notFound } from "next/navigation"
@@ -39,8 +39,8 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages()
 
   return (
-    <NextIntlClientProvider messages={messages}>
+    <IntlProvider messages={messages}>
       {children}
-    </NextIntlClientProvider>
+    </IntlProvider>
   )
 }
