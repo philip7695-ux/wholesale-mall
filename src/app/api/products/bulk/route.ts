@@ -62,7 +62,9 @@ function parseSheet(
 
     const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
-    const colorCode = String(row["컬러코드"] ?? "").trim()
+    const rawColorCode = String(row["컬러코드"] ?? "").trim()
+    // Ensure colorCode is a valid CSS hex color (#rrggbb or #rgb)
+    const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
 
     if (!groups.has(name)) {
       groups.set(name, { code, category, description, material, variants: [] })

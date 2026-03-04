@@ -358,7 +358,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
               />
               <Input
                 type="color"
-                value={color.colorCode || "#000000"}
+                value={/^#[0-9A-Fa-f]{6}$/.test(color.colorCode) ? color.colorCode : "#000000"}
                 onChange={(e) => {
                   const next = [...colors]
                   next[i].colorCode = e.target.value
