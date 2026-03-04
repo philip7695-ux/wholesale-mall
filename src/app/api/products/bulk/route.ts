@@ -3,21 +3,12 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 
-const ADULT_SIZES = ["F", "S", "M", "L"]
-const KIDS_SIZES = ["80", "85", "90", "100", "110", "120", "130", "140"]
+const SIZE_COLUMNS = ["F", "S", "M", "L", "80", "85", "90", "100", "110", "120", "130"]
 
 interface FailedRow {
   row: number
   error: string
 }
-
-type ProductGroups = Map<string, {
-  code: string
-  category: string
-  description: string
-  material: string
-  variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[]
-}>
 
 function toSlug(name: string): string {
   return name
@@ -25,59 +16,6 @@ function toSlug(name: string): string {
     .trim()
     .replace(/[^a-z0-9가-힣\s-]/g, "")
     .replace(/\s+/g, "-")
-}
-
-function parseSheet(
-  rows: Record<string, any>[],
-  sizeColumns: string[],
-  failed: FailedRow[],
-  sheetLabel: string,
-  groups: ProductGroups,
-) {
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]
-    const rowNum = i + 2
-
-    const code = String(row["상품코드"] ?? "").trim()
-    const name = String(row["상품명*"] ?? "").trim()
-    const category = String(row["카테고리*"] ?? "").trim()
-    const colorName = String(row["컬러명*"] ?? "").trim()
-    const price = Number(row["가격*"])
-
-    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
-    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
-    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
-    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
-
-    const sizeVariants: { sizeName: string; stock: number }[] = []
-    for (const sizeName of sizeColumns) {
-      const val = row[sizeName]
-      if (val === undefined || val === null || val === "") continue
-      const stock = Number(val)
-      sizeVariants.push({ sizeName, stock: isNaN(stock) ? 0 : stock })
-    }
-
-    if (sizeVariants.length === 0) {
-      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈 재고가 입력되지 않았습니다.` })
-      continue
-    }
-
-    const description = String(row["설명"] ?? "").trim()
-    const material = String(row["혼용률"] ?? "").trim()
-    const colorCode = String(row["컬러코드"] ?? "").trim()
-
-    if (!groups.has(name)) {
-      groups.set(name, { code, category, description, material, variants: [] })
-    }
-
-    const group = groups.get(name)!
-    if (description && !group.description) group.description = description
-    if (material && !group.material) group.material = material
-
-    for (const { sizeName, stock } of sizeVariants) {
-      group.variants.push({ colorName, colorCode, sizeName, price, stock })
-    }
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -93,31 +31,65 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const wb = XLSX.read(buffer, { type: "buffer" })
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws)
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "엑셀에 데이터가 없습니다." }, { status: 400 })
+    }
 
     const failed: FailedRow[] = []
-    const productGroups: ProductGroups = new Map()
+    const productGroups = new Map<string, {
+      code: string
+      category: string
+      description: string
+      material: string
+      variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[]
+    }>()
 
-    const adultWs = wb.Sheets["성인복"]
-    const kidsWs = wb.Sheets["아동복"]
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const rowNum = i + 2
 
-    if (adultWs) {
-      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(adultWs)
-      parseSheet(rows, ADULT_SIZES, failed, "성인복", productGroups)
-    }
-    if (kidsWs) {
-      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(kidsWs)
-      parseSheet(rows, KIDS_SIZES, failed, "아동복", productGroups)
-    }
+      const code = String(row["상품코드"] ?? "").trim()
+      const name = String(row["상품명*"] ?? "").trim()
+      const category = String(row["카테고리*"] ?? "").trim()
+      const colorName = String(row["컬러명*"] ?? "").trim()
+      const price = Number(row["가격*"])
 
-    // 시트 이름이 없는 경우 첫 번째 시트를 두 사이즈 합쳐서 파싱 (하위 호환)
-    if (!adultWs && !kidsWs) {
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws)
-      parseSheet(rows, [...ADULT_SIZES, ...KIDS_SIZES], failed, "시트1", productGroups)
-    }
+      if (!name) { failed.push({ row: rowNum, error: "상품명이 비어있습니다." }); continue }
+      if (!category) { failed.push({ row: rowNum, error: "카테고리가 비어있습니다." }); continue }
+      if (!colorName) { failed.push({ row: rowNum, error: "컬러명이 비어있습니다." }); continue }
+      if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: "가격이 올바르지 않습니다." }); continue }
 
-    if (productGroups.size === 0 && failed.length === 0) {
-      return NextResponse.json({ error: "엑셀에 데이터가 없습니다." }, { status: 400 })
+      const sizeVariants: { sizeName: string; stock: number }[] = []
+      for (const sizeName of SIZE_COLUMNS) {
+        const val = row[sizeName]
+        if (val === undefined || val === null || val === "") continue
+        const stock = Number(val)
+        sizeVariants.push({ sizeName, stock: isNaN(stock) ? 0 : stock })
+      }
+
+      if (sizeVariants.length === 0) {
+        failed.push({ row: rowNum, error: "사이즈 재고가 입력되지 않았습니다." })
+        continue
+      }
+
+      const description = String(row["설명"] ?? "").trim()
+      const material = String(row["혼용률"] ?? "").trim()
+      const colorCode = String(row["컬러코드"] ?? "").trim()
+
+      if (!productGroups.has(name)) {
+        productGroups.set(name, { code, category, description, material, variants: [] })
+      }
+
+      const group = productGroups.get(name)!
+      if (description && !group.description) group.description = description
+      if (material && !group.material) group.material = material
+
+      for (const { sizeName, stock } of sizeVariants) {
+        group.variants.push({ colorName, colorCode, sizeName, price, stock })
+      }
     }
 
     // 카테고리 처리
@@ -151,14 +123,8 @@ export async function POST(request: NextRequest) {
           name, colorCode: colorCode || undefined, images: [] as string[], sortOrder: i,
         }))
 
-        // 사이즈 정렬 순서를 템플릿 순서 기준으로
-        const sizeOrder = [...ADULT_SIZES, ...KIDS_SIZES]
         const sizes = [...sizesSet]
-          .sort((a, b) => {
-            const ai = sizeOrder.indexOf(a)
-            const bi = sizeOrder.indexOf(b)
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-          })
+          .sort((a, b) => SIZE_COLUMNS.indexOf(a) - SIZE_COLUMNS.indexOf(b))
           .map((name, i) => ({ name, sortOrder: i }))
 
         const product = await prisma.product.create({
