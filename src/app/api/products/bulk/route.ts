@@ -107,7 +107,8 @@ export async function POST(request: NextRequest) {
 
     if (!adultWs && !kidsWs) {
       const ws = wb.Sheets[wb.SheetNames[0]]
-      parseSheet(XLSX.utils.sheet_to_json(ws), [...ADULT_SIZES, ...KIDS_SIZES], "시트1", failed, productGroups)
+      const allSizes = [...new Set([...ADULT_SIZES, ...KIDS_SIZES])]
+      parseSheet(XLSX.utils.sheet_to_json(ws), allSizes, "시트1", failed, productGroups)
     }
 
     if (productGroups.size === 0 && failed.length === 0) {
