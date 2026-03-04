@@ -14,6 +14,9 @@ import { toast } from "sonner"
 import { translateCategory } from "@/lib/translate"
 import { useCurrency } from "@/hooks/use-currency"
 import { getCurrencyForLocale, convertPrice } from "@/lib/currency"
+import { ADULT_SIZES, KIDS_SIZES } from "@/lib/product-sizes"
+
+const ALL_SIZE_ORDER = [...ADULT_SIZES, ...KIDS_SIZES.filter((s) => !ADULT_SIZES.includes(s))]
 
 interface Category {
   id: string
@@ -155,12 +158,33 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
     setColors(colors.filter((_, i) => i !== index))
   }
 
-  function addSize() {
-    setSizes([...sizes, { name: "" }])
+  const [customSize, setCustomSize] = useState("")
+
+  function toggleSize(name: string) {
+    if (sizes.some((s) => s.name === name)) {
+      setSizes(sizes.filter((s) => s.name !== name))
+    } else {
+      const next = [...sizes, { name }].sort((a, b) => {
+        const ai = ALL_SIZE_ORDER.indexOf(a.name)
+        const bi = ALL_SIZE_ORDER.indexOf(b.name)
+        if (ai === -1 && bi === -1) return 0
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+      })
+      setSizes(next)
+    }
   }
 
-  function removeSize(index: number) {
-    setSizes(sizes.filter((_, i) => i !== index))
+  function addCustomSize() {
+    const name = customSize.trim()
+    if (!name || sizes.some((s) => s.name === name)) return
+    setSizes([...sizes, { name }])
+    setCustomSize("")
+  }
+
+  function removeCustomSize(name: string) {
+    setSizes(sizes.filter((s) => s.name !== name))
   }
 
   function getVariantPrice(colorName: string, sizeName: string): number {
@@ -378,34 +402,115 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
       {/* Sizes */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle>{t("size")}</CardTitle>
-          <Button type="button" variant="outline" size="sm" onClick={addSize}>
-            <Plus className="mr-1 h-3 w-3" /> {t("addSize")}
-          </Button>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {sizes.map((size, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <Input
-                  placeholder={t("sizePlaceholder")}
-                  value={size.name}
-                  onChange={(e) => {
-                    const next = [...sizes]
-                    next[i].name = e.target.value
-                    setSizes(next)
-                  }}
-                  className="w-24"
-                />
-                {sizes.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeSize(i)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+        <CardContent className="space-y-4">
+          {/* Quick preset */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">빠른 선택:</span>
+            <Button
+              type="button" variant="outline" size="sm"
+              onClick={() => setSizes(ADULT_SIZES.map((n) => ({ name: n })))}
+            >
+              성인복 (XS~XL)
+            </Button>
+            <Button
+              type="button" variant="outline" size="sm"
+              onClick={() => setSizes(KIDS_SIZES.map((n) => ({ name: n })))}
+            >
+              아동복 (F~130)
+            </Button>
+            {sizes.length > 0 && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSizes([])}>
+                초기화
+              </Button>
+            )}
           </div>
+
+          {/* Predefined size toggles - Adult */}
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">성인복</p>
+            <div className="flex flex-wrap gap-1.5">
+              {ADULT_SIZES.map((name) => {
+                const selected = sizes.some((s) => s.name === name)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleSize(name)}
+                    className={`rounded border px-3 py-1 text-sm transition-colors ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input hover:bg-muted"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Predefined size toggles - Kids */}
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">아동복</p>
+            <div className="flex flex-wrap gap-1.5">
+              {KIDS_SIZES.map((name) => {
+                const selected = sizes.some((s) => s.name === name)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleSize(name)}
+                    className={`rounded border px-3 py-1 text-sm transition-colors ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input hover:bg-muted"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Custom size input */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">직접 입력:</span>
+            <Input
+              placeholder="예) FREE, OS"
+              value={customSize}
+              onChange={(e) => setCustomSize(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSize() } }}
+              className="w-28"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={addCustomSize}>
+              <Plus className="mr-1 h-3 w-3" /> 추가
+            </Button>
+          </div>
+
+          {/* Custom sizes (not in predefined list) */}
+          {sizes.filter((s) => !ALL_SIZE_ORDER.includes(s.name)).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {sizes.filter((s) => !ALL_SIZE_ORDER.includes(s.name)).map((size) => (
+                <div key={size.name} className="flex items-center gap-1 rounded border border-primary bg-primary/5 px-2 py-1 text-sm">
+                  {size.name}
+                  <button type="button" onClick={() => removeCustomSize(size.name)} className="ml-1">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Selected summary */}
+          {sizes.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              선택된 사이즈: {sizes.map((s) => s.name).join(", ")}
+            </p>
+          )}
         </CardContent>
       </Card>
 
