@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-
-const SIZE_COLUMNS = ["F", "S", "M", "L", "80", "85", "90", "100", "110", "120", "130"]
+import { ADULT_SIZES, KIDS_SIZES } from "@/app/api/products/template/route"
 
 interface FailedRow {
   row: number
   error: string
 }
+
+type ProductGroups = Map<string, {
+  code: string
+  category: string
+  description: string
+  material: string
+  variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[]
+}>
 
 function toSlug(name: string): string {
   return name
@@ -16,6 +23,59 @@ function toSlug(name: string): string {
     .trim()
     .replace(/[^a-z0-9가-힣\s-]/g, "")
     .replace(/\s+/g, "-")
+}
+
+function parseSheet(
+  rows: Record<string, any>[],
+  sizeColumns: string[],
+  sheetLabel: string,
+  failed: FailedRow[],
+  groups: ProductGroups,
+) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const rowNum = i + 2
+
+    const code = String(row["상품코드"] ?? "").trim()
+    const name = String(row["상품명*"] ?? "").trim()
+    const category = String(row["카테고리*"] ?? "").trim()
+    const colorName = String(row["컬러명*"] ?? "").trim()
+    const price = Number(row["가격*"])
+
+    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
+    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
+    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
+    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
+
+    const sizeVariants: { sizeName: string; stock: number }[] = []
+    for (const sizeName of sizeColumns) {
+      const val = row[sizeName]
+      if (val === undefined || val === null || val === "") continue
+      const stock = Number(val)
+      sizeVariants.push({ sizeName, stock: isNaN(stock) ? 0 : stock })
+    }
+
+    if (sizeVariants.length === 0) {
+      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈 재고가 입력되지 않았습니다.` })
+      continue
+    }
+
+    const description = String(row["설명"] ?? "").trim()
+    const material = String(row["혼용률"] ?? "").trim()
+    const colorCode = String(row["컬러코드"] ?? "").trim()
+
+    if (!groups.has(name)) {
+      groups.set(name, { code, category, description, material, variants: [] })
+    }
+
+    const group = groups.get(name)!
+    if (description && !group.description) group.description = description
+    if (material && !group.material) group.material = material
+
+    for (const { sizeName, stock } of sizeVariants) {
+      group.variants.push({ colorName, colorCode, sizeName, price, stock })
+    }
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -31,65 +91,28 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const wb = XLSX.read(buffer, { type: "buffer" })
-    const ws = wb.Sheets[wb.SheetNames[0]]
-    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws)
-
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "엑셀에 데이터가 없습니다." }, { status: 400 })
-    }
 
     const failed: FailedRow[] = []
-    const productGroups = new Map<string, {
-      code: string
-      category: string
-      description: string
-      material: string
-      variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[]
-    }>()
+    const productGroups: ProductGroups = new Map()
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const rowNum = i + 2
+    const adultWs = wb.Sheets["성인복"]
+    const kidsWs = wb.Sheets["아동복"]
 
-      const code = String(row["상품코드"] ?? "").trim()
-      const name = String(row["상품명*"] ?? "").trim()
-      const category = String(row["카테고리*"] ?? "").trim()
-      const colorName = String(row["컬러명*"] ?? "").trim()
-      const price = Number(row["가격*"])
+    if (adultWs) {
+      parseSheet(XLSX.utils.sheet_to_json(adultWs), ADULT_SIZES, "성인복", failed, productGroups)
+    }
+    if (kidsWs) {
+      parseSheet(XLSX.utils.sheet_to_json(kidsWs), KIDS_SIZES, "아동복", failed, productGroups)
+    }
 
-      if (!name) { failed.push({ row: rowNum, error: "상품명이 비어있습니다." }); continue }
-      if (!category) { failed.push({ row: rowNum, error: "카테고리가 비어있습니다." }); continue }
-      if (!colorName) { failed.push({ row: rowNum, error: "컬러명이 비어있습니다." }); continue }
-      if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: "가격이 올바르지 않습니다." }); continue }
+    // 시트 이름이 없는 파일은 첫 번째 시트로 처리 (하위 호환)
+    if (!adultWs && !kidsWs) {
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      parseSheet(XLSX.utils.sheet_to_json(ws), [...ADULT_SIZES, ...KIDS_SIZES], "시트1", failed, productGroups)
+    }
 
-      const sizeVariants: { sizeName: string; stock: number }[] = []
-      for (const sizeName of SIZE_COLUMNS) {
-        const val = row[sizeName]
-        if (val === undefined || val === null || val === "") continue
-        const stock = Number(val)
-        sizeVariants.push({ sizeName, stock: isNaN(stock) ? 0 : stock })
-      }
-
-      if (sizeVariants.length === 0) {
-        failed.push({ row: rowNum, error: "사이즈 재고가 입력되지 않았습니다." })
-        continue
-      }
-
-      const description = String(row["설명"] ?? "").trim()
-      const material = String(row["혼용률"] ?? "").trim()
-      const colorCode = String(row["컬러코드"] ?? "").trim()
-
-      if (!productGroups.has(name)) {
-        productGroups.set(name, { code, category, description, material, variants: [] })
-      }
-
-      const group = productGroups.get(name)!
-      if (description && !group.description) group.description = description
-      if (material && !group.material) group.material = material
-
-      for (const { sizeName, stock } of sizeVariants) {
-        group.variants.push({ colorName, colorCode, sizeName, price, stock })
-      }
+    if (productGroups.size === 0 && failed.length === 0) {
+      return NextResponse.json({ error: "엑셀에 데이터가 없습니다." }, { status: 400 })
     }
 
     // 카테고리 처리
@@ -105,6 +128,7 @@ export async function POST(request: NextRequest) {
 
     // 상품 생성
     let success = 0
+    const sizeOrder = [...ADULT_SIZES, ...KIDS_SIZES]
 
     for (const [productName, group] of productGroups) {
       try {
@@ -124,7 +148,7 @@ export async function POST(request: NextRequest) {
         }))
 
         const sizes = [...sizesSet]
-          .sort((a, b) => SIZE_COLUMNS.indexOf(a) - SIZE_COLUMNS.indexOf(b))
+          .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b))
           .map((name, i) => ({ name, sortOrder: i }))
 
         const product = await prisma.product.create({
