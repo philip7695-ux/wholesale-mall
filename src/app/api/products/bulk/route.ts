@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 
+const SIZE_COLUMNS = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "FREE"] as const
+
 interface ExcelRow {
   "상품코드"?: string
   "상품명*": string
@@ -11,9 +13,15 @@ interface ExcelRow {
   "혼용률"?: string
   "컬러명*": string
   "컬러코드"?: string
-  "사이즈*": string
   "가격*": number
-  "재고"?: number
+  "XS"?: number | string
+  "S"?: number | string
+  "M"?: number | string
+  "L"?: number | string
+  "XL"?: number | string
+  "2XL"?: number | string
+  "3XL"?: number | string
+  "FREE"?: number | string
 }
 
 interface FailedRow {
@@ -64,7 +72,6 @@ export async function POST(request: NextRequest) {
       const name = String(row["상품명*"] ?? "").trim()
       const category = String(row["카테고리*"] ?? "").trim()
       const colorName = String(row["컬러명*"] ?? "").trim()
-      const sizeName = String(row["사이즈*"] ?? "").trim()
       const priceRaw = row["가격*"]
       const price = Number(priceRaw)
 
@@ -81,19 +88,28 @@ export async function POST(request: NextRequest) {
         failed.push({ row: rowNum, error: "컬러명이 비어있습니다." })
         continue
       }
-      if (!sizeName) {
-        failed.push({ row: rowNum, error: "사이즈가 비어있습니다." })
-        continue
-      }
       if (isNaN(price) || price <= 0) {
         failed.push({ row: rowNum, error: "가격이 올바르지 않습니다." })
+        continue
+      }
+
+      // Collect sizes from size columns (skip empty cells)
+      const sizeVariants: { sizeName: string; stock: number }[] = []
+      for (const sizeName of SIZE_COLUMNS) {
+        const val = row[sizeName]
+        if (val === undefined || val === null || val === "") continue
+        const stock = Number(val)
+        sizeVariants.push({ sizeName, stock: isNaN(stock) ? 0 : stock })
+      }
+
+      if (sizeVariants.length === 0) {
+        failed.push({ row: rowNum, error: "사이즈 재고가 입력되지 않았습니다." })
         continue
       }
 
       const description = String(row["설명"] ?? "").trim()
       const material = String(row["혼용률"] ?? "").trim()
       const colorCode = String(row["컬러코드"] ?? "").trim()
-      const stock = Number(row["재고"] ?? 0)
 
       if (!productGroups.has(name)) {
         productGroups.set(name, {
@@ -106,21 +122,12 @@ export async function POST(request: NextRequest) {
       }
 
       const group = productGroups.get(name)!
-      // Use description/material from first row that has it
-      if (description && !group.description) {
-        group.description = description
-      }
-      if (material && !group.material) {
-        group.material = material
-      }
+      if (description && !group.description) group.description = description
+      if (material && !group.material) group.material = material
 
-      group.variants.push({
-        colorName,
-        colorCode,
-        sizeName,
-        price,
-        stock: isNaN(stock) ? 0 : stock,
-      })
+      for (const { sizeName, stock } of sizeVariants) {
+        group.variants.push({ colorName, colorCode, sizeName, price, stock })
+      }
     }
 
     // Resolve categories (find or create)
