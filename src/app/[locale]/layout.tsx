@@ -39,7 +39,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages()
 
   return (
-    <IntlProvider messages={messages}>
+    <IntlProvider locale={locale} messages={messages}>
       {children}
     </IntlProvider>
   )

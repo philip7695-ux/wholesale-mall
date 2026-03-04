@@ -34,6 +34,7 @@ export default function LoginPage() {
     setLoading(false)
 
     if (result?.error) {
+      console.error("Login error:", result.error)
       setError(t("loginError"))
     } else {
       // 세션을 가져와서 role 확인 (재시도 포함)
