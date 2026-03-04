@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import * as XLSX from "xlsx"
-
-export const ADULT_SIZES = ["XS", "S", "M", "L", "XL"]
-export const KIDS_SIZES = ["F", "S", "M", "L", "80", "85", "90", "100", "110", "120", "130"]
+import { ADULT_SIZES, KIDS_SIZES } from "@/lib/product-sizes"
 
 const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "설명", "혼용률", "컬러명*", "컬러코드", "가격*"]
 const BASE_COLS = [
@@ -17,7 +15,7 @@ const BASE_COLS = [
   { wch: 10 }, // 가격
 ]
 
-function makeSheet(sizeNames: string[], exampleRows: (string | number)[][]) {
+function makeSheet(sizeNames: readonly string[], exampleRows: (string | number)[][]) {
   const ws = XLSX.utils.aoa_to_sheet([[...BASE_HEADERS, ...sizeNames], ...exampleRows])
   ws["!cols"] = [...BASE_COLS, ...sizeNames.map(() => ({ wch: 6 }))]
   return ws

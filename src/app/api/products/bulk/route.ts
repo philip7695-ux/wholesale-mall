@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { ADULT_SIZES, KIDS_SIZES } from "@/app/api/products/template/route"
+import { ADULT_SIZES, KIDS_SIZES } from "@/lib/product-sizes"
 
 interface FailedRow {
   row: number
@@ -27,7 +27,7 @@ function toSlug(name: string): string {
 
 function parseSheet(
   rows: Record<string, any>[],
-  sizeColumns: string[],
+  sizeColumns: readonly string[],
   sheetLabel: string,
   failed: FailedRow[],
   groups: ProductGroups,
@@ -105,7 +105,6 @@ export async function POST(request: NextRequest) {
       parseSheet(XLSX.utils.sheet_to_json(kidsWs), KIDS_SIZES, "아동복", failed, productGroups)
     }
 
-    // 시트 이름이 없는 파일은 첫 번째 시트로 처리 (하위 호환)
     if (!adultWs && !kidsWs) {
       const ws = wb.Sheets[wb.SheetNames[0]]
       parseSheet(XLSX.utils.sheet_to_json(ws), [...ADULT_SIZES, ...KIDS_SIZES], "시트1", failed, productGroups)
