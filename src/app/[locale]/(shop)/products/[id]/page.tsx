@@ -39,18 +39,18 @@ export default async function ProductDetailPage({
     moq: raw.moq,
     colorMoq: raw.colorMoq,
     category: { name: raw.category.name, slug: raw.category.slug },
-    colors: raw.colors.map((c) => ({
+    colors: raw.colors.map((c: any) => ({
       id: c.id,
       name: c.name,
       colorCode: c.colorCode,
       images: c.images,
       moq: c.moq,
     })),
-    sizes: raw.sizes.map((s) => ({
+    sizes: raw.sizes.map((s: any) => ({
       id: s.id,
       name: s.name,
     })),
-    variants: raw.variants.map((v) => ({
+    variants: raw.variants.map((v: any) => ({
       id: v.id,
       colorId: v.colorId,
       sizeId: v.sizeId,
