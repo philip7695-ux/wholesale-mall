@@ -46,6 +46,9 @@ export async function PUT(
       data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined },
     })
 
+    // Delete cart items referencing this product's variants (to avoid FK constraint)
+    await prisma.cartItem.deleteMany({ where: { variant: { productId: id } } })
+
     // Replace colors, sizes, and variants
     if (colors !== undefined) {
       await prisma.productColor.deleteMany({ where: { productId: id } })
