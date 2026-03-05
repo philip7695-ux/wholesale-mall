@@ -25,7 +25,57 @@ function toSlug(name: string): string {
     .replace(/\s+/g, "-")
 }
 
-function parseSheet(
+// 새 형식: "사이즈*" 컬럼에 쉼표 구분 사이즈 문자열 (예: "XS,S,M,L,XL" 또는 "80,85,90")
+function parseSheetNew(
+  rows: Record<string, any>[],
+  sheetLabel: string,
+  failed: FailedRow[],
+  groups: ProductGroups,
+) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const rowNum = i + 2
+
+    const code = String(row["상품코드"] ?? "").trim()
+    const name = String(row["상품명*"] ?? "").trim()
+    const category = String(row["카테고리*"] ?? "").trim()
+    const colorName = String(row["컬러명*"] ?? "").trim()
+    const price = Number(row["가격*"])
+    const sizeStr = String(row["사이즈*"] ?? "").trim()
+    const stock = Number(row["재고"] ?? 0) || 0
+
+    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
+    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
+    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
+    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
+
+    const sizeNames = sizeStr.split(",").map((s) => s.trim()).filter(Boolean)
+    if (sizeNames.length === 0) {
+      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈가 비어있습니다. (예: XS,S,M,L,XL 또는 80,85,90)` })
+      continue
+    }
+
+    const description = String(row["설명"] ?? "").trim()
+    const material = String(row["혼용률"] ?? "").trim()
+    const rawColorCode = String(row["컬러코드"] ?? "").trim()
+    const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
+
+    if (!groups.has(name)) {
+      groups.set(name, { code, category, description, material, variants: [] })
+    }
+
+    const group = groups.get(name)!
+    if (description && !group.description) group.description = description
+    if (material && !group.material) group.material = material
+
+    for (const sizeName of sizeNames) {
+      group.variants.push({ colorName, colorCode, sizeName, price, stock })
+    }
+  }
+}
+
+// 구 형식: 각 사이즈가 별도 컬럼 (하위 호환)
+function parseSheetLegacy(
   rows: Record<string, any>[],
   sizeColumns: readonly string[],
   sheetLabel: string,
@@ -63,7 +113,6 @@ function parseSheet(
     const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
     const rawColorCode = String(row["컬러코드"] ?? "").trim()
-    // Ensure colorCode is a valid CSS hex color (#rrggbb or #rgb)
     const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
 
     if (!groups.has(name)) {
@@ -97,20 +146,24 @@ export async function POST(request: NextRequest) {
     const failed: FailedRow[] = []
     const productGroups: ProductGroups = new Map()
 
-    const adultWs = wb.Sheets["성인복"]
-    const kidsWs = wb.Sheets["아동복"]
+    // 새 형식(사이즈* 컬럼) vs 구 형식(사이즈별 컬럼) 자동 감지
+    const sheetsToProcess = wb.SheetNames.length > 0 ? wb.SheetNames : []
 
-    if (adultWs) {
-      parseSheet(XLSX.utils.sheet_to_json(adultWs), ADULT_SIZES, "성인복", failed, productGroups)
-    }
-    if (kidsWs) {
-      parseSheet(XLSX.utils.sheet_to_json(kidsWs), KIDS_SIZES, "아동복", failed, productGroups)
-    }
+    for (const sheetName of sheetsToProcess) {
+      const ws = wb.Sheets[sheetName]
+      if (!ws) continue
+      const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
+      if (rows.length === 0) continue
 
-    if (!adultWs && !kidsWs) {
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const allSizes = [...new Set([...ADULT_SIZES, ...KIDS_SIZES])]
-      parseSheet(XLSX.utils.sheet_to_json(ws), allSizes, "시트1", failed, productGroups)
+      // 첫 행의 키를 보고 새 형식인지 구 형식인지 판단
+      const firstRow = rows[0]
+      if ("사이즈*" in firstRow) {
+        parseSheetNew(rows, sheetName, failed, productGroups)
+      } else {
+        // 구 형식: 시트명으로 성인복/아동복 구분
+        const sizeColumns = sheetName === "아동복" ? KIDS_SIZES : ADULT_SIZES
+        parseSheetLegacy(rows, sizeColumns, sheetName, failed, productGroups)
+      }
     }
 
     if (productGroups.size === 0 && failed.length === 0) {
