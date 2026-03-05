@@ -65,7 +65,7 @@ export const authConfig: NextAuthConfig = {
 
       // Admin routes require ADMIN role
       if (strippedPath.startsWith("/admin")) {
-        return auth.user.role === "ADMIN"
+        return auth.user?.role === "ADMIN"
       }
 
       return true
