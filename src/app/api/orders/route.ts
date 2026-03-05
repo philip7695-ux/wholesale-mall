@@ -7,23 +7,28 @@ import { GRADE_DISCOUNT } from "@/lib/grade"
 import { checkMoq } from "@/lib/moq"
 
 export async function GET() {
-  const session = await auth()
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await auth()
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const where = session.user.role === "ADMIN" ? {} : { userId: session.user.id }
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: true,
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    return NextResponse.json(orders)
+  } catch (error) {
+    console.error("[GET /api/orders] error:", error)
+    return NextResponse.json({ error: "주문 목록을 불러오는 중 오류가 발생했습니다." }, { status: 500 })
   }
-
-  const where = session.user.role === "ADMIN" ? {} : { userId: session.user.id }
-
-  const orders = await prisma.order.findMany({
-    where,
-    include: {
-      user: { select: { name: true, email: true } },
-      items: true,
-    },
-    orderBy: { createdAt: "desc" },
-  })
-
-  return NextResponse.json(orders)
 }
 
 export async function POST(request: Request) {
