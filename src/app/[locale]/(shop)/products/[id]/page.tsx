@@ -10,15 +10,21 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const raw = await prisma.product.findUnique({
-    where: { id, isActive: true },
-    include: {
-      category: true,
-      colors: { orderBy: { sortOrder: "asc" } },
-      sizes: { orderBy: { sortOrder: "asc" } },
-      variants: { include: { color: true, size: true } },
-    },
-  })
+  let raw: any = null
+  try {
+    raw = await prisma.product.findUnique({
+      where: { id, isActive: true },
+      include: {
+        category: true,
+        colors: { orderBy: { sortOrder: "asc" } },
+        sizes: { orderBy: { sortOrder: "asc" } },
+        variants: { include: { color: true, size: true } },
+      },
+    })
+  } catch (err) {
+    console.error("[ProductDetailPage] DB error:", err)
+    throw err
+  }
 
   if (!raw) notFound()
 

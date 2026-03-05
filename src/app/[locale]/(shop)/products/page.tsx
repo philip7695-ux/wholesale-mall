@@ -31,25 +31,39 @@ export default async function ProductsPage({
   if (search) where.name = { contains: search, mode: "insensitive" }
 
   const { rate } = await getExchangeRate(locale)
-  const session = await auth()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let session: any = null
+  try {
+    session = await auth()
+  } catch (err) {
+    console.error("[ProductsPage] auth() error:", err)
+  }
   const buyerGrade = session?.user?.buyerGrade || "BRONZE"
   const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
 
-  const [products, categories, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: {
-        category: true,
-        colors: { orderBy: { sortOrder: "asc" } },
-        variants: true,
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.product.count({ where }),
-  ])
+  let products: any[] = []
+  let categories: any[] = []
+  let total = 0
+  try {
+    ;[products, categories, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          colors: { orderBy: { sortOrder: "asc" } },
+          variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+      prisma.product.count({ where }),
+    ])
+  } catch (err) {
+    console.error("[ProductsPage] DB error:", err)
+    throw err
+  }
 
   const totalPages = Math.ceil(total / limit)
 
@@ -57,7 +71,11 @@ export default async function ProductsPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t("productsTitle")}</h1>
 
-      <ProductSearch categories={categories} currentCategory={category} currentSearch={search} />
+      <ProductSearch
+        categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
+        currentCategory={category}
+        currentSearch={search}
+      />
 
       {products.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">{t("noProducts")}</p>
