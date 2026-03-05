@@ -1,5 +1,4 @@
 import React from "react"
-import path from "path"
 import {
   Document,
   Page,
@@ -11,9 +10,11 @@ import {
 } from "@react-pdf/renderer"
 import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-config"
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://biibws.com"
+
 Font.register({
   family: "NotoSansKR",
-  src: path.join(process.cwd(), "public/fonts/NotoSansKR-Regular.ttf"),
+  src: `${BASE_URL}/fonts/NotoSansKR-Regular.ttf`,
 })
 
 export interface InvoiceItem {

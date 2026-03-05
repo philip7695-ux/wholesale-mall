@@ -110,12 +110,16 @@ export async function GET(
     formatAmount,
   }
 
-  const pdfBuffer = await buildInvoicePdf(invoiceData)
-
-  return new NextResponse(new Uint8Array(pdfBuffer), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=invoice-${invoiceNumber}.pdf`,
-    },
-  })
+  try {
+    const pdfBuffer = await buildInvoicePdf(invoiceData)
+    return new NextResponse(new Uint8Array(pdfBuffer), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename=invoice-${invoiceNumber}.pdf`,
+      },
+    })
+  } catch (error) {
+    console.error("[invoice] PDF generation error:", error)
+    return NextResponse.json({ error: "PDF 생성 중 오류가 발생했습니다." }, { status: 500 })
+  }
 }
