@@ -14,11 +14,12 @@ import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-
 
 function registerFont() {
   const base = path.join(process.cwd(), "public/fonts")
+  // NanumGothic Korean WOFF contains both Korean and Latin glyphs
   Font.register({
-    family: "NotoSansKR",
+    family: "NanumGothic",
     fonts: [
-      { src: path.join(base, "NotoSansKR-Latin.woff2") },
-      { src: path.join(base, "NotoSansKR-Regular.woff2") },
+      { src: path.join(base, "NanumGothic-Latin.woff") },
+      { src: path.join(base, "NanumGothic-Korean.woff") },
     ],
   })
 }
@@ -56,7 +57,7 @@ export interface InvoiceData {
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "NotoSansKR",
+    fontFamily: "NanumGothic",
     fontSize: 9,
     padding: 40,
     color: "#1a1a1a",
