@@ -110,15 +110,6 @@ export async function GET(
     formatAmount,
   }
 
-  // DEBUG: return data as JSON to diagnose blank invoice
-  return NextResponse.json({
-    invoiceNumber,
-    buyer: invoiceData.buyer,
-    items: invoiceData.items,
-    totalAmountKRW: invoiceData.totalAmountKRW,
-    currency: invoiceData.currency,
-  })
-
   try {
     const pdfBuffer = await buildInvoicePdf(invoiceData)
     return new NextResponse(new Uint8Array(pdfBuffer), {

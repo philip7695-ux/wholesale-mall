@@ -14,15 +14,17 @@ import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-
 
 function registerFont() {
   const base = path.join(process.cwd(), "public/fonts")
-  const latinBase64 = fs.readFileSync(path.join(base, "NotoSansKR-Latin.woff2")).toString("base64")
-  const koreanBase64 = fs.readFileSync(path.join(base, "NotoSansKR-Regular.woff2")).toString("base64")
-  Font.register({
-    family: "NotoSansKR",
-    fonts: [
-      { src: `data:font/woff2;base64,${latinBase64}` },
-      { src: `data:font/woff2;base64,${koreanBase64}` },
-    ],
-  })
+  const latinSrc = path.join(base, "NotoSansKR-Latin.woff2")
+  const koreanSrc = path.join(base, "NotoSansKR-Regular.woff2")
+
+  // Write to /tmp so react-pdf can load via file path (data: URLs not supported)
+  const tmpLatin = "/tmp/NotoSansKR-Latin.woff2"
+  const tmpKorean = "/tmp/NotoSansKR-Korean.woff2"
+  if (!fs.existsSync(tmpLatin)) fs.writeFileSync(tmpLatin, fs.readFileSync(latinSrc))
+  if (!fs.existsSync(tmpKorean)) fs.writeFileSync(tmpKorean, fs.readFileSync(koreanSrc))
+
+  Font.register({ family: "NotoSansKR-Latin", src: tmpLatin })
+  Font.register({ family: "NotoSansKR", src: tmpKorean })
 }
 
 registerFont()
@@ -58,7 +60,7 @@ export interface InvoiceData {
 
 const styles = StyleSheet.create({
   page: {
-    // fontFamily: "NotoSansKR",  // temp disabled to test if font is the issue
+    fontFamily: "NotoSansKR",
     fontSize: 9,
     padding: 40,
     color: "#1a1a1a",
