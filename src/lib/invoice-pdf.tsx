@@ -1,4 +1,6 @@
 import React from "react"
+import fs from "fs"
+import path from "path"
 import {
   Document,
   Page,
@@ -10,12 +12,16 @@ import {
 } from "@react-pdf/renderer"
 import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-config"
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://biibws.com"
+function registerFont() {
+  const fontPath = path.join(process.cwd(), "public/fonts/NotoSansKR-Regular.ttf")
+  const fontBase64 = fs.readFileSync(fontPath).toString("base64")
+  Font.register({
+    family: "NotoSansKR",
+    src: `data:font/truetype;base64,${fontBase64}`,
+  })
+}
 
-Font.register({
-  family: "NotoSansKR",
-  src: `${BASE_URL}/fonts/NotoSansKR-Regular.ttf`,
-})
+registerFont()
 
 export interface InvoiceItem {
   productName: string
