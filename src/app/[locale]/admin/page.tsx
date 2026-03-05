@@ -48,115 +48,134 @@ export default async function AdminDashboard() {
 
   const notCancelled = { status: { not: "CANCELLED" as const } }
 
-  const [
-    productCount,
-    orderCount,
-    memberCount,
-    todayRevenue,
-    weekRevenue,
-    monthRevenue,
-    ordersByStatus,
-    pendingPayments,
-    topProducts,
-    pendingApproval,
-    gradeDistribution,
-    recentBuyers,
-    recentOrders,
-    wiseConfig,
-    monthlyRevenueRaw,
-  ] = await Promise.all([
-    // 기존 카운트
-    prisma.product.count(),
-    prisma.order.count(),
-    prisma.user.count({ where: { role: "BUYER" } }),
+  let productCount = 0, orderCount = 0, memberCount = 0
+  let todayRevenue: any = { _sum: { totalAmount: 0 } }
+  let weekRevenue: any = { _sum: { totalAmount: 0 } }
+  let monthRevenue: any = { _sum: { totalAmount: 0 } }
+  let ordersByStatus: any[] = []
+  let pendingPayments = 0
+  let topProducts: any[] = []
+  let pendingApproval = 0
+  let gradeDistribution: any[] = []
+  let recentBuyers: any[] = []
+  let recentOrders: any[] = []
+  let wiseConfig: any = null
+  let monthlyRevenueRaw: { month: string; revenue: bigint }[] = []
 
-    // 매출 현황 (CANCELLED 제외)
-    prisma.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { ...notCancelled, createdAt: { gte: todayStart } },
-    }),
-    prisma.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { ...notCancelled, createdAt: { gte: weekStart } },
-    }),
-    prisma.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { ...notCancelled, createdAt: { gte: monthStart } },
-    }),
+  try {
+    ;[
+      productCount,
+      orderCount,
+      memberCount,
+      todayRevenue,
+      weekRevenue,
+      monthRevenue,
+      ordersByStatus,
+      pendingPayments,
+      topProducts,
+      pendingApproval,
+      gradeDistribution,
+      recentBuyers,
+      recentOrders,
+      wiseConfig,
+      monthlyRevenueRaw,
+    ] = await Promise.all([
+      // 기존 카운트
+      prisma.product.count(),
+      prisma.order.count(),
+      prisma.user.count({ where: { role: "BUYER" } }),
 
-    // 주문 상태별 건수
-    prisma.order.groupBy({
-      by: ["status"],
-      _count: true,
-    }),
+      // 매출 현황 (CANCELLED 제외)
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { ...notCancelled, createdAt: { gte: todayStart } },
+      }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { ...notCancelled, createdAt: { gte: weekStart } },
+      }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { ...notCancelled, createdAt: { gte: monthStart } },
+      }),
 
-    // 입금 확인 대기
-    prisma.paymentConfirmation.count({ where: { status: "PENDING" } }),
+      // 주문 상태별 건수
+      prisma.order.groupBy({
+        by: ["status"],
+        _count: true,
+      }),
 
-    // 인기 상품 Top 5 (최근 30일, CANCELLED 제외)
-    prisma.orderItem.groupBy({
-      by: ["productName"],
-      _sum: { quantity: true },
-      where: {
-        order: {
-          createdAt: { gte: thirtyDaysAgo },
-          status: { not: "CANCELLED" },
+      // 입금 확인 대기
+      prisma.paymentConfirmation.count({ where: { status: "PENDING" } }),
+
+      // 인기 상품 Top 5 (최근 30일, CANCELLED 제외)
+      prisma.orderItem.groupBy({
+        by: ["productName"],
+        _sum: { quantity: true },
+        where: {
+          order: {
+            createdAt: { gte: thirtyDaysAgo },
+            status: { not: "CANCELLED" },
+          },
         },
-      },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: 5,
-    }),
+        orderBy: { _sum: { quantity: "desc" } },
+        take: 5,
+      }),
 
-    // 바이어 승인 대기
-    prisma.user.count({ where: { role: "BUYER", approvalStatus: "PENDING" } }),
+      // 바이어 승인 대기
+      prisma.user.count({ where: { role: "BUYER", approvalStatus: "PENDING" } }),
 
-    // 등급별 분포
-    prisma.user.groupBy({
-      by: ["buyerGrade"],
-      _count: true,
-      where: { role: "BUYER", approvalStatus: "APPROVED" },
-    }),
+      // 등급별 분포
+      prisma.user.groupBy({
+        by: ["buyerGrade"],
+        _count: true,
+        where: { role: "BUYER", approvalStatus: "APPROVED" },
+      }),
 
-    // 최근 활동 바이어 (7일 내 주문)
-    prisma.user.findMany({
-      where: {
-        role: "BUYER",
-        orders: { some: { createdAt: { gte: sevenDaysAgo } } },
-      },
-      select: {
-        id: true,
-        name: true,
-        businessName: true,
-        _count: { select: { orders: true } },
-      },
-      take: 5,
-      orderBy: { orders: { _count: "desc" } },
-    }),
+      // 최근 활동 바이어 (7일 내 주문)
+      prisma.user.findMany({
+        where: {
+          role: "BUYER",
+          orders: { some: { createdAt: { gte: sevenDaysAgo } } },
+        },
+        select: {
+          id: true,
+          name: true,
+          businessName: true,
+          _count: { select: { orders: true } },
+        },
+        take: 5,
+        orderBy: { orders: { _count: "desc" } },
+      }),
 
-    // 최근 주문 10건
-    prisma.order.findMany({
-      take: 10,
-      orderBy: { createdAt: "desc" },
-      include: { user: { select: { name: true, email: true, businessName: true } } },
-    }),
+      // 최근 주문 10건
+      prisma.order.findMany({
+        take: 10,
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { name: true, email: true, businessName: true } } },
+      }),
 
-    // Wise 설정 존재 여부
-    prisma.wiseConfig.findFirst({ select: { id: true } }),
+      // Wise 설정 존재 여부
+      prisma.wiseConfig.findFirst({ select: { id: true } }),
 
-    // 월별 매출 (최근 6개월) - raw SQL
-    prisma.$queryRaw<{ month: string; revenue: bigint }[]>(
-      Prisma.sql`
-        SELECT
-          to_char("createdAt", 'YYYY-MM') as month,
-          COALESCE(SUM("totalAmount"), 0) as revenue
-        FROM "Order"
-        WHERE "status" != 'CANCELLED'
-          AND "createdAt" >= ${sixMonthsAgo}
-        GROUP BY to_char("createdAt", 'YYYY-MM')
-        ORDER BY month ASC
-      `
-    ),
-  ])
+      // 월별 매출 (최근 6개월) - raw SQL
+      prisma.$queryRaw<{ month: string; revenue: bigint }[]>(
+        Prisma.sql`
+          SELECT
+            to_char("createdAt", 'YYYY-MM') as month,
+            COALESCE(SUM("totalAmount"), 0) as revenue
+          FROM "Order"
+          WHERE "status" != 'CANCELLED'
+            AND "createdAt" >= ${sixMonthsAgo}
+          GROUP BY to_char("createdAt", 'YYYY-MM')
+          ORDER BY month ASC
+        `
+      ),
+    ])
+  } catch (err) {
+    console.error("[AdminDashboard] DB error:", err)
+    throw err
+  }
 
   // 월별 매출 데이터 가공
   const monthlyRevenue = monthlyRevenueRaw.map((row) => ({
