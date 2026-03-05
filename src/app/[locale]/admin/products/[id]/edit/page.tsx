@@ -12,18 +12,25 @@ export default async function EditProductPage({
 }) {
   const t = await getTranslations("admin")
   const { id } = await params
-  const [product, categories] = await Promise.all([
-    prisma.product.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        colors: { orderBy: { sortOrder: "asc" } },
-        sizes: { orderBy: { sortOrder: "asc" } },
-        variants: { include: { color: true, size: true } },
-      },
-    }),
-    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-  ])
+
+  let product, categories
+  try {
+    ;[product, categories] = await Promise.all([
+      prisma.product.findUnique({
+        where: { id },
+        include: {
+          category: true,
+          colors: { orderBy: { sortOrder: "asc" } },
+          sizes: { orderBy: { sortOrder: "asc" } },
+          variants: { include: { color: true, size: true } },
+        },
+      }),
+      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    ])
+  } catch (err) {
+    console.error("[EditProductPage] DB error:", err)
+    throw err
+  }
 
   if (!product) notFound()
 
