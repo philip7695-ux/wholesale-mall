@@ -13,11 +13,15 @@ import {
 import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-config"
 
 function registerFont() {
-  const fontPath = path.join(process.cwd(), "public/fonts/NotoSansKR-Regular.woff2")
-  const fontBase64 = fs.readFileSync(fontPath).toString("base64")
+  const base = path.join(process.cwd(), "public/fonts")
+  const latinBase64 = fs.readFileSync(path.join(base, "NotoSansKR-Latin.woff2")).toString("base64")
+  const koreanBase64 = fs.readFileSync(path.join(base, "NotoSansKR-Regular.woff2")).toString("base64")
   Font.register({
     family: "NotoSansKR",
-    src: `data:font/woff2;base64,${fontBase64}`,
+    fonts: [
+      { src: `data:font/woff2;base64,${latinBase64}` },
+      { src: `data:font/woff2;base64,${koreanBase64}` },
+    ],
   })
 }
 
