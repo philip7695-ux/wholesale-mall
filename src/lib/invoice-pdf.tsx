@@ -14,13 +14,10 @@ import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-
 
 function registerFont() {
   const base = path.join(process.cwd(), "public/fonts")
-  // NanumGothic Korean WOFF contains both Korean and Latin glyphs
+  // NanumGothic-Korean.woff contains both Korean and Latin glyphs
   Font.register({
     family: "NanumGothic",
-    fonts: [
-      { src: path.join(base, "NanumGothic-Latin.woff") },
-      { src: path.join(base, "NanumGothic-Korean.woff") },
-    ],
+    src: path.join(base, "NanumGothic-Korean.woff"),
   })
 }
 
