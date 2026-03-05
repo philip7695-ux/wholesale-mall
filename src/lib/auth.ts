@@ -21,14 +21,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             where: { email: credentials.email as string },
           })
 
-          if (!user) return null
+          if (!user) {
+            console.error("[Auth] user not found:", credentials.email)
+            return null
+          }
 
           const isValid = await compare(
             credentials.password as string,
             user.password,
           )
 
-          if (!isValid) return null
+          if (!isValid) {
+            console.error("[Auth] invalid password for:", credentials.email)
+            return null
+          }
 
           return {
             id: user.id,
@@ -39,7 +45,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             buyerGrade: user.buyerGrade,
           }
         } catch (error) {
-          console.error("[Auth] authorize error:", error)
+          console.error("[Auth] DB error:", error)
           return null
         }
       },
