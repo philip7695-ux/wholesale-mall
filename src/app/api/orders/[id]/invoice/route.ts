@@ -70,8 +70,23 @@ export async function GET(
   const currency = order.currency || "KRW"
   const exchangeRate = order.exchangeRate || 1
 
-  const formatAmount = (amountKRW: number) =>
-    formatCurrency(amountKRW, currency, exchangeRate)
+  // PDF 폰트에 특수 통화 기호 글리프가 없으므로 ASCII 안전 기호로 매핑
+  const CURRENCY_SYMBOL: Record<string, string> = {
+    KRW: "KRW",
+    USD: "USD",
+    CNY: "CNY",
+    JPY: "JPY",
+  }
+  const formatAmount = (amountKRW: number) => {
+    const converted = currency === "KRW" || exchangeRate <= 1
+      ? amountKRW
+      : Math.round(amountKRW / exchangeRate * 100) / 100
+    const formatted = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: currency === "KRW" || currency === "JPY" ? 0 : 2,
+      maximumFractionDigits: currency === "KRW" || currency === "JPY" ? 0 : 2,
+    }).format(converted)
+    return `${CURRENCY_SYMBOL[currency] ?? currency} ${formatted}`
+  }
 
   const subtotalKRW = order.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
