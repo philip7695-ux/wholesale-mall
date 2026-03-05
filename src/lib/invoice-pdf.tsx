@@ -275,7 +275,7 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
             <Text style={styles.colNo}>{i + 1}</Text>
             <Text style={styles.colProduct}>{item.productName}</Text>
             <Text style={styles.colSpec}>
-              {item.colorName} / {item.sizeName}
+              {item.colorName} - {item.sizeName}
             </Text>
             <Text style={styles.colQty}>{item.quantity}</Text>
             <Text style={styles.colPrice}>{formatAmount(item.unitPrice)}</Text>
