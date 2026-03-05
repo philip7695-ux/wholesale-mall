@@ -5,7 +5,7 @@ import { routing } from "@/i18n/routing"
 import { NextRequest, NextResponse } from "next/server"
 
 const intlMiddleware = createIntlMiddleware(routing)
-const { auth } = NextAuth(authConfig)
+const { auth } = NextAuth({ ...authConfig, trustHost: true })
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
