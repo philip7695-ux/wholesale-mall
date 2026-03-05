@@ -14,17 +14,13 @@ import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-
 
 function registerFont() {
   const base = path.join(process.cwd(), "public/fonts")
-  const latinSrc = path.join(base, "NotoSansKR-Latin.woff2")
-  const koreanSrc = path.join(base, "NotoSansKR-Regular.woff2")
-
-  // Write to /tmp so react-pdf can load via file path (data: URLs not supported)
-  const tmpLatin = "/tmp/NotoSansKR-Latin.woff2"
-  const tmpKorean = "/tmp/NotoSansKR-Korean.woff2"
-  if (!fs.existsSync(tmpLatin)) fs.writeFileSync(tmpLatin, fs.readFileSync(latinSrc))
-  if (!fs.existsSync(tmpKorean)) fs.writeFileSync(tmpKorean, fs.readFileSync(koreanSrc))
-
-  Font.register({ family: "NotoSansKR-Latin", src: tmpLatin })
-  Font.register({ family: "NotoSansKR", src: tmpKorean })
+  Font.register({
+    family: "NotoSansKR",
+    fonts: [
+      { src: path.join(base, "NotoSansKR-Latin.woff2") },
+      { src: path.join(base, "NotoSansKR-Regular.woff2") },
+    ],
+  })
 }
 
 registerFont()

@@ -123,7 +123,8 @@ export async function GET(
     return NextResponse.json({
       error: "PDF 생성 중 오류가 발생했습니다.",
       detail: error?.message,
-      stack: error?.stack?.split("\n").slice(0, 4),
+      code: error?.code,
+      stack: error?.stack?.split("\n").slice(0, 5),
     }, { status: 500 })
   }
 }
