@@ -58,7 +58,7 @@ export interface InvoiceData {
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "NotoSansKR",
+    // fontFamily: "NotoSansKR",  // temp disabled to test if font is the issue
     fontSize: 9,
     padding: 40,
     color: "#1a1a1a",

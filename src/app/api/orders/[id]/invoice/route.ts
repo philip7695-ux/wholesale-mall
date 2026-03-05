@@ -110,6 +110,13 @@ export async function GET(
     formatAmount,
   }
 
+  console.log("[invoice] data:", JSON.stringify({
+    invoiceNumber,
+    buyer: invoiceData.buyer,
+    itemCount: invoiceData.items.length,
+    totalAmountKRW: invoiceData.totalAmountKRW,
+  }))
+
   try {
     const pdfBuffer = await buildInvoicePdf(invoiceData)
     return new NextResponse(new Uint8Array(pdfBuffer), {
