@@ -118,8 +118,12 @@ export async function GET(
         "Content-Disposition": `attachment; filename=invoice-${invoiceNumber}.pdf`,
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[invoice] PDF generation error:", error)
-    return NextResponse.json({ error: "PDF 생성 중 오류가 발생했습니다." }, { status: 500 })
+    return NextResponse.json({
+      error: "PDF 생성 중 오류가 발생했습니다.",
+      detail: error?.message,
+      stack: error?.stack?.split("\n").slice(0, 4),
+    }, { status: 500 })
   }
 }
