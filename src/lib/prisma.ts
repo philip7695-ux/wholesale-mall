@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import { Pool } from "pg"
 
 // 스키마 변경 시 이 값을 바꾸면 캐시된 클라이언트가 재생성됨
-const SCHEMA_VERSION = 10
+const SCHEMA_VERSION = 11
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined

@@ -28,7 +28,10 @@ export default async function ProductsPage({
 
   const where: Record<string, unknown> = { isActive: true }
   if (category) where.category = { slug: category }
-  if (search) where.name = { contains: search, mode: "insensitive" }
+  if (search) where.OR = [
+    { name: { contains: search, mode: "insensitive" } },
+    { code: { contains: search, mode: "insensitive" } },
+  ]
 
   const { rate } = await getExchangeRate(locale)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

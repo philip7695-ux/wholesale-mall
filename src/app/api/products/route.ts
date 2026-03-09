@@ -11,7 +11,10 @@ export async function GET(request: NextRequest) {
 
   const where: Record<string, unknown> = { isActive: true }
   if (category) where.category = { slug: category }
-  if (search) where.name = { contains: search, mode: "insensitive" }
+  if (search) where.OR = [
+    { name: { contains: search, mode: "insensitive" } },
+    { code: { contains: search, mode: "insensitive" } },
+  ]
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
