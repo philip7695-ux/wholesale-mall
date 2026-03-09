@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server"
-import { getGradeConfig } from "@/lib/grade"
+import { getGradeConfig } from "@/lib/grade.server"
 import { GradeConfigForm } from "@/components/admin/grade-config-form"
 
 export const dynamic = "force-dynamic"
