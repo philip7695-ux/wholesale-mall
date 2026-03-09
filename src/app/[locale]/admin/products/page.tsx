@@ -50,41 +50,50 @@ export default async function AdminProductsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product: any) => {
             const minPrice = product.variants.length > 0
               ? Math.min(...product.variants.map((v: any) => v.price))
               : 0
             return (
-              <Card key={product.id}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="flex items-center gap-3">
-                    {product.thumbnail && (
-                      <img
-                        src={product.thumbnail}
-                        alt={product.name}
-                        className="h-12 w-12 rounded object-cover"
-                      />
-                    )}
-                    <div>
-                      <CardTitle className="text-base">{product.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {translateCategory(product.category.slug, tCat)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={product.isActive ? "default" : "secondary"}>
+              <Card key={product.id} className="flex flex-col">
+                {product.thumbnail ? (
+                  <div className="relative aspect-square w-full overflow-hidden rounded-t-lg">
+                    <img
+                      src={product.thumbnail}
+                      alt={product.name}
+                      className="h-full w-full object-cover"
+                    />
+                    <Badge
+                      variant={product.isActive ? "default" : "secondary"}
+                      className="absolute top-2 right-2"
+                    >
                       {product.isActive ? t("active") : t("inactive")}
                     </Badge>
-                    <span className="text-sm font-medium">
-                      {minPrice > 0 ? formatPrice(minPrice, locale, rate) : "-"}~
-                    </span>
                   </div>
+                ) : (
+                  <div className="relative flex aspect-square w-full items-center justify-center rounded-t-lg bg-muted">
+                    <span className="text-muted-foreground text-sm">{t("noImage") || "No Image"}</span>
+                    <Badge
+                      variant={product.isActive ? "default" : "secondary"}
+                      className="absolute top-2 right-2"
+                    >
+                      {product.isActive ? t("active") : t("inactive")}
+                    </Badge>
+                  </div>
+                )}
+                <CardHeader className="pb-2 pt-3">
+                  <CardTitle className="text-sm font-semibold line-clamp-1">{product.name}</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    {translateCategory(product.category.slug, tCat)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
+                  </p>
+                  <p className="text-sm font-medium mt-1">
+                    {minPrice > 0 ? formatPrice(minPrice, locale, rate) : "-"}~
+                  </p>
                 </CardHeader>
-                <CardContent className="flex justify-end gap-2 pt-0">
-                  <Link href={`/admin/products/${product.id}/edit`}>
-                    <Button variant="outline" size="sm">{tc("edit")}</Button>
+                <CardContent className="mt-auto flex gap-2 pt-0">
+                  <Link href={`/admin/products/${product.id}/edit`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full">{tc("edit")}</Button>
                   </Link>
                   <DeleteProductButton productId={product.id} productName={product.name} />
                 </CardContent>
