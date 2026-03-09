@@ -262,3 +262,11 @@ model WiseWebhookLog {
   error      String?
   createdAt  DateTime @default(now())
 }
+
+model GradeConfig {
+  id           String @id @default(cuid())
+  grade        String @unique // BRONZE, SILVER, GOLD, VIP
+  discountRate Float  @default(0)
+  moqRate      Float  @default(1.0)
+  threshold    Int    @default(0) // USD 승급 기준 (0=해당없음)
+}

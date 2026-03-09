@@ -12,6 +12,7 @@ import {
   Users,
   ArrowLeftRight,
   Landmark,
+  Crown,
   ExternalLink,
   LogOut,
 } from "lucide-react"
@@ -28,6 +29,7 @@ export function AdminSidebar() {
     { href: "/admin/orders", label: t("orderMgmt"), icon: ShoppingCart },
     { href: "/admin/members", label: t("memberMgmt"), icon: Users },
     { href: "/admin/settings/exchange-rates", label: t("exchangeRates"), icon: ArrowLeftRight },
+    { href: "/admin/settings/grades", label: t("gradeSettings"), icon: Crown },
     { href: "/admin/settings/wise", label: t("wiseSettings"), icon: Landmark },
   ]
 

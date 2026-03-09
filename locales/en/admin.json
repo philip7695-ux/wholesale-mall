@@ -23,6 +23,7 @@
   "statusDelivered": "Delivered",
   "statusCancelled": "Cancelled",
   "addProduct": "Add Product",
+  "exportExcel": "Export Excel",
   "editProduct": "Edit Product",
   "noProducts": "No products registered.",
   "colors": " colors",
@@ -291,5 +292,13 @@
   "wiseUnmatchedDesc": "Deposit notifications that could not be matched to an invoice. Manual review required.",
   "wiseWebhookLog": "Delivery ID",
   "wiseNoLogs": "No unmatched logs.",
-  "wiseAutoConfirmed": "Wise auto-confirmed"
+  "wiseAutoConfirmed": "Wise auto-confirmed",
+  "gradeSettings": "Grade Settings",
+  "gradeSettingsTitle": "Grade Discount / MOQ / Promotion Criteria",
+  "gradeSettingsLabel": "Grade Configuration",
+  "gradeDiscount": "Discount Rate",
+  "gradeMoqRate": "MOQ Rate",
+  "gradeThreshold": "Promotion Threshold (USD)",
+  "gradeSettingsSaved": "Grade settings saved.",
+  "gradeSettingsSaveFail": "Failed to save grade settings."
 }

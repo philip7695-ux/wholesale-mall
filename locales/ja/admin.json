@@ -23,6 +23,7 @@
   "statusDelivered": "完了",
   "statusCancelled": "キャンセル",
   "addProduct": "商品登録",
+  "exportExcel": "Excel出力",
   "editProduct": "商品編集",
   "noProducts": "登録された商品がありません。",
   "colors": "色",
@@ -291,5 +292,13 @@
   "wiseUnmatchedDesc": "請求書番号とマッチしなかった入金通知です。手動確認が必要です。",
   "wiseWebhookLog": "Delivery ID",
   "wiseNoLogs": "未マッチのログはありません。",
-  "wiseAutoConfirmed": "Wise 自動入金確認"
+  "wiseAutoConfirmed": "Wise 自動入金確認",
+  "gradeSettings": "ランク設定",
+  "gradeSettingsTitle": "ランク別割引率/MOQ/昇格基準",
+  "gradeSettingsLabel": "ランク設定",
+  "gradeDiscount": "割引率",
+  "gradeMoqRate": "MOQ比率",
+  "gradeThreshold": "昇格基準 (USD)",
+  "gradeSettingsSaved": "ランク設定が保存されました。",
+  "gradeSettingsSaveFail": "ランク設定の保存に失敗しました。"
 }

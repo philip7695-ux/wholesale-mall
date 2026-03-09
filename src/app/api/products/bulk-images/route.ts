@@ -19,18 +19,22 @@ interface ParsedFile {
 function parseFileName(fileName: string): { code: string; order: number } | null {
   // Remove extension
   const nameWithoutExt = fileName.replace(/\.[^.]+$/, "")
+  if (!nameWithoutExt) return null
+
   // Split by _ and check if last part is a number
   const parts = nameWithoutExt.split("_")
-  if (parts.length < 2) return null
 
-  const orderStr = parts[parts.length - 1]
-  const order = parseInt(orderStr, 10)
-  if (isNaN(order)) return null
+  if (parts.length >= 2) {
+    const orderStr = parts[parts.length - 1]
+    const order = parseInt(orderStr, 10)
+    if (!isNaN(order)) {
+      const code = parts.slice(0, -1).join("_")
+      if (code) return { code, order }
+    }
+  }
 
-  const code = parts.slice(0, -1).join("_")
-  if (!code) return null
-
-  return { code, order }
+  // No _order suffix — treat entire name as product code, order = 1
+  return { code: nameWithoutExt, order: 1 }
 }
 
 export async function POST(request: NextRequest) {
@@ -68,17 +72,18 @@ export async function POST(request: NextRequest) {
       codeGroups.set(p.code, group)
     }
 
-    // 3. Resolve product codes to products
+    // 3. Resolve product codes to products (case-insensitive)
     const codes = [...codeGroups.keys()]
     const products = await prisma.product.findMany({
-      where: { code: { in: codes } },
+      where: { code: { in: codes, mode: "insensitive" } },
       select: { id: true, code: true, images: true, thumbnail: true },
     })
-    const productMap = new Map(products.map((p) => [p.code!, p]))
+    // Map by lowercase code for case-insensitive lookup
+    const productMap = new Map(products.map((p) => [p.code!.toLowerCase(), p]))
 
     // Mark files with unknown codes as failed
     for (const code of codes) {
-      if (!productMap.has(code)) {
+      if (!productMap.has(code.toLowerCase())) {
         const group = codeGroups.get(code)!
         for (const p of group) {
           failed.push({ file: p.file.name, error: `상품코드 "${code}"에 해당하는 상품이 없습니다.` })
@@ -92,7 +97,7 @@ export async function POST(request: NextRequest) {
     let success = 0
 
     for (const [code, group] of codeGroups) {
-      const product = productMap.get(code)!
+      const product = productMap.get(code.toLowerCase())!
       // Sort by order number
       group.sort((a, b) => a.order - b.order)
 

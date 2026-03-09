@@ -89,21 +89,26 @@ export default async function ProductsPage({
               return (
                 <Link key={product.id} href={`/products/${product.id}`}>
                   <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                    <div className="aspect-square bg-gray-100">
+                    <div className="relative w-full bg-gray-100" style={{ paddingBottom: "100%" }}>
                       {product.thumbnail ? (
                         <img
                           src={product.thumbnail}
                           alt={product.name}
-                          className="h-full w-full object-cover"
+                          className="absolute inset-0 h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-muted-foreground">
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                           No Image
                         </div>
                       )}
                     </div>
                     <CardContent className="p-3">
-                      <p className="text-xs text-muted-foreground">{translateCategory(product.category.slug, tCat)}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">{translateCategory(product.category.slug, tCat)}</p>
+                        {product.code && (
+                          <p className="text-xs font-mono text-muted-foreground">{product.code}</p>
+                        )}
+                      </div>
                       <h3 className="mt-1 text-sm font-medium leading-tight line-clamp-2">
                         {product.name}
                       </h3>

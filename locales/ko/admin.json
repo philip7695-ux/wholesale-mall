@@ -23,6 +23,7 @@
   "statusDelivered": "완료",
   "statusCancelled": "취소",
   "addProduct": "상품 등록",
+  "exportExcel": "엑셀 다운로드",
   "editProduct": "상품 수정",
   "noProducts": "등록된 상품이 없습니다.",
   "colors": "색",
@@ -291,5 +292,13 @@
   "wiseUnmatchedDesc": "인보이스 번호와 매칭되지 않은 입금 알림입니다. 수동 확인이 필요합니다.",
   "wiseWebhookLog": "Delivery ID",
   "wiseNoLogs": "미매칭 로그가 없습니다.",
-  "wiseAutoConfirmed": "Wise 자동 입금확인"
+  "wiseAutoConfirmed": "Wise 자동 입금확인",
+  "gradeSettings": "등급 설정",
+  "gradeSettingsTitle": "등급별 할인율/MOQ/승급 기준",
+  "gradeSettingsLabel": "등급 설정",
+  "gradeDiscount": "할인율",
+  "gradeMoqRate": "MOQ 비율",
+  "gradeThreshold": "승급 기준 (USD)",
+  "gradeSettingsSaved": "등급 설정이 저장되었습니다.",
+  "gradeSettingsSaveFail": "등급 설정 저장에 실패했습니다."
 }

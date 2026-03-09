@@ -23,6 +23,7 @@
   "statusDelivered": "已完成",
   "statusCancelled": "已取消",
   "addProduct": "添加商品",
+  "exportExcel": "导出Excel",
   "editProduct": "编辑商品",
   "noProducts": "暂无商品。",
   "colors": "种颜色",
@@ -291,5 +292,13 @@
   "wiseUnmatchedDesc": "无法与发票匹配的入款通知，需要手动确认。",
   "wiseWebhookLog": "Delivery ID",
   "wiseNoLogs": "暂无未匹配日志。",
-  "wiseAutoConfirmed": "Wise 自动确认付款"
+  "wiseAutoConfirmed": "Wise 自动确认付款",
+  "gradeSettings": "等级设置",
+  "gradeSettingsTitle": "等级折扣/MOQ/升级标准",
+  "gradeSettingsLabel": "等级配置",
+  "gradeDiscount": "折扣率",
+  "gradeMoqRate": "MOQ比例",
+  "gradeThreshold": "升级标准 (USD)",
+  "gradeSettingsSaved": "等级设置已保存。",
+  "gradeSettingsSaveFail": "等级设置保存失败。"
 }
