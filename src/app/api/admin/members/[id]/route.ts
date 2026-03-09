@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function PUT(
   request: Request,
@@ -27,7 +28,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth()
@@ -35,11 +36,12 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const t = await getApiTranslations(request, "api")
   const { id } = await params
 
   // 자기 자신은 삭제 불가
   if (id === session.user.id) {
-    return NextResponse.json({ error: "자기 자신은 삭제할 수 없습니다." }, { status: 400 })
+    return NextResponse.json({ error: t("cannotDeleteSelf") }, { status: 400 })
   }
 
   const user = await prisma.user.findUnique({
@@ -48,12 +50,12 @@ export async function DELETE(
   })
 
   if (!user) {
-    return NextResponse.json({ error: "회원을 찾을 수 없습니다." }, { status: 404 })
+    return NextResponse.json({ error: t("memberNotFound") }, { status: 404 })
   }
 
   // 주문이 있는 회원은 장바구니만 삭제 후 회원 삭제
   await prisma.cartItem.deleteMany({ where: { userId: id } })
   await prisma.user.delete({ where: { id } })
 
-  return NextResponse.json({ message: "회원이 삭제되었습니다." })
+  return NextResponse.json({ message: t("memberDeleted") })
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function GET() {
   const session = await auth()
@@ -59,7 +60,8 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ message: "장바구니에 추가되었습니다." })
+  const t = await getApiTranslations(request, "api")
+  return NextResponse.json({ message: t("addedToCart") })
 }
 
 export async function PUT(request: Request) {
@@ -79,7 +81,8 @@ export async function PUT(request: Request) {
     })
   }
 
-  return NextResponse.json({ message: "수량이 변경되었습니다." })
+  const t = await getApiTranslations(request, "api")
+  return NextResponse.json({ message: t("qtyChanged") })
 }
 
 export async function DELETE(request: Request) {
@@ -91,5 +94,6 @@ export async function DELETE(request: Request) {
   const { cartItemId } = await request.json()
   await prisma.cartItem.delete({ where: { id: cartItemId } })
 
-  return NextResponse.json({ message: "삭제되었습니다." })
+  const t = await getApiTranslations(request, "api")
+  return NextResponse.json({ message: t("deleted") })
 }

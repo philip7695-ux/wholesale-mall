@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function GET(
   _request: Request,
@@ -20,7 +21,7 @@ export async function GET(
   })
 
   if (!product) {
-    return NextResponse.json({ error: "상품을 찾을 수 없습니다." }, { status: 404 })
+    return NextResponse.json({ error: "Product not found" }, { status: 404 })
   }
 
   return NextResponse.json(product)
@@ -34,6 +35,8 @@ export async function PUT(
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const t = await getApiTranslations(request, "api")
 
   const { id } = await params
   const body = await request.json()
@@ -115,14 +118,14 @@ export async function PUT(
   } catch (error) {
     console.error("Product update error:", error)
     return NextResponse.json(
-      { error: "상품 수정 중 오류가 발생했습니다." },
+      { error: t("productUpdateError") },
       { status: 500 },
     )
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth()
@@ -130,7 +133,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const t = await getApiTranslations(request, "api")
+
   const { id } = await params
   await prisma.product.delete({ where: { id } })
-  return NextResponse.json({ message: "삭제되었습니다." })
+  return NextResponse.json({ message: t("productDeleted") })
 }

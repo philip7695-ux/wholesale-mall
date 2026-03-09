@@ -160,11 +160,11 @@ export function ProductBulkUpload() {
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate("adult")}>
             <Download className="mr-1 h-4 w-4" />
-            성인복 템플릿
+            {t("adultTemplate")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate("kids")}>
             <Download className="mr-1 h-4 w-4" />
-            아동복 템플릿
+            {t("kidsTemplate")}
           </Button>
 
           <input

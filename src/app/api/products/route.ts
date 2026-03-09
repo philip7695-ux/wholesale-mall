@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const t = await getApiTranslations(request, "api")
 
   try {
     const body = await request.json()
@@ -113,7 +116,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Product creation error:", error)
     return NextResponse.json(
-      { error: "상품 등록 중 오류가 발생했습니다." },
+      { error: t("productCreateError") },
       { status: 500 },
     )
   }

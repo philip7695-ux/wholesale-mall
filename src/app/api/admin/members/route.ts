@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
+import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -9,13 +10,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const t = await getApiTranslations(request, "api")
+
   try {
     const body = await request.json()
     const { email, password, name, phone, businessName, businessNumber, businessAddress, role, approvalStatus } = body
 
     if (!email || !password || !name) {
       return NextResponse.json(
-        { error: "이메일, 비밀번호, 이름은 필수입니다." },
+        { error: t("memberRequiredFields") },
         { status: 400 },
       )
     }
@@ -23,7 +26,7 @@ export async function POST(request: Request) {
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
       return NextResponse.json(
-        { error: "이미 등록된 이메일입니다." },
+        { error: t("memberEmailExists") },
         { status: 400 },
       )
     }
@@ -45,12 +48,12 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(
-      { message: "회원이 등록되었습니다.", userId: user.id },
+      { message: t("memberRegistered"), userId: user.id },
       { status: 201 },
     )
   } catch {
     return NextResponse.json(
-      { error: "회원 등록 중 오류가 발생했습니다." },
+      { error: t("memberRegisterError") },
       { status: 500 },
     )
   }
