@@ -2,9 +2,7 @@
 export const ORDER_STATUS_FLOW = [
   "ORDER_PLACED",
   "INVOICE_SENT",
-  "AWAITING_PAYMENT",
   "PAYMENT_CONFIRMED",
-  "PREPARING",
   "SHIPPED",
   "DELIVERED",
 ] as const

@@ -82,5 +82,9 @@
   "paymentConfirmPendingDesc": "管理者が入金を確認しています。しばらくお待ちください。",
   "paymentConfirmRejected": "入金確認が却下されました。",
   "paymentConfirmRejectedReason": "却下理由",
-  "paymentConfirmResubmit": "情報を確認して再度リクエストしてください。"
+  "paymentConfirmResubmit": "情報を確認して再度リクエストしてください。",
+  "paymentMethodInfo": "お支払い情報",
+  "bankLabel": "銀行",
+  "accountLabel": "口座番号",
+  "holderLabel": "口座名義"
 }

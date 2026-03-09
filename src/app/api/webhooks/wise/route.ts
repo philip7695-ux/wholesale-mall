@@ -115,7 +115,7 @@ export async function POST(request: Request) {
   }
 
   // 8. Check if order is in a state that can be auto-confirmed
-  const confirmableStatuses = ["INVOICE_SENT", "AWAITING_PAYMENT"] as const
+  const confirmableStatuses = ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"] as const
   if (
     !confirmableStatuses.includes(
       order.status as (typeof confirmableStatuses)[number]

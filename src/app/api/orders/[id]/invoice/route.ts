@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { generateInvoiceNumber } from "@/lib/utils"
 import { buildInvoicePdf, type InvoiceData } from "@/lib/invoice-pdf"
 import { formatCurrency, getCurrencyForLocale } from "@/lib/currency"
+import { notifyCustomerInvoice } from "@/lib/email"
+import { getPaymentSetting } from "@/lib/payment-setting.server"
 
 export async function GET(
   _request: Request,
@@ -123,6 +125,25 @@ export async function GET(
     discountAmountKRW,
     totalAmountKRW: order.totalAmount,
     formatAmount,
+  }
+
+  // 인보이스 최초 생성 시 고객에게 이메일 발송
+  if (!order.invoiceNumber) {
+    getPaymentSetting().then((setting) => {
+      notifyCustomerInvoice(order.user.email, {
+        orderNumber: order.orderNumber,
+        invoiceNumber: invoiceNumber!,
+        totalAmount: order.totalAmount,
+        customerName: order.user.name,
+      }, {
+        bankName: setting?.bankName,
+        accountNumber: setting?.accountNumber,
+        accountHolder: setting?.accountHolder,
+        bankNote: setting?.bankNote,
+        alipayQrImage: setting?.alipayQrImage,
+        wechatQrImage: setting?.wechatQrImage,
+      })
+    })
   }
 
   try {

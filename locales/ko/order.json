@@ -82,5 +82,9 @@
   "paymentConfirmPendingDesc": "관리자가 입금을 확인하고 있습니다. 잠시만 기다려주세요.",
   "paymentConfirmRejected": "입금 확인이 반려되었습니다.",
   "paymentConfirmRejectedReason": "반려 사유",
-  "paymentConfirmResubmit": "정보를 확인 후 다시 요청해주세요."
+  "paymentConfirmResubmit": "정보를 확인 후 다시 요청해주세요.",
+  "paymentMethodInfo": "결제 안내",
+  "bankLabel": "은행",
+  "accountLabel": "계좌번호",
+  "holderLabel": "예금주"
 }

@@ -5,6 +5,8 @@ import { generateOrderNumber } from "@/lib/utils"
 import { getExchangeRate } from "@/lib/currency.server"
 import { GRADE_DISCOUNT } from "@/lib/grade"
 import { checkMoq } from "@/lib/moq"
+import { notifyAdminNewOrder } from "@/lib/email"
+import { getAdminNotificationEmail } from "@/lib/payment-setting.server"
 
 export async function GET() {
   try {
@@ -155,6 +157,19 @@ export async function POST(request: Request) {
     // Clear cart
     await prisma.cartItem.deleteMany({
       where: { userId: session.user.id },
+    })
+
+    // 관리자 이메일 알림 (비동기, 실패해도 주문에 영향 없음)
+    getAdminNotificationEmail().then((adminEmail) => {
+      if (adminEmail) {
+        notifyAdminNewOrder(adminEmail, {
+          orderNumber: order.orderNumber,
+          customerName: session.user.name || "",
+          customerEmail: session.user.email || "",
+          totalAmount: order.totalAmount,
+          itemCount: order.items.length,
+        })
+      }
     })
 
     return NextResponse.json(order, { status: 201 })

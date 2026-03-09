@@ -82,5 +82,9 @@
   "paymentConfirmPendingDesc": "The admin is verifying your payment. Please wait.",
   "paymentConfirmRejected": "Payment confirmation was rejected.",
   "paymentConfirmRejectedReason": "Rejection Reason",
-  "paymentConfirmResubmit": "Please check the information and resubmit."
+  "paymentConfirmResubmit": "Please check the information and resubmit.",
+  "paymentMethodInfo": "Payment Information",
+  "bankLabel": "Bank",
+  "accountLabel": "Account Number",
+  "holderLabel": "Account Holder"
 }

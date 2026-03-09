@@ -272,9 +272,7 @@ export default async function AdminDashboard() {
               [
                 "ORDER_PLACED",
                 "INVOICE_SENT",
-                "AWAITING_PAYMENT",
                 "PAYMENT_CONFIRMED",
-                "PREPARING",
                 "SHIPPED",
                 "DELIVERED",
                 "CANCELLED",

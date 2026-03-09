@@ -82,5 +82,9 @@
   "paymentConfirmPendingDesc": "管理员正在确认您的付款，请稍候。",
   "paymentConfirmRejected": "付款确认被拒绝。",
   "paymentConfirmRejectedReason": "拒绝原因",
-  "paymentConfirmResubmit": "请核实信息后重新提交。"
+  "paymentConfirmResubmit": "请核实信息后重新提交。",
+  "paymentMethodInfo": "付款信息",
+  "bankLabel": "银行",
+  "accountLabel": "账号",
+  "holderLabel": "户名"
 }

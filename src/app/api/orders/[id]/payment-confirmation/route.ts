@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { notifyAdminPaymentSubmitted, notifyCustomerPaymentConfirmed } from "@/lib/email"
+import { getAdminNotificationEmail } from "@/lib/payment-setting.server"
 
 export async function GET(
   _request: Request,
@@ -56,7 +58,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  if (order.status !== "INVOICE_SENT" && order.status !== "AWAITING_PAYMENT") {
+  if (!["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"].includes(order.status)) {
     return NextResponse.json(
       { error: "입금 확인 요청이 불가능한 상태입니다." },
       { status: 400 },
@@ -88,14 +90,21 @@ export async function POST(
     },
   })
 
-  // 주문 상태를 AWAITING_PAYMENT로 전환
-  if (order.status === "INVOICE_SENT") {
-    await prisma.order.update({
-      where: { id },
-      data: {
-        status: "AWAITING_PAYMENT",
-        awaitingPaymentAt: new Date(),
-      },
+  // 관리자에게 이메일 알림
+  const orderForNotify = await prisma.order.findUnique({
+    where: { id },
+    select: { orderNumber: true, user: { select: { name: true } } },
+  })
+  if (orderForNotify) {
+    getAdminNotificationEmail().then((adminEmail) => {
+      if (adminEmail) {
+        notifyAdminPaymentSubmitted(adminEmail, {
+          orderNumber: orderForNotify.orderNumber,
+          customerName: orderForNotify.user.name,
+          amount: Number(amount),
+          senderName,
+        })
+      }
     })
   }
 
@@ -141,6 +150,18 @@ export async function PUT(
         },
       }),
     ])
+
+    // 고객에게 결제 확인 이메일
+    const confirmedOrder = await prisma.order.findUnique({
+      where: { id },
+      select: { orderNumber: true, user: { select: { name: true, email: true } } },
+    })
+    if (confirmedOrder) {
+      notifyCustomerPaymentConfirmed(confirmedOrder.user.email, {
+        orderNumber: confirmedOrder.orderNumber,
+        customerName: confirmedOrder.user.name,
+      })
+    }
 
     return NextResponse.json({ message: "입금이 확인되었습니다." })
   }

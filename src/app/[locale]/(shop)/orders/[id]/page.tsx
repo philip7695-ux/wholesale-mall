@@ -79,6 +79,10 @@ export default function OrderDetailPage() {
   const [senderName, setSenderName] = useState("")
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [paymentInfo, setPaymentInfo] = useState<{
+    bankName?: string; accountNumber?: string; accountHolder?: string; bankNote?: string
+    alipayQrImage?: string; wechatQrImage?: string
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const statusLabels: Record<string, string> = {
@@ -193,10 +197,14 @@ export default function OrderDetailPage() {
     Promise.all([
       fetch(`/api/orders/${params.id}`).then((res) => res.json()),
       fetch(`/api/orders/${params.id}/payment-confirmation`).then((res) => res.json()),
-    ]).then(([orderData, confirmData]) => {
+      fetch(`/api/payment-info`).then((res) => res.json()),
+    ]).then(([orderData, confirmData, paymentData]) => {
       setOrder(orderData)
       if (confirmData && confirmData.id) {
         setPaymentConfirmation(confirmData)
+      }
+      if (paymentData) {
+        setPaymentInfo(paymentData)
       }
     }).finally(() => setLoading(false))
   }, [params.id])
@@ -224,8 +232,7 @@ export default function OrderDetailPage() {
   }
 
   const showPaymentConfirmSection =
-    (order.status === "INVOICE_SENT" || order.status === "AWAITING_PAYMENT") &&
-    order.paymentMethod === "BANK_TRANSFER"
+    ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"].includes(order.status)
 
   const canSubmitPaymentConfirm =
     !paymentConfirmation || paymentConfirmation.status === "REJECTED"
@@ -517,15 +524,36 @@ export default function OrderDetailPage() {
         </Card>
       )}
 
-      {order.paymentMethod === "BANK_TRANSFER" && order.paymentStatus === "PENDING" && (
-        <Card className="border-primary">
-          <CardContent className="py-4">
-            <p className="font-medium">{t("bankInfo")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("bankInfoDesc")}<br />
-              {t("bankAccountLabel")}: 국민은행 000-000000-00-000 (도매몰)<br />
-              {t("depositAmountLabel")}: {formatPrice(order.totalAmount, locale, rate)}
-            </p>
+      {showPaymentConfirmSection && paymentInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("paymentMethodInfo")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {paymentInfo.bankName && paymentInfo.accountNumber && (
+              <div className="rounded-lg bg-muted p-4 space-y-1 text-sm">
+                <p className="font-medium">{t("bankTransfer")}</p>
+                <p>{t("bankLabel")}: {paymentInfo.bankName}</p>
+                <p>{t("accountLabel")}: {paymentInfo.accountNumber}</p>
+                <p>{t("holderLabel")}: {paymentInfo.accountHolder || "-"}</p>
+                {paymentInfo.bankNote && <p className="text-muted-foreground">{paymentInfo.bankNote}</p>}
+                <p className="font-medium mt-2">{t("depositAmountLabel")}: {formatPrice(order.totalAmount, locale, rate)}</p>
+              </div>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {paymentInfo.alipayQrImage && (
+                <div className="rounded-lg bg-muted p-4 text-center">
+                  <p className="text-sm font-medium mb-2">Alipay</p>
+                  <img src={paymentInfo.alipayQrImage} alt="Alipay QR" className="mx-auto h-48 w-48 object-contain" />
+                </div>
+              )}
+              {paymentInfo.wechatQrImage && (
+                <div className="rounded-lg bg-muted p-4 text-center">
+                  <p className="text-sm font-medium mb-2">WeChat Pay</p>
+                  <img src={paymentInfo.wechatQrImage} alt="WeChat QR" className="mx-auto h-48 w-48 object-contain" />
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

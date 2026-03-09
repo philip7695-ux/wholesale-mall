@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
 import { STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
+import { notifyCustomerShipped } from "@/lib/email"
 
 export async function GET(
   _request: Request,
@@ -110,28 +111,70 @@ export async function PUT(
   const { id } = await params
   const { status, paymentStatus, trackingNumber, shippingCarrier } = await request.json()
 
+  const currentOrder = await prisma.order.findUnique({
+    where: { id },
+    select: { status: true, paymentStatus: true },
+  })
+
+  if (!currentOrder) {
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
+  }
+
   const data: Record<string, unknown> = {}
+
+  // 결제 상태 변경
+  if (paymentStatus) {
+    data.paymentStatus = paymentStatus
+    // 결제완료 → 주문 상태 자동 PAYMENT_CONFIRMED
+    if (paymentStatus === "PAID") {
+      const prePaymentStatuses = ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"]
+      if (prePaymentStatuses.includes(currentOrder.status)) {
+        data.status = "PAYMENT_CONFIRMED"
+        data.paymentConfirmedAt = new Date()
+      }
+    }
+  }
+
+  // 송장번호 입력 → 자동 SHIPPED
+  if (trackingNumber !== undefined) data.trackingNumber = trackingNumber
+  if (shippingCarrier !== undefined) data.shippingCarrier = shippingCarrier
+  if (trackingNumber && trackingNumber.trim() !== "") {
+    const effectiveStatus = (data.status as string) || currentOrder.status
+    const shippableStatuses = ["PAYMENT_CONFIRMED", "PREPARING"]
+    if (shippableStatuses.includes(effectiveStatus)) {
+      data.status = "SHIPPED"
+      data.shippedAt = new Date()
+    }
+  }
+
+  // 수동 상태 변경 (배송완료, 취소 등 자동 전환 외)
   if (status) {
     data.status = status
-    // 상태별 타임스탬프 자동 기록
     const tsField = STATUS_TIMESTAMP_FIELD[status]
     if (tsField && tsField !== "createdAt") {
       data[tsField] = new Date()
     }
   }
-  if (paymentStatus) data.paymentStatus = paymentStatus
-  if (trackingNumber !== undefined) data.trackingNumber = trackingNumber
-  if (shippingCarrier !== undefined) data.shippingCarrier = shippingCarrier
 
   const order = await prisma.order.update({
     where: { id },
     data,
-    select: { id: true, userId: true, status: true, paymentStatus: true },
+    select: { id: true, userId: true, status: true, paymentStatus: true, orderNumber: true, trackingNumber: true, shippingCarrier: true, user: { select: { name: true, email: true } } },
   })
+
+  // 출하 완료 시 고객 이메일 알림
+  if (order.status === "SHIPPED" && order.trackingNumber) {
+    notifyCustomerShipped(order.user.email, {
+      orderNumber: order.orderNumber,
+      customerName: order.user.name,
+      trackingNumber: order.trackingNumber,
+      shippingCarrier: order.shippingCarrier || "",
+    })
+  }
 
   // DELIVERED로 변경 시 자동 승급 체크
   let promotedGrade: string | null = null
-  if (status === "DELIVERED") {
+  if (order.status === "DELIVERED") {
     promotedGrade = await checkAndPromoteGrade(order.userId)
   }
 

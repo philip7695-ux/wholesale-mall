@@ -263,6 +263,25 @@ model WiseWebhookLog {
   createdAt  DateTime @default(now())
 }
 
+model PaymentSetting {
+  id             String   @id @default(cuid())
+  // 알림 이메일
+  notificationEmail String?
+  // 계좌이체 정보
+  bankName       String?
+  accountNumber  String?
+  accountHolder  String?
+  bankNote       String?  // 추가 안내 문구
+  // 알리페이 QR
+  alipayQrImage  String?
+  alipayNote     String?  // 추가 안내 문구
+  // 위챗페이 QR
+  wechatQrImage  String?
+  wechatNote     String?  // 추가 안내 문구
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model GradeConfig {
   id           String @id @default(cuid())
   grade        String @unique // BRONZE, SILVER, GOLD, VIP

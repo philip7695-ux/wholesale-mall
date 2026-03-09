@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { toast } from "sonner"
-import { FileDown } from "lucide-react"
+import { FileDown, Package, Truck, CheckCircle } from "lucide-react"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
 
@@ -46,12 +47,12 @@ export function OrderStatusForm({
   const t = useTranslations("admin")
   const locale = useLocale()
   const { rate } = useCurrency()
-  const [status, setStatus] = useState(currentStatus)
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
   const [trackingNumber, setTrackingNumber] = useState(currentTrackingNumber || "")
   const [shippingCarrier, setShippingCarrier] = useState(currentShippingCarrier || "")
   const [loading, setLoading] = useState(false)
   const [invoiceLoading, setInvoiceLoading] = useState(false)
+  const [packingLoading, setPackingLoading] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
   const [confirmLoading, setConfirmLoading] = useState(false)
 
@@ -77,16 +78,28 @@ export function OrderStatusForm({
     setInvoiceLoading(false)
   }
 
-  const orderStatuses = [
-    { value: "ORDER_PLACED", label: t("orderStatusOrderPlaced") },
-    { value: "INVOICE_SENT", label: t("orderStatusInvoiceSent") },
-    { value: "AWAITING_PAYMENT", label: t("orderStatusAwaitingPayment") },
-    { value: "PAYMENT_CONFIRMED", label: t("orderStatusPaymentConfirmed") },
-    { value: "PREPARING", label: t("orderStatusPreparing") },
-    { value: "SHIPPED", label: t("orderStatusShipped") },
-    { value: "DELIVERED", label: t("orderStatusDelivered") },
-    { value: "CANCELLED", label: t("orderStatusCancelled") },
-  ]
+  async function handlePackingList() {
+    setPackingLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}/packing-list`)
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = res.headers.get("Content-Disposition")?.split("''")[1]
+        ? decodeURIComponent(res.headers.get("Content-Disposition")!.split("''")[1])
+        : `packing-list-${orderId}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success(t("packingListDownloaded"))
+    } catch {
+      toast.error(t("packingListDownloadFail"))
+    }
+    setPackingLoading(false)
+  }
 
   const paymentStatuses = [
     { value: "PENDING", label: t("paymentStatusPending") },
@@ -117,19 +130,14 @@ export function OrderStatusForm({
     setLoading(false)
   }
 
-  async function handleSave() {
+  // 결제 상태만 저장 (자동 전환은 서버에서 처리)
+  async function handlePaymentSave() {
     setLoading(true)
     try {
-      const body: Record<string, string> = { status, paymentStatus }
-      if (status === "SHIPPED" || trackingNumber) {
-        body.trackingNumber = trackingNumber
-        body.shippingCarrier = shippingCarrier
-      }
-
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ paymentStatus }),
       })
 
       if (!res.ok) throw new Error()
@@ -138,6 +146,74 @@ export function OrderStatusForm({
       if (data.promotedGrade) {
         toast.success(t("gradeAutoPromoted"))
       }
+
+      toast.success(t("orderStatusChanged"))
+      router.refresh()
+    } catch {
+      toast.error(t("orderStatusChangeFail"))
+    }
+    setLoading(false)
+  }
+
+  // 송장번호 저장 (자동 SHIPPED 전환은 서버에서 처리)
+  async function handleShippingSave() {
+    if (!trackingNumber.trim()) {
+      toast.error(t("trackingNumberRequired"))
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackingNumber, shippingCarrier }),
+      })
+
+      if (!res.ok) throw new Error()
+
+      toast.success(t("orderStatusChanged"))
+      router.refresh()
+    } catch {
+      toast.error(t("orderStatusChangeFail"))
+    }
+    setLoading(false)
+  }
+
+  // 배송완료 처리
+  async function handleDelivered() {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "DELIVERED" }),
+      })
+
+      if (!res.ok) throw new Error()
+
+      const data = await res.json()
+      if (data.promotedGrade) {
+        toast.success(t("gradeAutoPromoted"))
+      }
+
+      toast.success(t("orderStatusChanged"))
+      router.refresh()
+    } catch {
+      toast.error(t("orderStatusChangeFail"))
+    }
+    setLoading(false)
+  }
+
+  // 주문 취소
+  async function handleCancel() {
+    if (!confirm(t("orderCancelConfirm"))) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) throw new Error()
 
       toast.success(t("orderStatusChanged"))
       router.refresh()
@@ -173,6 +249,13 @@ export function OrderStatusForm({
     }
     setConfirmLoading(false)
   }
+
+  // 현재 단계에 맞는 다음 액션 결정
+  const isPrePayment = ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"].includes(currentStatus)
+  const isPaymentConfirmed = ["PAYMENT_CONFIRMED", "PREPARING"].includes(currentStatus)
+  const isShipped = currentStatus === "SHIPPED"
+  const isCompleted = currentStatus === "DELIVERED"
+  const isCancelled = currentStatus === "CANCELLED"
 
   return (
     <div className="space-y-6">
@@ -238,65 +321,121 @@ export function OrderStatusForm({
           <CardTitle>{t("orderStatusMgmt")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("orderStatusLabel")}</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {orderStatuses.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* 문서 다운로드 */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleInvoice}
+              disabled={invoiceLoading}
+              className="flex-1"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              {invoiceLoading
+                ? t("invoiceGenerating")
+                : invoiceNumber
+                  ? t("invoiceRedownload")
+                  : t("invoiceGenerate")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handlePackingList}
+              disabled={packingLoading}
+              className="flex-1"
+            >
+              <Package className="mr-2 h-4 w-4" />
+              {packingLoading ? t("packingListGenerating") : t("packingListDownload")}
+            </Button>
           </div>
-          {(status === "SHIPPED" || status === "DELIVERED") && (
-            <div className="space-y-2">
-              <Label>{t("trackingShippingCarrier")}</Label>
-              <Input
-                value={shippingCarrier}
-                onChange={(e) => setShippingCarrier(e.target.value)}
-                placeholder={t("trackingShippingCarrier")}
-              />
-              <Label>{t("trackingNumber")}</Label>
-              <Input
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder={t("trackingNumber")}
-              />
+
+          {/* 결제 전 단계: 결제 상태 변경 */}
+          {isPrePayment && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{t("nextStepPayment")}</Badge>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("paymentStatusLabel")}</Label>
+                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentStatuses.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handlePaymentSave} disabled={loading} className="w-full">
+                {loading ? t("orderSaving") : t("paymentSaveButton")}
+              </Button>
             </div>
           )}
-          <div className="space-y-2">
-            <Label>{t("paymentStatusLabel")}</Label>
-            <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentStatuses.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleInvoice}
-            disabled={invoiceLoading}
-            className="w-full"
-          >
-            <FileDown className="mr-2 h-4 w-4" />
-            {invoiceLoading
-              ? t("invoiceGenerating")
-              : invoiceNumber
-                ? t("invoiceRedownload")
-                : t("invoiceGenerate")}
-          </Button>
-          <Button onClick={handleSave} disabled={loading} className="w-full">
-            {loading ? t("orderSaving") : t("orderChangeStatus")}
-          </Button>
-          {(status === "CANCELLED" || currentStatus === "CANCELLED") && (
+
+          {/* 결제 확인 후: 배송 정보 입력 */}
+          {isPaymentConfirmed && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{t("nextStepShipping")}</Badge>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("trackingShippingCarrier")}</Label>
+                <Input
+                  value={shippingCarrier}
+                  onChange={(e) => setShippingCarrier(e.target.value)}
+                  placeholder={t("trackingShippingCarrier")}
+                />
+                <Label>{t("trackingNumber")}</Label>
+                <Input
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder={t("trackingNumber")}
+                />
+              </div>
+              <Button onClick={handleShippingSave} disabled={loading} className="w-full">
+                <Truck className="mr-2 h-4 w-4" />
+                {loading ? t("orderSaving") : t("shipOrder")}
+              </Button>
+            </div>
+          )}
+
+          {/* 배송 중: 배송완료 처리 */}
+          {isShipped && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{t("nextStepDelivery")}</Badge>
+              </div>
+              {currentTrackingNumber && (
+                <div className="text-sm text-muted-foreground">
+                  {t("trackingShippingCarrier")}: {currentShippingCarrier || "-"} / {t("trackingNumber")}: {currentTrackingNumber}
+                </div>
+              )}
+              <Button onClick={handleDelivered} disabled={loading} className="w-full">
+                <CheckCircle className="mr-2 h-4 w-4" />
+                {loading ? t("orderSaving") : t("confirmDelivery")}
+              </Button>
+            </div>
+          )}
+
+          {/* 완료 */}
+          {isCompleted && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center text-sm text-green-700">
+              {t("orderCompleted")}
+            </div>
+          )}
+
+          {/* 주문 취소 / 삭제 */}
+          {!isCancelled && !isCompleted && (
+            <Button
+              variant="ghost"
+              onClick={handleCancel}
+              disabled={loading}
+              className="w-full text-destructive hover:text-destructive"
+            >
+              {t("orderStatusCancelled")}
+            </Button>
+          )}
+          {isCancelled && (
             <Button
               variant="destructive"
               onClick={handleDelete}

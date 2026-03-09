@@ -34,7 +34,8 @@ export async function POST(request: Request) {
 
     const ext = file.name.split(".").pop() || "jpg"
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const filePath = uploadType === "receipt" ? `receipts/${fileName}` : `products/${fileName}`
+    const folderMap: Record<string, string> = { receipt: "receipts", payment: "payment" }
+    const filePath = `${folderMap[uploadType || ""] || "products"}/${fileName}`
 
     const supabase = getSupabase()
 
