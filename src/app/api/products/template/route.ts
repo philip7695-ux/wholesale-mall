@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getApiTranslations } from "@/lib/api-i18n"
 import * as XLSX from "xlsx"
 
+const HEADERS = ["상품코드", "상품명*", "카테고리*", "설명", "혼용률", "컬러명*", "컬러코드", "가격*", "사이즈*", "재고"]
 const COL_WIDTHS = [
   { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 30 },
   { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
@@ -15,25 +15,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "admin")
-
-  const HEADERS = [
-    t("templateProductCode"),
-    t("templateProductName"),
-    t("templateCategory"),
-    t("templateDescription"),
-    t("templateComposition"),
-    t("templateColorName"),
-    t("templateColorCode"),
-    t("templatePrice"),
-    t("templateSize"),
-    t("templateStock"),
-  ]
-
   const type = request.nextUrl.searchParams.get("type")
   const isKids = type === "kids"
 
-  // Example data stays in Korean (sample product names/categories are DB data)
   const exampleRows = isKids
     ? [
         ["KD001", "아동 반팔티", "아동상의", "부드러운 아동용 반팔티", "면 100%", "블랙", "#000000", 12000, "80,85,90,95,100,110,120,130", 30],
@@ -50,12 +34,9 @@ export async function GET(request: NextRequest) {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...exampleRows])
   ws["!cols"] = COL_WIDTHS
-  const sheetName = isKids ? t("templateSheetKids") : t("templateSheetAdult")
-  XLSX.utils.book_append_sheet(wb, ws, sheetName)
+  XLSX.utils.book_append_sheet(wb, ws, isKids ? "아동복" : "성인복")
 
-  const fileName = isKids
-    ? `${t("kidsTemplate")}.xlsx`
-    : `${t("adultTemplate")}.xlsx`
+  const fileName = isKids ? "아동복_대량등록_템플릿.xlsx" : "성인복_대량등록_템플릿.xlsx"
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
 
   return new NextResponse(buf, {

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getApiTranslations } from "@/lib/api-i18n"
 
 // 주문 상품을 장바구니로 복원하고, 주문을 취소
 export async function POST(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth()
@@ -13,7 +12,6 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
   const { id } = await params
   const order = await prisma.order.findUnique({
     where: { id },
@@ -21,7 +19,7 @@ export async function POST(
   })
 
   if (!order) {
-    return NextResponse.json({ error: t("orderNotFound") }, { status: 404 })
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
   if (order.userId !== session.user.id && session.user.role !== "ADMIN") {
@@ -30,7 +28,7 @@ export async function POST(
 
   if (order.status !== "ORDER_PLACED") {
     return NextResponse.json(
-      { error: t("onlyPlacedEdit") },
+      { error: "접수 상태의 주문만 수정할 수 있습니다." },
       { status: 400 },
     )
   }
@@ -70,5 +68,5 @@ export async function POST(
     data: { status: "CANCELLED", cancelledAt: new Date() },
   })
 
-  return NextResponse.json({ message: t("orderRestoredToCart") })
+  return NextResponse.json({ message: "주문이 장바구니로 복원되었습니다." })
 }

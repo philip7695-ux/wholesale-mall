@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getApiTranslations } from "@/lib/api-i18n"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@supabase/supabase-js"
 
@@ -40,14 +39,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
-
   try {
     const formData = await request.formData()
     const files = formData.getAll("files") as File[]
 
     if (files.length === 0) {
-      return NextResponse.json({ error: t("noFile") }, { status: 400 })
+      return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
     }
 
     const failed: { file: string; error: string }[] = []
@@ -57,7 +54,7 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       const result = parseFileName(file.name)
       if (!result) {
-        failed.push({ file: file.name, error: t("filenameInvalid") })
+        failed.push({ file: file.name, error: "파일명 형식이 올바르지 않습니다. (예: ST001_1.jpg)" })
         continue
       }
       parsed.push({ code: result.code, order: result.order, file })
@@ -84,7 +81,7 @@ export async function POST(request: NextRequest) {
       if (!productMap.has(code)) {
         const group = codeGroups.get(code)!
         for (const p of group) {
-          failed.push({ file: p.file.name, error: t("productCodeNotFound") })
+          failed.push({ file: p.file.name, error: `상품코드 "${code}"에 해당하는 상품이 없습니다.` })
         }
         codeGroups.delete(code)
       }
@@ -149,7 +146,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Bulk image upload error:", error)
     return NextResponse.json(
-      { error: t("imageUploadError") },
+      { error: "이미지 업로드 처리 중 오류가 발생했습니다." },
       { status: 500 },
     )
   }

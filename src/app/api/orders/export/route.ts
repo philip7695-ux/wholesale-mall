@@ -1,39 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getApiTranslations } from "@/lib/api-i18n"
 import * as XLSX from "xlsx"
+
+const statusLabels: Record<string, string> = {
+  ORDER_PLACED: "주문접수",
+  INVOICE_SENT: "인보이스 발행",
+  AWAITING_PAYMENT: "입금대기",
+  PAYMENT_CONFIRMED: "입금확인",
+  PREPARING: "준비중",
+  SHIPPED: "출하완료",
+  DELIVERED: "배송완료",
+  CANCELLED: "취소됨",
+}
+
+const paymentLabels: Record<string, string> = {
+  PENDING: "입금대기",
+  PAID: "결제완료",
+  FAILED: "실패",
+  REFUNDED: "환불",
+}
+
+const paymentMethodLabels: Record<string, string> = {
+  CARD: "카드",
+  BANK_TRANSFER: "계좌이체",
+  VIRTUAL_ACCOUNT: "가상계좌",
+}
 
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const ta = await getApiTranslations(request, "admin")
-
-  const statusLabels: Record<string, string> = {
-    ORDER_PLACED: ta("orderStatusOrderPlaced"),
-    INVOICE_SENT: ta("orderStatusInvoiceSent"),
-    AWAITING_PAYMENT: ta("orderStatusAwaitingPayment"),
-    PAYMENT_CONFIRMED: ta("orderStatusPaymentConfirmed"),
-    PREPARING: ta("orderStatusPreparing"),
-    SHIPPED: ta("orderStatusShipped"),
-    DELIVERED: ta("orderStatusDelivered"),
-    CANCELLED: ta("orderStatusCancelled"),
-  }
-
-  const paymentLabels: Record<string, string> = {
-    PENDING: ta("paymentStatusPending"),
-    PAID: ta("paymentStatusPaid"),
-    FAILED: ta("paymentStatusFailed"),
-    REFUNDED: ta("paymentStatusRefunded"),
-  }
-
-  const paymentMethodLabels: Record<string, string> = {
-    CARD: "Card",
-    BANK_TRANSFER: ta("paymentMethodBankTransfer"),
-    VIRTUAL_ACCOUNT: "Virtual Account",
   }
 
   const idsParam = request.nextUrl.searchParams.get("ids")
@@ -58,63 +55,41 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   })
 
-  const COL = {
-    orderNumber: ta("excelOrderNumber"),
-    orderDate: ta("excelOrderDate"),
-    orderStatus: ta("excelOrderStatus"),
-    paymentStatus: ta("excelPaymentStatus"),
-    paymentMethod: ta("excelPaymentMethod"),
-    orderer: ta("excelOrderer"),
-    email: "Email",
-    contact: ta("excelContact"),
-    business: ta("excelBusiness"),
-    bizNumber: "Biz No.",
-    receiver: ta("excelReceiver"),
-    receiverContact: ta("excelContact"),
-    address: ta("excelAddress"),
-    memo: ta("excelMemo"),
-    product: ta("excelProduct"),
-    color: ta("excelColor"),
-    size: ta("excelSize"),
-    qty: ta("excelQuantity"),
-    unitPrice: ta("excelUnitPrice"),
-    subtotal: ta("excelAmount"),
-    total: "Total",
-  }
-
+  // 주문 아이템 단위로 한 행씩 (대량 주문 상세 포함)
   const rows = orders.flatMap((order) =>
     order.items.map((item) => ({
-      [COL.orderNumber]: order.orderNumber,
-      [COL.orderDate]: new Date(order.createdAt).toLocaleString("ko-KR", {
+      주문번호: order.orderNumber,
+      주문일시: new Date(order.createdAt).toLocaleString("ko-KR", {
         timeZone: "Asia/Seoul",
       }),
-      [COL.orderStatus]: statusLabels[order.status] || order.status,
-      [COL.paymentStatus]: paymentLabels[order.paymentStatus] || order.paymentStatus,
-      [COL.paymentMethod]: order.paymentMethod
+      주문상태: statusLabels[order.status] || order.status,
+      결제상태: paymentLabels[order.paymentStatus] || order.paymentStatus,
+      결제수단: order.paymentMethod
         ? paymentMethodLabels[order.paymentMethod] || order.paymentMethod
         : "-",
-      [COL.orderer]: order.user.name,
-      [COL.email]: order.user.email,
-      [COL.contact]: order.user.phone || "-",
-      [COL.business]: order.user.businessName || "-",
-      [COL.bizNumber]: order.user.businessNumber || "-",
-      [COL.receiver]: order.recipientName || "-",
-      [COL.receiverContact]: order.recipientPhone || "-",
-      [COL.address]: order.shippingAddress || "-",
-      [COL.memo]: order.shippingMemo || "-",
-      [COL.product]: item.productName,
-      [COL.color]: item.colorName,
-      [COL.size]: item.sizeName,
-      [COL.qty]: item.quantity,
-      [COL.unitPrice]: item.price,
-      [COL.subtotal]: item.price * item.quantity,
-      [COL.total]: order.totalAmount,
+      주문자명: order.user.name,
+      이메일: order.user.email,
+      연락처: order.user.phone || "-",
+      상호명: order.user.businessName || "-",
+      사업자번호: order.user.businessNumber || "-",
+      수령인: order.recipientName || "-",
+      수령인연락처: order.recipientPhone || "-",
+      배송주소: order.shippingAddress || "-",
+      배송메모: order.shippingMemo || "-",
+      상품명: item.productName,
+      컬러: item.colorName,
+      사이즈: item.sizeName,
+      수량: item.quantity,
+      단가: item.price,
+      소계: item.price * item.quantity,
+      주문총액: order.totalAmount,
     })),
   )
 
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.json_to_sheet(rows)
 
+  // 컬럼 너비 자동 조정
   const colWidths = Object.keys(rows[0] || {}).map((key) => {
     const maxLen = Math.max(
       key.length * 2,
@@ -124,7 +99,7 @@ export async function GET(request: NextRequest) {
   })
   ws["!cols"] = colWidths
 
-  XLSX.utils.book_append_sheet(wb, ws, ta("excelSheetName"))
+  XLSX.utils.book_append_sheet(wb, ws, "주문목록")
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
 
@@ -132,7 +107,7 @@ export async function GET(request: NextRequest) {
     .toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })
     .replace(/\. /g, "")
     .replace(".", "")
-  const filename = `${ta("excelSheetName")}_${today}.xlsx`
+  const filename = `주문목록_${today}.xlsx`
 
   return new NextResponse(buf, {
     headers: {

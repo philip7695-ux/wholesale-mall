@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getApiTranslations } from "@/lib/api-i18n"
 import * as XLSX from "xlsx"
 import { ADULT_SIZES, KIDS_SIZES } from "@/lib/product-sizes"
 
@@ -26,67 +25,39 @@ function toSlug(name: string): string {
     .replace(/\s+/g, "-")
 }
 
-// Column header aliases for multi-language support
-const HEADER_ALIASES: Record<string, string[]> = {
-  code: ["상품코드", "Product Code", "商品编码", "商品コード"],
-  name: ["상품명*", "Product Name*", "商品名*"],
-  category: ["카테고리*", "Category*", "分类*", "カテゴリ*"],
-  color: ["컬러명*", "Color*", "颜色名*", "カラー名*"],
-  price: ["가격*", "Price*", "价格*", "価格*"],
-  size: ["사이즈*", "Size*", "尺码*", "サイズ*"],
-  stock: ["재고", "Stock", "库存", "在庫"],
-  desc: ["설명", "Description", "说明", "説明"],
-  material: ["혼용률", "Composition", "成分", "混用率"],
-  colorCode: ["컬러코드", "Color Code", "颜色代码", "カラーコード"],
-}
-
-function getVal(row: Record<string, any>, field: string): any {
-  const aliases = HEADER_ALIASES[field]
-  if (!aliases) return undefined
-  for (const alias of aliases) {
-    if (alias in row) return row[alias]
-  }
-  return undefined
-}
-
-function hasSizeColumn(row: Record<string, any>): boolean {
-  const sizeAliases = HEADER_ALIASES.size
-  return sizeAliases.some((alias) => alias in row)
-}
-
+// 새 형식: "사이즈*" 컬럼에 쉼표 구분 사이즈 문자열 (예: "XS,S,M,L,XL" 또는 "80,85,90")
 function parseSheetNew(
   rows: Record<string, any>[],
   sheetLabel: string,
   failed: FailedRow[],
   groups: ProductGroups,
-  t: (key: string, params?: Record<string, string | number>) => string,
 ) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
     const rowNum = i + 2
 
-    const code = String(getVal(row, "code") ?? "").trim()
-    const name = String(getVal(row, "name") ?? "").trim()
-    const category = String(getVal(row, "category") ?? "").trim()
-    const colorName = String(getVal(row, "color") ?? "").trim()
-    const price = Number(getVal(row, "price"))
-    const sizeStr = String(getVal(row, "size") ?? "").trim()
-    const stock = Number(getVal(row, "stock") ?? 0) || 0
+    const code = String(row["상품코드"] ?? "").trim()
+    const name = String(row["상품명*"] ?? "").trim()
+    const category = String(row["카테고리*"] ?? "").trim()
+    const colorName = String(row["컬러명*"] ?? "").trim()
+    const price = Number(row["가격*"])
+    const sizeStr = String(row["사이즈*"] ?? "").trim()
+    const stock = Number(row["재고"] ?? 0) || 0
 
-    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkNameRequired")}` }); continue }
-    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkCategoryRequired")}` }); continue }
-    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkColorRequired")}` }); continue }
-    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkPriceRequired")}` }); continue }
+    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
+    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
+    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
+    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
 
     const sizeNames = sizeStr.split(",").map((s) => s.trim()).filter(Boolean)
     if (sizeNames.length === 0) {
-      failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkSizeRequired")}` })
+      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈가 비어있습니다. (예: XS,S,M,L,XL 또는 80,85,90)` })
       continue
     }
 
-    const description = String(getVal(row, "desc") ?? "").trim()
-    const material = String(getVal(row, "material") ?? "").trim()
-    const rawColorCode = String(getVal(row, "colorCode") ?? "").trim()
+    const description = String(row["설명"] ?? "").trim()
+    const material = String(row["혼용률"] ?? "").trim()
+    const rawColorCode = String(row["컬러코드"] ?? "").trim()
     const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
 
     if (!groups.has(name)) {
@@ -103,28 +74,28 @@ function parseSheetNew(
   }
 }
 
+// 구 형식: 각 사이즈가 별도 컬럼 (하위 호환)
 function parseSheetLegacy(
   rows: Record<string, any>[],
   sizeColumns: readonly string[],
   sheetLabel: string,
   failed: FailedRow[],
   groups: ProductGroups,
-  t: (key: string, params?: Record<string, string | number>) => string,
 ) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
     const rowNum = i + 2
 
-    const code = String(getVal(row, "code") ?? "").trim()
-    const name = String(getVal(row, "name") ?? "").trim()
-    const category = String(getVal(row, "category") ?? "").trim()
-    const colorName = String(getVal(row, "color") ?? "").trim()
-    const price = Number(getVal(row, "price"))
+    const code = String(row["상품코드"] ?? "").trim()
+    const name = String(row["상품명*"] ?? "").trim()
+    const category = String(row["카테고리*"] ?? "").trim()
+    const colorName = String(row["컬러명*"] ?? "").trim()
+    const price = Number(row["가격*"])
 
-    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkNameRequired")}` }); continue }
-    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkCategoryRequired")}` }); continue }
-    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkColorRequired")}` }); continue }
-    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkPriceRequired")}` }); continue }
+    if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
+    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
+    if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
+    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
 
     const sizeVariants: { sizeName: string; stock: number }[] = []
     for (const sizeName of sizeColumns) {
@@ -135,13 +106,13 @@ function parseSheetLegacy(
     }
 
     if (sizeVariants.length === 0) {
-      failed.push({ row: rowNum, error: `[${sheetLabel}] ${t("bulkSizeRequired")}` })
+      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈 재고가 입력되지 않았습니다.` })
       continue
     }
 
-    const description = String(getVal(row, "desc") ?? "").trim()
-    const material = String(getVal(row, "material") ?? "").trim()
-    const rawColorCode = String(getVal(row, "colorCode") ?? "").trim()
+    const description = String(row["설명"] ?? "").trim()
+    const material = String(row["혼용률"] ?? "").trim()
+    const rawColorCode = String(row["컬러코드"] ?? "").trim()
     const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
 
     if (!groups.has(name)) {
@@ -158,21 +129,16 @@ function parseSheetLegacy(
   }
 }
 
-// Known kids sheet names across languages
-const KIDS_SHEET_NAMES = ["아동복", "商品登録_子供", "商品登录_童装", "Products_Kids"]
-
 export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
-
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File | null
-    if (!file) return NextResponse.json({ error: t("noFile") }, { status: 400 })
+    if (!file) return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const wb = XLSX.read(buffer, { type: "buffer" })
@@ -180,6 +146,7 @@ export async function POST(request: NextRequest) {
     const failed: FailedRow[] = []
     const productGroups: ProductGroups = new Map()
 
+    // 새 형식(사이즈* 컬럼) vs 구 형식(사이즈별 컬럼) 자동 감지
     const sheetsToProcess = wb.SheetNames.length > 0 ? wb.SheetNames : []
 
     for (const sheetName of sheetsToProcess) {
@@ -188,19 +155,22 @@ export async function POST(request: NextRequest) {
       const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
       if (rows.length === 0) continue
 
+      // 첫 행의 키를 보고 새 형식인지 구 형식인지 판단
       const firstRow = rows[0]
-      if (hasSizeColumn(firstRow)) {
-        parseSheetNew(rows, sheetName, failed, productGroups, t)
+      if ("사이즈*" in firstRow) {
+        parseSheetNew(rows, sheetName, failed, productGroups)
       } else {
-        const sizeColumns = KIDS_SHEET_NAMES.includes(sheetName) ? KIDS_SIZES : ADULT_SIZES
-        parseSheetLegacy(rows, sizeColumns, sheetName, failed, productGroups, t)
+        // 구 형식: 시트명으로 성인복/아동복 구분
+        const sizeColumns = sheetName === "아동복" ? KIDS_SIZES : ADULT_SIZES
+        parseSheetLegacy(rows, sizeColumns, sheetName, failed, productGroups)
       }
     }
 
     if (productGroups.size === 0 && failed.length === 0) {
-      return NextResponse.json({ error: t("noFile") }, { status: 400 })
+      return NextResponse.json({ error: "엑셀에 데이터가 없습니다." }, { status: 400 })
     }
 
+    // 카테고리 처리
     const categoryNames = [...new Set([...productGroups.values()].map((g) => g.category))]
     const categoryMap = new Map<string, string>()
 
@@ -211,13 +181,14 @@ export async function POST(request: NextRequest) {
       categoryMap.set(catName, category.id)
     }
 
+    // 상품 생성
     let success = 0
     const sizeOrder = [...ADULT_SIZES, ...KIDS_SIZES]
 
     for (const [productName, group] of productGroups) {
       try {
         const categoryId = categoryMap.get(group.category)
-        if (!categoryId) { failed.push({ row: 0, error: t("bulkCategoryNotFound", { name: group.category }) }); continue }
+        if (!categoryId) { failed.push({ row: 0, error: `카테고리 "${group.category}" 처리 실패` }); continue }
 
         const colorsMap = new Map<string, string>()
         const sizesSet = new Set<string>()
@@ -266,13 +237,13 @@ export async function POST(request: NextRequest) {
 
         success++
       } catch (err: any) {
-        failed.push({ row: 0, error: `${productName}: ${err.message}` })
+        failed.push({ row: 0, error: `상품 "${productName}" 생성 실패: ${err.message}` })
       }
     }
 
     return NextResponse.json({ success, failed })
   } catch (error: any) {
     console.error("Bulk upload error:", error)
-    return NextResponse.json({ error: t("uploadError") }, { status: 500 })
+    return NextResponse.json({ error: "엑셀 업로드 처리 중 오류가 발생했습니다." }, { status: 500 })
   }
 }

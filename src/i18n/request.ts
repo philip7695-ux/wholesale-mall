@@ -15,7 +15,6 @@ const namespaces = [
   "categories",
   "colors",
   "sizeSpec",
-  "api",
 ] as const
 
 export default getRequestConfig(async ({ requestLocale }) => {

@@ -408,29 +408,29 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         <CardContent className="space-y-4">
           {/* Quick preset */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t("quickSelect")}</span>
+            <span className="text-sm text-muted-foreground">빠른 선택:</span>
             <Button
               type="button" variant="outline" size="sm"
               onClick={() => setSizes(ADULT_SIZES.map((n) => ({ name: n })))}
             >
-              {t("adultSizesPreset")}
+              성인복 (XS~XL)
             </Button>
             <Button
               type="button" variant="outline" size="sm"
               onClick={() => setSizes(KIDS_SIZES.map((n) => ({ name: n })))}
             >
-              {t("kidsSizesPreset")}
+              아동복 (F~130)
             </Button>
             {sizes.length > 0 && (
               <Button type="button" variant="ghost" size="sm" onClick={() => setSizes([])}>
-                {t("resetSizes")}
+                초기화
               </Button>
             )}
           </div>
 
           {/* Predefined size toggles - Adult */}
           <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("adultLabel")}</p>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">성인복</p>
             <div className="flex flex-wrap gap-1.5">
               {ADULT_SIZES.map((name) => {
                 const selected = sizes.some((s) => s.name === name)
@@ -454,7 +454,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
           {/* Predefined size toggles - Kids */}
           <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("kidsLabel")}</p>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">아동복</p>
             <div className="flex flex-wrap gap-1.5">
               {KIDS_SIZES.map((name) => {
                 const selected = sizes.some((s) => s.name === name)
@@ -478,16 +478,16 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
           {/* Custom size input */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t("customInput")}</span>
+            <span className="text-xs text-muted-foreground">직접 입력:</span>
             <Input
-              placeholder={t("customSizePlaceholder")}
+              placeholder="예) FREE, OS"
               value={customSize}
               onChange={(e) => setCustomSize(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSize() } }}
               className="w-28"
             />
             <Button type="button" variant="outline" size="sm" onClick={addCustomSize}>
-              <Plus className="mr-1 h-3 w-3" /> {t("add")}
+              <Plus className="mr-1 h-3 w-3" /> 추가
             </Button>
           </div>
 
@@ -508,7 +508,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
           {/* Selected summary */}
           {sizes.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              {t("selectedSizes")} {sizes.map((s) => s.name).join(", ")}
+              선택된 사이즈: {sizes.map((s) => s.name).join(", ")}
             </p>
           )}
         </CardContent>

@@ -5,7 +5,6 @@ import { generateOrderNumber } from "@/lib/utils"
 import { getExchangeRate } from "@/lib/currency.server"
 import { GRADE_DISCOUNT } from "@/lib/grade"
 import { checkMoq } from "@/lib/moq"
-import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function GET() {
   try {
@@ -28,7 +27,7 @@ export async function GET() {
     return NextResponse.json(orders)
   } catch (error) {
     console.error("[GET /api/orders] error:", error)
-    return NextResponse.json({ error: "Failed to load orders" }, { status: 500 })
+    return NextResponse.json({ error: "주문 목록을 불러오는 중 오류가 발생했습니다." }, { status: 500 })
   }
 }
 
@@ -37,8 +36,6 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-
-  const t = await getApiTranslations(request, "api")
 
   try {
     const { recipientName, recipientPhone, shippingAddress, shippingMemo, paymentMethod, locale } =
@@ -62,7 +59,7 @@ export async function POST(request: Request) {
     })
 
     if (cartItems.length === 0) {
-      return NextResponse.json({ error: t("cartEmpty") }, { status: 400 })
+      return NextResponse.json({ error: "장바구니가 비어있습니다." }, { status: 400 })
     }
 
     // 유저 등급 조회 및 할인율 계산
@@ -109,10 +106,10 @@ export async function POST(request: Request) {
       if (!moqResult.valid) {
         const errors: string[] = []
         if (moqResult.productMoqRequired > 0 && moqResult.productQtyTotal < moqResult.productMoqRequired) {
-          errors.push(t("moqProductError", { name: product.name, required: moqResult.productMoqRequired, actual: moqResult.productQtyTotal }))
+          errors.push(`${product.name}: 최소 ${moqResult.productMoqRequired}장 필요 (현재 ${moqResult.productQtyTotal}장)`)
         }
         for (const ce of moqResult.colorErrors) {
-          errors.push(t("moqColorError", { name: product.name, color: ce.colorName, required: ce.required, actual: ce.actual }))
+          errors.push(`${product.name} - ${ce.colorName}: 최소 ${ce.required}장 필요 (현재 ${ce.actual}장)`)
         }
         return NextResponse.json(
           { error: `MOQ 미달: ${errors.join(", ")}` },
@@ -164,7 +161,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Order creation error:", error)
     return NextResponse.json(
-      { error: "Order processing error" },
+      { error: "주문 처리 중 오류가 발생했습니다." },
       { status: 500 },
     )
   }

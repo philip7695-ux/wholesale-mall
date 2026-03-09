@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
 import { STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
-import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function GET(
   _request: Request,
@@ -30,7 +29,7 @@ export async function GET(
   })
 
   if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
   // Only allow owner or admin
@@ -50,7 +49,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
   const { id } = await params
   const { searchParams } = new URL(request.url)
   const permanent = searchParams.get("permanent") === "true"
@@ -58,7 +56,7 @@ export async function DELETE(
   const order = await prisma.order.findUnique({ where: { id } })
 
   if (!order) {
-    return NextResponse.json({ error: t("orderNotFound") }, { status: 404 })
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
   // 본인 주문이거나 관리자만 가능
@@ -73,7 +71,7 @@ export async function DELETE(
     }
     if (order.status !== "CANCELLED") {
       return NextResponse.json(
-        { error: t("onlyCancelledDelete") },
+        { error: "취소된 주문만 삭제할 수 있습니다." },
         { status: 400 },
       )
     }
@@ -81,13 +79,13 @@ export async function DELETE(
     await prisma.orderItem.deleteMany({ where: { orderId: id } })
     await prisma.order.delete({ where: { id } })
 
-    return NextResponse.json({ message: t("orderDeleted") })
+    return NextResponse.json({ message: "주문이 삭제되었습니다." })
   }
 
   // 취소 처리
   if (session.user.role !== "ADMIN" && order.status !== "ORDER_PLACED") {
     return NextResponse.json(
-      { error: t("onlyPlacedCancel") },
+      { error: "접수 상태의 주문만 취소할 수 있습니다." },
       { status: 400 },
     )
   }
@@ -97,7 +95,7 @@ export async function DELETE(
     data: { status: "CANCELLED", cancelledAt: new Date() },
   })
 
-  return NextResponse.json({ message: t("orderCancelled") })
+  return NextResponse.json({ message: "주문이 취소되었습니다." })
 }
 
 export async function PUT(

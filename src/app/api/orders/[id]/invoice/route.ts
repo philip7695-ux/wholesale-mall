@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getApiTranslations } from "@/lib/api-i18n"
 import { prisma } from "@/lib/prisma"
 import { generateInvoiceNumber } from "@/lib/utils"
 import { buildInvoicePdf, type InvoiceData } from "@/lib/invoice-pdf"
 import { formatCurrency, getCurrencyForLocale } from "@/lib/currency"
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-
-  const t = await getApiTranslations(request, "api")
 
   const { id } = await params
 
@@ -139,7 +136,7 @@ export async function GET(
   } catch (error: any) {
     console.error("[invoice] PDF generation error:", error)
     return NextResponse.json(
-      { error: t("pdfError") },
+      { error: "PDF 생성 중 오류가 발생했습니다." },
       { status: 500 },
     )
   }

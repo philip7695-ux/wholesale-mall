@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { createClient } from "@supabase/supabase-js"
-import { getApiTranslations } from "@/lib/api-i18n"
 
 function getSupabase() {
   return createClient(
@@ -16,15 +15,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
-
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
     const uploadType = formData.get("type") as string | null
 
     if (!file) {
-      return NextResponse.json({ error: t("noFile") }, { status: 400 })
+      return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
     }
 
     // receipt 타입이 아니면 ADMIN만 허용
@@ -50,7 +47,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("Supabase upload error:", error)
-      return NextResponse.json({ error: t("uploadFail", { error: error.message }) }, { status: 500 })
+      return NextResponse.json({ error: "업로드 실패: " + error.message }, { status: 500 })
     }
 
     const { data: urlData } = supabase.storage
@@ -61,7 +58,7 @@ export async function POST(request: Request) {
   } catch (e: any) {
     console.error("Upload error:", e)
     return NextResponse.json(
-      { error: t("uploadError") },
+      { error: "업로드 중 오류가 발생했습니다." },
       { status: 500 },
     )
   }

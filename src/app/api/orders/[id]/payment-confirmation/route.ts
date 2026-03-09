@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getApiTranslations } from "@/lib/api-i18n"
 
 export async function GET(
   _request: Request,
@@ -19,7 +18,7 @@ export async function GET(
   })
 
   if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
   if (session.user.role !== "ADMIN" && order.userId !== session.user.id) {
@@ -43,7 +42,6 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
   const { id } = await params
   const order = await prisma.order.findUnique({
     where: { id },
@@ -51,7 +49,7 @@ export async function POST(
   })
 
   if (!order) {
-    return NextResponse.json({ error: t("orderNotFound") }, { status: 404 })
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
   if (order.userId !== session.user.id) {
@@ -60,7 +58,7 @@ export async function POST(
 
   if (order.status !== "INVOICE_SENT" && order.status !== "AWAITING_PAYMENT") {
     return NextResponse.json(
-      { error: t("paymentNotAvailable") },
+      { error: "입금 확인 요청이 불가능한 상태입니다." },
       { status: 400 },
     )
   }
@@ -69,7 +67,7 @@ export async function POST(
 
   if (!receiptImage || !transferDate || !amount || !senderName) {
     return NextResponse.json(
-      { error: t("allFieldsRequired") },
+      { error: "모든 필드를 입력해주세요." },
       { status: 400 },
     )
   }
@@ -77,7 +75,7 @@ export async function POST(
   // 기존 PENDING 건이 있으면 REJECTED로 변경 (재요청 시나리오)
   await prisma.paymentConfirmation.updateMany({
     where: { orderId: id, status: "PENDING" },
-    data: { status: "REJECTED", rejectionReason: "Superseded by new request" },
+    data: { status: "REJECTED", rejectionReason: "새 요청으로 대체됨" },
   })
 
   const confirmation = await prisma.paymentConfirmation.create({
@@ -113,7 +111,6 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const t = await getApiTranslations(request, "api")
   const { id } = await params
   const { action, rejectionReason } = await request.json()
 
@@ -124,7 +121,7 @@ export async function PUT(
 
   if (!confirmation) {
     return NextResponse.json(
-      { error: t("noPaymentToProcess") },
+      { error: "처리할 입금 확인 요청이 없습니다." },
       { status: 404 },
     )
   }
@@ -145,7 +142,7 @@ export async function PUT(
       }),
     ])
 
-    return NextResponse.json({ message: t("paymentConfirmed") })
+    return NextResponse.json({ message: "입금이 확인되었습니다." })
   }
 
   if (action === "reject") {
@@ -157,8 +154,8 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json({ message: t("paymentRejected") })
+    return NextResponse.json({ message: "입금이 반려되었습니다." })
   }
 
-  return NextResponse.json({ error: t("invalidRequest") }, { status: 400 })
+  return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
 }
