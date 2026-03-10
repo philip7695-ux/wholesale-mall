@@ -17,14 +17,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     return redirect({ href: "/auth/login", locale })
   }
 
-  // 관리자는 shop에 접근할 필요 없음
-  if (session.user.role === "ADMIN") {
-    const locale = await getLocale()
-    return redirect({ href: "/admin", locale })
-  }
-
-  // 미승인 회원 → 대기 페이지
-  if (session.user.approvalStatus !== "APPROVED") {
+  // 미승인 일반 회원 → 대기 페이지 (관리자는 통과)
+  if (session.user.role !== "ADMIN" && session.user.approvalStatus !== "APPROVED") {
     const t = await getTranslations("auth")
     return (
       <AuthSessionProvider>
