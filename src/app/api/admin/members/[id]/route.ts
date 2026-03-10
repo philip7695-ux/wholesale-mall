@@ -91,9 +91,19 @@ export async function DELETE(
     return NextResponse.json({ error: "회원을 찾을 수 없습니다." }, { status: 404 })
   }
 
-  // 주문이 있는 회원은 장바구니만 삭제 후 회원 삭제
-  await prisma.cartItem.deleteMany({ where: { userId: id } })
-  await prisma.user.delete({ where: { id } })
+  // 관련 데이터 모두 삭제 후 회원 삭제
+  await prisma.$transaction(async (tx) => {
+    // 주문 항목 삭제
+    await tx.orderItem.deleteMany({
+      where: { order: { userId: id } },
+    })
+    // 주문 삭제
+    await tx.order.deleteMany({ where: { userId: id } })
+    // 장바구니 삭제
+    await tx.cartItem.deleteMany({ where: { userId: id } })
+    // 회원 삭제
+    await tx.user.delete({ where: { id } })
+  })
 
   return NextResponse.json({ message: "회원이 삭제되었습니다." })
 }
