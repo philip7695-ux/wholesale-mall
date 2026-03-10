@@ -37,21 +37,13 @@ export default function LoginPage() {
       console.error("Login error:", result.error)
       setError(t("loginError"))
     } else {
-      // 세션을 가져와서 role 확인 (재시도 포함)
-      let role = ""
-      for (let i = 0; i < 3; i++) {
-        const session = await getSession()
-        if (session?.user?.role) {
-          role = session.user.role
-          break
-        }
-        await new Promise(r => setTimeout(r, 500))
-      }
+      const session = await getSession()
+      const role = session?.user?.role || ""
       router.refresh()
       if (role === "ADMIN") {
         router.replace("/admin")
       } else {
-        router.replace("/")
+        router.replace("/products")
       }
     }
   }

@@ -33,22 +33,11 @@ export default async function ProductsPage({
     { code: { contains: search, mode: "insensitive" } },
   ]
 
-  const { rate } = await getExchangeRate(locale)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let session: any = null
-  try {
-    session = await auth()
-  } catch (err) {
-    console.error("[ProductsPage] auth() error:", err)
-  }
-  const buyerGrade = session?.user?.buyerGrade || "BRONZE"
-  const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
-
-  let products: any[] = []
-  let categories: any[] = []
-  let total = 0
-  try {
-    ;[products, categories, total] = await Promise.all([
+  // auth, 환율, DB 쿼리를 모두 병렬 실행
+  const [exchangeData, session, productsResult] = await Promise.all([
+    getExchangeRate(locale),
+    auth().catch(() => null),
+    Promise.all([
       prisma.product.findMany({
         where,
         include: {
@@ -62,11 +51,16 @@ export default async function ProductsPage({
       }),
       prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.product.count({ where }),
-    ])
-  } catch (err) {
-    console.error("[ProductsPage] DB error:", err)
-    throw err
-  }
+    ]).catch((err) => {
+      console.error("[ProductsPage] DB error:", err)
+      throw err
+    }),
+  ])
+
+  const { rate } = exchangeData
+  const buyerGrade = (session as any)?.user?.buyerGrade || "BRONZE"
+  const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
+  const [products, categories, total] = productsResult
 
   const totalPages = Math.ceil(total / limit)
 
