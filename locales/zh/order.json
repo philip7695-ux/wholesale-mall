@@ -103,5 +103,6 @@
   "paymentMethodInfo": "付款信息",
   "bankLabel": "银行",
   "accountLabel": "账号",
-  "holderLabel": "户名"
+  "holderLabel": "户名",
+  "approvalRequired": "会员审核通过后方可下单。"
 }

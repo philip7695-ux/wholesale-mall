@@ -16,5 +16,6 @@
   "subtotalUnit": "{qty}장 · {price}",
   "moqWarning": "MOQ 미달 상품이 있습니다",
   "moqProductWarning": "{productName}: 최소 {required}장 필요 (현재 {actual}장)",
-  "moqColorWarning": "{productName} - {colorName}: 최소 {required}장 필요 (현재 {actual}장)"
+  "moqColorWarning": "{productName} - {colorName}: 최소 {required}장 필요 (현재 {actual}장)",
+  "approvalRequired": "회원 승인 후 주문이 가능합니다."
 }

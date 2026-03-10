@@ -103,5 +103,6 @@
   "paymentMethodInfo": "お支払い情報",
   "bankLabel": "銀行",
   "accountLabel": "口座番号",
-  "holderLabel": "口座名義"
+  "holderLabel": "口座名義",
+  "approvalRequired": "会員承認後に注文が可能です。"
 }

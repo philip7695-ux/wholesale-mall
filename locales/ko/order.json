@@ -103,5 +103,6 @@
   "paymentMethodInfo": "결제 안내",
   "bankLabel": "은행",
   "accountLabel": "계좌번호",
-  "holderLabel": "예금주"
+  "holderLabel": "예금주",
+  "approvalRequired": "회원 승인 후 주문이 가능합니다."
 }

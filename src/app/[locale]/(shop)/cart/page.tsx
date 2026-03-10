@@ -373,10 +373,14 @@ export default function CartPage() {
                 <span>{t("totalPayment")}</span>
                 <span className="text-primary">{formatPrice(totalAmount, locale, rate)}</span>
               </div>
+              {session?.user?.approvalStatus !== "APPROVED" && (
+                <p className="text-sm text-destructive text-center">{t("approvalRequired")}</p>
+              )}
               <Button
                 className="w-full"
                 size="lg"
                 onClick={() => router.push("/orders/new")}
+                disabled={hasMoqWarnings || session?.user?.approvalStatus !== "APPROVED"}
               >
                 {t("order")}
               </Button>

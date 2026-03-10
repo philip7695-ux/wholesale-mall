@@ -39,6 +39,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // 승인되지 않은 회원은 주문 불가
+  if (session.user.approvalStatus !== "APPROVED") {
+    return NextResponse.json({ error: "회원 승인 후 주문이 가능합니다." }, { status: 403 })
+  }
+
   try {
     const { recipientName, recipientPhone, shippingAddress, shippingMemo, paymentMethod, locale } =
       await request.json()

@@ -103,5 +103,6 @@
   "paymentMethodInfo": "Payment Information",
   "bankLabel": "Bank",
   "accountLabel": "Account Number",
-  "holderLabel": "Account Holder"
+  "holderLabel": "Account Holder",
+  "approvalRequired": "Orders are available after membership approval."
 }

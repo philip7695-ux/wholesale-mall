@@ -16,5 +16,6 @@
   "subtotalUnit": "{qty}枚 · {price}",
   "moqWarning": "MOQ未達の商品があります",
   "moqProductWarning": "{productName}: 最低{required}枚必要 (現在{actual}枚)",
-  "moqColorWarning": "{productName} - {colorName}: 最低{required}枚必要 (現在{actual}枚)"
+  "moqColorWarning": "{productName} - {colorName}: 最低{required}枚必要 (現在{actual}枚)",
+  "approvalRequired": "会員承認後に注文が可能です。"
 }

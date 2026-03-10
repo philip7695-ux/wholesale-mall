@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
+import { useSession } from "next-auth/react"
 import { useCurrency } from "@/hooks/use-currency"
 
 interface CartItem {
@@ -28,6 +29,7 @@ export default function NewOrderPage() {
   const t = useTranslations("order")
   const tc = useTranslations("common")
   const locale = useLocale()
+  const { data: session } = useSession()
   const { rate } = useCurrency()
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -200,7 +202,10 @@ export default function NewOrderPage() {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+        {session?.user?.approvalStatus !== "APPROVED" && (
+          <p className="text-sm text-destructive text-center">{t("approvalRequired")}</p>
+        )}
+        <Button type="submit" className="w-full" size="lg" disabled={submitting || session?.user?.approvalStatus !== "APPROVED"}>
           {submitting ? t("orderProcessing") : t("orderButton", { price: formatPrice(totalAmount, locale, rate) })}
         </Button>
       </form>
