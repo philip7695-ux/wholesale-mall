@@ -47,9 +47,9 @@ export async function checkAndPromoteGrade(userId: string): Promise<string | nul
   // VIP는 자동 승급 불가
   if (user.buyerGrade === "VIP") return null
 
-  // DELIVERED 주문의 누적 금액 (KRW)
+  // SHIPPED 주문의 누적 금액 (KRW)
   const result = await prisma.order.aggregate({
-    where: { userId, status: "DELIVERED" },
+    where: { userId, status: "SHIPPED" },
     _sum: { totalAmount: true },
   })
 

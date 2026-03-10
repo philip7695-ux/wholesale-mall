@@ -8,7 +8,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react"
+import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { formatPrice } from "@/lib/utils"
 import { translateCategory, translateColor, translateSizeSpecHeader } from "@/lib/translate"
 import { toast } from "sonner"
@@ -63,6 +71,7 @@ export function ProductDetail({ product }: { product: Product }) {
   const [mainImage, setMainImage] = useState(allImages[0] || "")
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
+  const [showCartDialog, setShowCartDialog] = useState(false)
 
   const currentColor = product.colors.find((c) => c.id === selectedColor)
 
@@ -156,8 +165,8 @@ export function ProductDetail({ product }: { product: Product }) {
         throw new Error(data.error)
       }
 
-      toast.success(t("addedToCart"))
       setQuantities({})
+      setShowCartDialog(true)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tc("error"))
     }
@@ -489,6 +498,35 @@ export function ProductDetail({ product }: { product: Product }) {
           </Button>
         </div>
       </div>
+
+      {/* 장바구니 담기 완료 팝업 */}
+      <Dialog open={showCartDialog} onOpenChange={setShowCartDialog}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              {t("addedToCart")}
+            </DialogTitle>
+            <DialogDescription>
+              {product.name}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCartDialog(false)}
+            >
+              {t("continueShopping")}
+            </Button>
+            <Button
+              onClick={() => router.push("/cart")}
+            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              {t("goToCart")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -12,5 +12,6 @@
   "searchPlaceholder": "상품명 검색...",
   "noProducts": "상품이 없습니다.",
   "productsTitle": "상품 목록",
-  "goToShop": "쇼핑몰로 이동"
+  "goToShop": "쇼핑몰로 이동",
+  "welcome": "{name}님 환영합니다"
 }

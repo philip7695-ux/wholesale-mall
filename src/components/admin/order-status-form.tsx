@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { toast } from "sonner"
-import { FileDown, Package, Truck, CheckCircle } from "lucide-react"
+import { FileDown, Package, Truck } from "lucide-react"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
 
@@ -101,6 +101,14 @@ export function OrderStatusForm({
     setPackingLoading(false)
   }
 
+  const orderStatuses = [
+    { value: "ORDER_PLACED", label: t("orderStatusOrderPlaced") },
+    { value: "INVOICE_SENT", label: t("orderStatusInvoiceSent") },
+    { value: "PAYMENT_CONFIRMED", label: t("orderStatusPaymentConfirmed") },
+    { value: "SHIPPED", label: t("orderStatusShipped") },
+    { value: "CANCELLED", label: t("orderStatusCancelled") },
+  ]
+
   const paymentStatuses = [
     { value: "PENDING", label: t("paymentStatusPending") },
     { value: "PAID", label: t("paymentStatusPaid") },
@@ -179,31 +187,6 @@ export function OrderStatusForm({
     setLoading(false)
   }
 
-  // 배송완료 처리
-  async function handleDelivered() {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/orders/${orderId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "DELIVERED" }),
-      })
-
-      if (!res.ok) throw new Error()
-
-      const data = await res.json()
-      if (data.promotedGrade) {
-        toast.success(t("gradeAutoPromoted"))
-      }
-
-      toast.success(t("orderStatusChanged"))
-      router.refresh()
-    } catch {
-      toast.error(t("orderStatusChangeFail"))
-    }
-    setLoading(false)
-  }
-
   // 주문 취소
   async function handleCancel() {
     if (!confirm(t("orderCancelConfirm"))) return
@@ -251,10 +234,9 @@ export function OrderStatusForm({
   }
 
   // 현재 단계에 맞는 다음 액션 결정
-  const isPrePayment = ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"].includes(currentStatus)
-  const isPaymentConfirmed = ["PAYMENT_CONFIRMED", "PREPARING"].includes(currentStatus)
+  const isPrePayment = ["ORDER_PLACED", "INVOICE_SENT"].includes(currentStatus)
+  const isPaymentConfirmed = currentStatus === "PAYMENT_CONFIRMED"
   const isShipped = currentStatus === "SHIPPED"
-  const isCompleted = currentStatus === "DELIVERED"
   const isCancelled = currentStatus === "CANCELLED"
 
   return (
@@ -399,33 +381,19 @@ export function OrderStatusForm({
             </div>
           )}
 
-          {/* 배송 중: 배송완료 처리 */}
+          {/* 배송 완료 (SHIPPED = 최종 상태) */}
           {isShipped && (
-            <div className="space-y-3 rounded-lg border p-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{t("nextStepDelivery")}</Badge>
-              </div>
+            <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-4">
               {currentTrackingNumber && (
                 <div className="text-sm text-muted-foreground">
                   {t("trackingShippingCarrier")}: {currentShippingCarrier || "-"} / {t("trackingNumber")}: {currentTrackingNumber}
                 </div>
               )}
-              <Button onClick={handleDelivered} disabled={loading} className="w-full">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                {loading ? t("orderSaving") : t("confirmDelivery")}
-              </Button>
-            </div>
-          )}
-
-          {/* 완료 */}
-          {isCompleted && (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center text-sm text-green-700">
-              {t("orderCompleted")}
             </div>
           )}
 
           {/* 주문 취소 / 삭제 */}
-          {!isCancelled && !isCompleted && (
+          {!isCancelled && !isShipped && (
             <Button
               variant="ghost"
               onClick={handleCancel}

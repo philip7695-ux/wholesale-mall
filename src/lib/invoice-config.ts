@@ -21,6 +21,16 @@ export const WISE_INFO = {
   bankAddress: "56 Shoreditch High Street, London, E1 6JJ, United Kingdom",
 }
 
+export const ALIPAY_INFO = {
+  accountName: "YOUR COMPANY NAME",
+  accountId: "alipay@example.com",
+}
+
+export const WECHAT_INFO = {
+  accountName: "YOUR COMPANY NAME",
+  wechatId: "wechat_id_here",
+}
+
 export const INVOICE_FOOTER = {
   message: "Thank you for your business!",
   terms: "Payment is due within 7 days of invoice date.",

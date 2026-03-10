@@ -58,7 +58,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  if (!["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"].includes(order.status)) {
+  if (order.status !== "INVOICE_SENT") {
     return NextResponse.json(
       { error: "입금 확인 요청이 불가능한 상태입니다." },
       { status: 400 },

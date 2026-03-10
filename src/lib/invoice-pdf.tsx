@@ -6,11 +6,21 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
   Font,
   renderToBuffer,
 } from "@react-pdf/renderer"
 import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-config"
+
+export interface InvoiceSellerInfo {
+  companyName: string
+  address: string
+  phone: string
+  email: string
+  footerMessage: string
+  footerTerms: string
+}
 
 function registerFont() {
   const base = path.join(process.cwd(), "public/fonts")
@@ -32,6 +42,15 @@ export interface InvoiceItem {
   subtotal: number
 }
 
+export interface InvoicePaymentInfo {
+  method: string
+  accountName: string
+  accountInfo: string
+  bankName: string
+  qrCodeUrl?: string
+  memo: string
+}
+
 export interface InvoiceData {
   invoiceNumber: string
   issueDate: string
@@ -50,6 +69,8 @@ export interface InvoiceData {
   discountAmountKRW: number
   totalAmountKRW: number
   formatAmount: (amountKRW: number) => string
+  paymentInfo?: InvoicePaymentInfo | null
+  sellerInfo?: InvoiceSellerInfo | null
 }
 
 const styles = StyleSheet.create({
@@ -219,6 +240,7 @@ const styles = StyleSheet.create({
 
 function InvoiceDocument({ data }: { data: InvoiceData }) {
   const { formatAmount } = data
+  const seller = data.sellerInfo || SELLER_INFO
 
   return (
     <Document>
@@ -236,10 +258,10 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
         <View style={styles.twoColumn}>
           <View style={styles.columnHalf}>
             <Text style={styles.sectionLabel}>From</Text>
-            <Text style={styles.companyName}>{SELLER_INFO.companyName}</Text>
-            <Text style={styles.infoLine}>{SELLER_INFO.address}</Text>
-            <Text style={styles.infoLine}>{SELLER_INFO.phone}</Text>
-            <Text style={styles.infoLine}>{SELLER_INFO.email}</Text>
+            <Text style={styles.companyName}>{seller.companyName}</Text>
+            <Text style={styles.infoLine}>{seller.address}</Text>
+            <Text style={styles.infoLine}>{seller.phone}</Text>
+            <Text style={styles.infoLine}>{seller.email}</Text>
           </View>
           <View style={styles.columnHalf}>
             <Text style={styles.sectionLabel}>To</Text>
@@ -307,38 +329,59 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
         {/* Payment Info */}
         <View style={styles.paymentSection}>
           <Text style={styles.paymentTitle}>Payment Information</Text>
-          <View style={styles.twoColumn}>
-            <View style={styles.paymentColumn}>
-              <Text style={styles.paymentLabel}>HK Bank Transfer</Text>
-              <Text style={styles.paymentLine}>Bank: {HK_BANK_INFO.bankName}</Text>
-              <Text style={styles.paymentLine}>
-                Account: {HK_BANK_INFO.accountName}
-              </Text>
-              <Text style={styles.paymentLine}>
-                No: {HK_BANK_INFO.accountNumber}
-              </Text>
-              <Text style={styles.paymentLine}>
-                SWIFT: {HK_BANK_INFO.swiftCode}
-              </Text>
+          {data.paymentInfo ? (
+            <View style={styles.twoColumn}>
+              <View style={styles.paymentColumn}>
+                <Text style={styles.paymentLabel}>
+                  {data.paymentInfo.method === "BANK_TRANSFER" ? "Bank Transfer"
+                    : data.paymentInfo.method === "ALIPAY" ? "Alipay"
+                    : data.paymentInfo.method === "WECHAT" ? "WeChat Pay"
+                    : data.paymentInfo.method}
+                </Text>
+                {data.paymentInfo.bankName && (
+                  <Text style={styles.paymentLine}>Bank: {data.paymentInfo.bankName}</Text>
+                )}
+                <Text style={styles.paymentLine}>Account: {data.paymentInfo.accountName}</Text>
+                <Text style={styles.paymentLine}>No: {data.paymentInfo.accountInfo}</Text>
+                {data.paymentInfo.memo && (
+                  <Text style={styles.paymentLine}>{data.paymentInfo.memo}</Text>
+                )}
+              </View>
+              {data.paymentInfo.qrCodeUrl && (data.paymentInfo.method === "ALIPAY" || data.paymentInfo.method === "WECHAT") && (
+                <View style={{ width: "48%", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={[styles.paymentLine, { marginBottom: 6 }]}>Scan to Pay</Text>
+                  <Image src={data.paymentInfo.qrCodeUrl} style={{ width: 100, height: 100 }} />
+                </View>
+              )}
             </View>
-            <View style={styles.paymentColumn}>
-              <Text style={styles.paymentLabel}>Wise Transfer</Text>
-              <Text style={styles.paymentLine}>
-                Account: {WISE_INFO.accountName}
-              </Text>
-              <Text style={styles.paymentLine}>IBAN: {WISE_INFO.iban}</Text>
-              <Text style={styles.paymentLine}>
-                SWIFT/BIC: {WISE_INFO.swiftBic}
-              </Text>
-              <Text style={styles.paymentLine}>Bank: {WISE_INFO.bankName}</Text>
+          ) : (
+            <View style={styles.twoColumn}>
+              <View style={styles.paymentColumn}>
+                <Text style={styles.paymentLabel}>HK Bank Transfer</Text>
+                <Text style={styles.paymentLine}>Bank: {HK_BANK_INFO.bankName}</Text>
+                <Text style={styles.paymentLine}>Account: {HK_BANK_INFO.accountName}</Text>
+                <Text style={styles.paymentLine}>No: {HK_BANK_INFO.accountNumber}</Text>
+                <Text style={styles.paymentLine}>SWIFT: {HK_BANK_INFO.swiftCode}</Text>
+              </View>
+              <View style={styles.paymentColumn}>
+                <Text style={styles.paymentLabel}>Wise Transfer</Text>
+                <Text style={styles.paymentLine}>Account: {WISE_INFO.accountName}</Text>
+                <Text style={styles.paymentLine}>IBAN: {WISE_INFO.iban}</Text>
+                <Text style={styles.paymentLine}>SWIFT/BIC: {WISE_INFO.swiftBic}</Text>
+                <Text style={styles.paymentLine}>Bank: {WISE_INFO.bankName}</Text>
+              </View>
             </View>
-          </View>
+          )}
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{INVOICE_FOOTER.message}</Text>
-          <Text style={styles.footerText}>{INVOICE_FOOTER.terms}</Text>
+          <Text style={styles.footerText}>
+            {(data.sellerInfo?.footerMessage) || INVOICE_FOOTER.message}
+          </Text>
+          <Text style={styles.footerText}>
+            {(data.sellerInfo?.footerTerms) || INVOICE_FOOTER.terms}
+          </Text>
         </View>
       </Page>
     </Document>

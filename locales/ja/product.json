@@ -9,6 +9,8 @@
   "adding": "追加中...",
   "enterQuantity": "数量を入力してください。",
   "addedToCart": "カートに追加しました。",
+  "goToCart": "カートへ移動",
+  "continueShopping": "買い物を続ける",
   "composition": "混用率",
   "compositionPlaceholder": "例：綿 100%、ポリエステル 80% 綿 20%",
   "originalPrice": "定価",

@@ -76,7 +76,7 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24시간 (JWT 토큰 자체 만료)
+    maxAge: 24 * 60 * 60, // 24시간
   },
   cookies: {
     sessionToken: {

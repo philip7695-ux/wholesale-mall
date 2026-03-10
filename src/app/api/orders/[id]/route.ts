@@ -84,9 +84,10 @@ export async function DELETE(
   }
 
   // 취소 처리
-  if (session.user.role !== "ADMIN" && order.status !== "ORDER_PLACED") {
+  const cancelableStatuses = ["ORDER_PLACED", "INVOICE_SENT"]
+  if (session.user.role !== "ADMIN" && !cancelableStatuses.includes(order.status)) {
     return NextResponse.json(
-      { error: "접수 상태의 주문만 취소할 수 있습니다." },
+      { error: "입금 전 상태의 주문만 취소할 수 있습니다." },
       { status: 400 },
     )
   }
@@ -99,6 +100,55 @@ export async function DELETE(
   return NextResponse.json({ message: "주문이 취소되었습니다." })
 }
 
+// 고객용: 배송 정보 및 결제수단 수정
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await params
+  const order = await prisma.order.findUnique({ where: { id } })
+
+  if (!order) {
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
+  }
+
+  if (session.user.role !== "ADMIN" && order.userId !== session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+  }
+
+  const editableStatuses = ["ORDER_PLACED", "INVOICE_SENT"]
+  if (!editableStatuses.includes(order.status)) {
+    return NextResponse.json({ error: "입금 전 상태의 주문만 수정할 수 있습니다." }, { status: 400 })
+  }
+
+  try {
+    const { recipientName, recipientPhone, shippingAddress, shippingMemo, paymentMethod } = await request.json()
+
+    const data: Record<string, string> = {}
+    if (recipientName !== undefined) data.recipientName = recipientName
+    if (recipientPhone !== undefined) data.recipientPhone = recipientPhone
+    if (shippingAddress !== undefined) data.shippingAddress = shippingAddress
+    if (shippingMemo !== undefined) data.shippingMemo = shippingMemo
+    if (paymentMethod !== undefined) data.paymentMethod = paymentMethod
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data,
+    })
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    console.error("[PATCH /api/orders] error:", error)
+    return NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 })
+  }
+}
+
+// 관리자용: 상태/결제상태 변경
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -127,7 +177,7 @@ export async function PUT(
     data.paymentStatus = paymentStatus
     // 결제완료 → 주문 상태 자동 PAYMENT_CONFIRMED
     if (paymentStatus === "PAID") {
-      const prePaymentStatuses = ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"]
+      const prePaymentStatuses = ["ORDER_PLACED", "INVOICE_SENT"]
       if (prePaymentStatuses.includes(currentOrder.status)) {
         data.status = "PAYMENT_CONFIRMED"
         data.paymentConfirmedAt = new Date()
@@ -140,7 +190,7 @@ export async function PUT(
   if (shippingCarrier !== undefined) data.shippingCarrier = shippingCarrier
   if (trackingNumber && trackingNumber.trim() !== "") {
     const effectiveStatus = (data.status as string) || currentOrder.status
-    const shippableStatuses = ["PAYMENT_CONFIRMED", "PREPARING"]
+    const shippableStatuses = ["PAYMENT_CONFIRMED"]
     if (shippableStatuses.includes(effectiveStatus)) {
       data.status = "SHIPPED"
       data.shippedAt = new Date()
@@ -172,9 +222,9 @@ export async function PUT(
     })
   }
 
-  // DELIVERED로 변경 시 자동 승급 체크
+  // SHIPPED로 변경 시 자동 승급 체크
   let promotedGrade: string | null = null
-  if (order.status === "DELIVERED") {
+  if (order.status === "SHIPPED") {
     promotedGrade = await checkAndPromoteGrade(order.userId)
   }
 

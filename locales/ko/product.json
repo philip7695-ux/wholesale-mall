@@ -9,6 +9,8 @@
   "adding": "추가중...",
   "enterQuantity": "수량을 입력해주세요.",
   "addedToCart": "장바구니에 추가되었습니다.",
+  "goToCart": "장바구니로 이동",
+  "continueShopping": "계속 쇼핑하기",
   "composition": "혼용률",
   "compositionPlaceholder": "예: 면 100%, 폴리에스터 80% 면 20%",
   "originalPrice": "정가",

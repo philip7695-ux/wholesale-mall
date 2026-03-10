@@ -12,5 +12,6 @@
   "searchPlaceholder": "Search products...",
   "noProducts": "No products found.",
   "productsTitle": "Product List",
-  "goToShop": "Go to Shop"
+  "goToShop": "Go to Shop",
+  "welcome": "Welcome, {name}"
 }

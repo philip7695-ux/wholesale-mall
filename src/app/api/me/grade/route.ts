@@ -18,9 +18,9 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
 
-  // DELIVERED 주문의 누적 금액 (KRW)
+  // SHIPPED 주문의 누적 금액 (KRW)
   const result = await prisma.order.aggregate({
-    where: { userId: session.user.id, status: "DELIVERED" },
+    where: { userId: session.user.id, status: "SHIPPED" },
     _sum: { totalAmount: true },
   })
 

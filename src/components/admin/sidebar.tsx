@@ -11,9 +11,8 @@ import {
   ShoppingCart,
   Users,
   ArrowLeftRight,
-  Landmark,
-  Crown,
   CreditCard,
+  Crown,
   ExternalLink,
   LogOut,
 } from "lucide-react"
@@ -32,7 +31,6 @@ export function AdminSidebar() {
     { href: "/admin/settings/exchange-rates", label: t("exchangeRates"), icon: ArrowLeftRight },
     { href: "/admin/settings/grades", label: t("gradeSettings"), icon: Crown },
     { href: "/admin/settings/payment", label: t("paymentSettings"), icon: CreditCard },
-    { href: "/admin/settings/wise", label: t("wiseSettings"), icon: Landmark },
   ]
 
   return (

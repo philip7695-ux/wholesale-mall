@@ -1,6 +1,13 @@
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
 import { AdminSidebar } from "@/components/admin/sidebar"
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
+  if (!session || session.user.role !== "ADMIN") {
+    redirect("/")
+  }
+
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />

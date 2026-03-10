@@ -32,18 +32,28 @@ export default function NewOrderPage() {
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState("")
+  const [enabledMethods, setEnabledMethods] = useState<string[]>([])
 
   useEffect(() => {
-    fetch("/api/cart")
-      .then((res) => res.json())
-      .then((data) => {
-        setItems(data)
-        if (data.length === 0) {
-          toast.error(t("cartEmpty"))
-          router.push("/cart")
-        }
-      })
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch("/api/cart").then((res) => res.json()),
+      fetch("/api/payment-config").then((res) => res.json()),
+    ]).then(([cartData, paymentConfigs]) => {
+      setItems(cartData)
+      if (cartData.length === 0) {
+        toast.error(t("cartEmpty"))
+        router.push("/cart")
+      }
+      if (Array.isArray(paymentConfigs) && paymentConfigs.length > 0) {
+        const methods = paymentConfigs.map((c: { method: string }) => c.method)
+        setEnabledMethods(methods)
+        setPaymentMethod(methods[0])
+      } else {
+        setEnabledMethods(["BANK_TRANSFER"])
+        setPaymentMethod("BANK_TRANSFER")
+      }
+    }).finally(() => setLoading(false))
   }, [router, t])
 
   const totalAmount = items.reduce(
@@ -66,7 +76,7 @@ export default function NewOrderPage() {
           recipientPhone: formData.get("recipientPhone"),
           shippingAddress: formData.get("shippingAddress"),
           shippingMemo: formData.get("shippingMemo"),
-          paymentMethod: "BANK_TRANSFER",
+          paymentMethod,
           locale,
         }),
       })
@@ -158,11 +168,34 @@ export default function NewOrderPage() {
             <CardTitle>{t("paymentMethodTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md bg-muted p-4">
-              <p className="font-medium">{t("bankTransfer")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("bankTransferDesc")}
-              </p>
+            <div className="space-y-2">
+              {([
+                { value: "BANK_TRANSFER", label: t("bankTransfer"), desc: t("bankTransferDesc") },
+                { value: "ALIPAY", label: t("alipay"), desc: t("alipayDesc") },
+                { value: "WECHAT", label: t("wechat"), desc: t("wechatDesc") },
+              ] as const).filter((m) => enabledMethods.includes(m.value)).map((method) => (
+                <label
+                  key={method.value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-md border p-4 transition-colors ${
+                    paymentMethod === method.value
+                      ? "border-primary bg-primary/5"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={method.value}
+                    checked={paymentMethod === method.value}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="font-medium">{method.label}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{method.desc}</p>
+                  </div>
+                </label>
+              ))}
             </div>
           </CardContent>
         </Card>

@@ -202,11 +202,8 @@ enum BuyerGrade {
 enum OrderStatus {
   ORDER_PLACED
   INVOICE_SENT
-  AWAITING_PAYMENT
   PAYMENT_CONFIRMED
-  PREPARING
   SHIPPED
-  DELIVERED
   CANCELLED
 }
 
@@ -214,6 +211,8 @@ enum PaymentMethod {
   CARD
   BANK_TRANSFER
   VIRTUAL_ACCOUNT
+  ALIPAY
+  WECHAT
 }
 
 enum PaymentStatus {
@@ -263,21 +262,42 @@ model WiseWebhookLog {
   createdAt  DateTime @default(now())
 }
 
+model PaymentConfig {
+  id          String   @id @default(cuid())
+  method      String   @unique // BANK_TRANSFER, ALIPAY, WECHAT
+  enabled     Boolean  @default(true)
+  accountName String   @default("")
+  accountInfo String   @default("") // 계좌번호 or 계정 ID
+  bankName    String   @default("") // 은행명 (계좌이체용)
+  qrCodeUrl   String   @default("") // QR코드 이미지 URL
+  memo        String   @default("") // 추가 안내 메모
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StoreConfig {
+  id             String   @id @default("default")
+  companyName    String   @default("")
+  address        String   @default("")
+  phone          String   @default("")
+  email          String   @default("")
+  footerMessage  String   @default("Thank you for your business!")
+  footerTerms    String   @default("Payment is due within 7 days of invoice date.")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model PaymentSetting {
   id             String   @id @default(cuid())
-  // 알림 이메일
   notificationEmail String?
-  // 계좌이체 정보
   bankName       String?
   accountNumber  String?
   accountHolder  String?
-  bankNote       String?  // 추가 안내 문구
-  // 알리페이 QR
+  bankNote       String?
   alipayQrImage  String?
-  alipayNote     String?  // 추가 안내 문구
-  // 위챗페이 QR
+  alipayNote     String?
   wechatQrImage  String?
-  wechatNote     String?  // 추가 안내 문구
+  wechatNote     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

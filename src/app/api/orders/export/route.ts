@@ -6,11 +6,8 @@ import * as XLSX from "xlsx"
 const statusLabels: Record<string, string> = {
   ORDER_PLACED: "주문접수",
   INVOICE_SENT: "인보이스 발행",
-  AWAITING_PAYMENT: "입금대기",
   PAYMENT_CONFIRMED: "입금확인",
-  PREPARING: "준비중",
   SHIPPED: "출하완료",
-  DELIVERED: "배송완료",
   CANCELLED: "취소됨",
 }
 

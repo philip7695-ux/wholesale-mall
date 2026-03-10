@@ -38,11 +38,8 @@ export default async function AdminOrderDetailPage({
   const statusLabels: Record<string, string> = {
     ORDER_PLACED: t("orderStatusOrderPlaced"),
     INVOICE_SENT: t("orderStatusInvoiceSent"),
-    AWAITING_PAYMENT: t("orderStatusAwaitingPayment"),
     PAYMENT_CONFIRMED: t("orderStatusPaymentConfirmed"),
-    PREPARING: t("orderStatusPreparing"),
     SHIPPED: t("orderStatusShipped"),
-    DELIVERED: t("orderStatusDelivered"),
     CANCELLED: t("orderStatusCancelled"),
   }
 

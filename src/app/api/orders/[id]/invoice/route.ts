@@ -68,6 +68,18 @@ export async function GET(
     }
   }
 
+  // 결제수단별 결제 정보 조회
+  let paymentInfo: { method: string; accountName: string; accountInfo: string; bankName: string; memo: string } | null = null
+  if (order.paymentMethod) {
+    try {
+      const config = await prisma.paymentConfig.findUnique({
+        where: { method: order.paymentMethod },
+        select: { method: true, accountName: true, accountInfo: true, bankName: true, qrCodeUrl: true, memo: true },
+      })
+      if (config) paymentInfo = config
+    } catch { /* table may not exist */ }
+  }
+
   // Build invoice data
   const currency = order.currency || "KRW"
   const exchangeRate = order.exchangeRate || 1
@@ -125,7 +137,24 @@ export async function GET(
     discountAmountKRW,
     totalAmountKRW: order.totalAmount,
     formatAmount,
+    paymentInfo,
+    sellerInfo: null as import("@/lib/invoice-pdf").InvoiceSellerInfo | null,
   }
+
+  // StoreConfig에서 회사 정보 조회
+  try {
+    const sc = await prisma.storeConfig.findUnique({ where: { id: "default" } })
+    if (sc && sc.companyName) {
+      invoiceData.sellerInfo = {
+        companyName: sc.companyName,
+        address: sc.address,
+        phone: sc.phone,
+        email: sc.email,
+        footerMessage: sc.footerMessage,
+        footerTerms: sc.footerTerms,
+      }
+    }
+  } catch { /* table may not exist */ }
 
   // 인보이스 최초 생성 시 고객에게 이메일 발송
   if (!order.invoiceNumber) {

@@ -31,11 +31,8 @@ export default function OrdersPage() {
   const statusLabels: Record<string, string> = {
     ORDER_PLACED: t("statusOrderPlaced"),
     INVOICE_SENT: t("statusInvoiceSent"),
-    AWAITING_PAYMENT: t("statusAwaitingPayment"),
     PAYMENT_CONFIRMED: t("statusPaymentConfirmed"),
-    PREPARING: t("statusPreparing"),
     SHIPPED: t("statusShipped"),
-    DELIVERED: t("statusDelivered"),
     CANCELLED: t("statusCancelled"),
   }
 

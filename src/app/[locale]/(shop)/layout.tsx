@@ -1,16 +1,25 @@
 import { ShopHeader } from "@/components/shop/header"
-import { ShopFooter } from "@/components/shop/footer"
+import { ShopSidebar } from "@/components/shop/sidebar"
 import { AuthSessionProvider } from "@/components/shop/session-provider"
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthSessionProvider>
-      <div className="flex min-h-screen flex-col">
-        <ShopHeader />
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
-          {children}
-        </main>
-        <ShopFooter />
+      <div className="flex h-screen overflow-hidden">
+        {/* Desktop sidebar */}
+        <div className="hidden md:block">
+          <ShopSidebar />
+        </div>
+
+        {/* Main area */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <ShopHeader />
+          <main className="flex-1 overflow-y-auto p-6">
+            <div className="mx-auto max-w-7xl">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </AuthSessionProvider>
   )

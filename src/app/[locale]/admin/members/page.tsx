@@ -50,7 +50,7 @@ export default async function AdminMembersPage() {
       createdAt: true,
       _count: { select: { orders: true } },
       orders: {
-        where: { status: "DELIVERED" },
+        where: { status: { not: "CANCELLED" } },
         select: { totalAmount: true },
       },
     },
@@ -100,11 +100,12 @@ export default async function AdminMembersPage() {
                       {member.businessNumber && <p>{t("businessNumberPrefix")}{member.businessNumber}</p>}
                       {member.phone && <p>{t("phonePrefix")}{member.phone}</p>}
                       <p>{t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</p>
-                      {totalSpending > 0 && (
-                        <p>{t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</p>
-                      )}
+                      <p>{t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/admin/members/${member.id}/edit`}>{t("editMember")}</Link>
+                      </Button>
                       <MemberGradeSelect
                         memberId={member.id}
                         currentGrade={member.buyerGrade}

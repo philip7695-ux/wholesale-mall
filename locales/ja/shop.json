@@ -12,5 +12,6 @@
   "searchPlaceholder": "商品名で検索...",
   "noProducts": "商品が見つかりません。",
   "productsTitle": "商品一覧",
-  "goToShop": "ショップへ"
+  "goToShop": "ショップへ",
+  "welcome": "{name}様、ようこそ"
 }

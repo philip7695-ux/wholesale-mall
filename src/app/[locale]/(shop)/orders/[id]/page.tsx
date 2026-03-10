@@ -12,7 +12,8 @@ import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
-import { FileDown, Upload } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { FileDown, Upload, Pencil, X, CheckCircle } from "lucide-react"
 
 interface OrderDetail {
   id: string
@@ -47,6 +48,15 @@ interface OrderDetail {
   }[]
 }
 
+interface PaymentConfigInfo {
+  method: string
+  accountName: string
+  accountInfo: string
+  bankName: string
+  qrCodeUrl: string
+  memo: string
+}
+
 interface PaymentConfirmation {
   id: string
   receiptImage: string
@@ -68,7 +78,16 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
-  const [editing, setEditing] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editFields, setEditFields] = useState({
+    recipientName: "",
+    recipientPhone: "",
+    shippingAddress: "",
+    shippingMemo: "",
+    paymentMethod: "",
+  })
+  const [editSaving, setEditSaving] = useState(false)
+  const [enabledMethods, setEnabledMethods] = useState<string[]>([])
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
   // Payment confirmation states
@@ -79,36 +98,49 @@ export default function OrderDetailPage() {
   const [senderName, setSenderName] = useState("")
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [paymentInfo, setPaymentInfo] = useState<{
-    bankName?: string; accountNumber?: string; accountHolder?: string; bankNote?: string
-    alipayQrImage?: string; wechatQrImage?: string
-  } | null>(null)
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfigInfo | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const statusLabels: Record<string, string> = {
     ORDER_PLACED: t("statusOrderPlaced"),
     INVOICE_SENT: t("statusInvoiceSent"),
-    AWAITING_PAYMENT: t("statusAwaitingPayment"),
     PAYMENT_CONFIRMED: t("statusPaymentConfirmed"),
-    PREPARING: t("statusPreparing"),
     SHIPPED: t("statusShipped"),
-    DELIVERED: t("statusDelivered"),
     CANCELLED: t("statusCancelled"),
   }
 
-  async function handleEdit() {
-    if (!confirm(t("editConfirm"))) return
-    setEditing(true)
+  function startEdit() {
+    if (!order) return
+    setEditFields({
+      recipientName: order.recipientName || "",
+      recipientPhone: order.recipientPhone || "",
+      shippingAddress: order.shippingAddress || "",
+      shippingMemo: order.shippingMemo || "",
+      paymentMethod: order.paymentMethod || "BANK_TRANSFER",
+    })
+    setEditMode(true)
+  }
+
+  async function handleEditSave() {
+    setEditSaving(true)
     try {
-      const res = await fetch(`/api/orders/${params.id}/reorder`, { method: "POST" })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      toast.success(t("editSuccessDetail"))
-      router.push("/cart")
+      const res = await fetch(`/api/orders/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFields),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error)
+      }
+      const updated = await res.json()
+      setOrder((prev) => prev ? { ...prev, ...updated } : prev)
+      setEditMode(false)
+      toast.success(t("editSaved"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("editFail"))
+      toast.error(err instanceof Error ? err.message : t("editSaveFail"))
     }
-    setEditing(false)
+    setEditSaving(false)
   }
 
   async function handleCancel() {
@@ -197,14 +229,18 @@ export default function OrderDetailPage() {
     Promise.all([
       fetch(`/api/orders/${params.id}`).then((res) => res.json()),
       fetch(`/api/orders/${params.id}/payment-confirmation`).then((res) => res.json()),
-      fetch(`/api/payment-info`).then((res) => res.json()),
-    ]).then(([orderData, confirmData, paymentData]) => {
+      fetch("/api/payment-config").then((res) => res.json()),
+    ]).then(([orderData, confirmData, paymentConfigs]) => {
       setOrder(orderData)
       if (confirmData && confirmData.id) {
         setPaymentConfirmation(confirmData)
       }
-      if (paymentData) {
-        setPaymentInfo(paymentData)
+      if (Array.isArray(paymentConfigs)) {
+        setEnabledMethods(paymentConfigs.map((c: PaymentConfigInfo) => c.method))
+        if (orderData.paymentMethod) {
+          const matched = paymentConfigs.find((c: PaymentConfigInfo) => c.method === orderData.paymentMethod)
+          if (matched) setPaymentConfig(matched)
+        }
       }
     }).finally(() => setLoading(false))
   }, [params.id])
@@ -232,7 +268,8 @@ export default function OrderDetailPage() {
   }
 
   const showPaymentConfirmSection =
-    ["ORDER_PLACED", "INVOICE_SENT", "AWAITING_PAYMENT"].includes(order.status)
+    (order.status === "INVOICE_SENT") &&
+    (order.paymentMethod === "BANK_TRANSFER" || order.paymentMethod === "ALIPAY" || order.paymentMethod === "WECHAT")
 
   const canSubmitPaymentConfirm =
     !paymentConfirmation || paymentConfirmation.status === "REJECTED"
@@ -245,16 +282,18 @@ export default function OrderDetailPage() {
           <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>
             {statusLabels[order.status]}
           </span>
-          {order.status === "ORDER_PLACED" && (
+          {(order.status === "ORDER_PLACED" || order.status === "INVOICE_SENT") && (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEdit}
-                disabled={editing}
-              >
-                {editing ? tc("processing") : t("editOrder")}
-              </Button>
+              {!editMode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={startEdit}
+                >
+                  <Pencil className="mr-1 h-3 w-3" />
+                  {t("editOrder")}
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 size="sm"
@@ -294,7 +333,12 @@ export default function OrderDetailPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("paymentMethod")}</span>
-            <span>{order.paymentMethod === "BANK_TRANSFER" ? t("bankTransfer") : order.paymentMethod}</span>
+            <span>{
+              order.paymentMethod === "BANK_TRANSFER" ? t("bankTransfer")
+              : order.paymentMethod === "ALIPAY" ? t("alipay")
+              : order.paymentMethod === "WECHAT" ? t("wechat")
+              : order.paymentMethod
+            }</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("paymentStatus")}</span>
@@ -375,7 +419,7 @@ export default function OrderDetailPage() {
                 <p className="text-sm text-muted-foreground">{t("paymentConfirmDesc")}</p>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <Label>{t("receiptImage")}</Label>
+                    <Label>{t("receiptImage")} *</Label>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -383,7 +427,40 @@ export default function OrderDetailPage() {
                       onChange={handleReceiptUpload}
                       className="hidden"
                     />
-                    <div className="flex items-center gap-2">
+                    {receiptImage ? (
+                      <div className="space-y-2">
+                        <div className="relative inline-block">
+                          <img
+                            src={receiptImage}
+                            alt="Receipt"
+                            className="h-32 w-32 rounded border object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReceiptImage("")
+                              if (fileInputRef.current) fileInputRef.current.value = ""
+                            }}
+                            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-0.5 text-white shadow hover:bg-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-green-600">{t("receiptImageUploaded")}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                          >
+                            {t("receiptImageChange")}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                       <Button
                         type="button"
                         variant="outline"
@@ -394,12 +471,7 @@ export default function OrderDetailPage() {
                         <Upload className="mr-1 h-4 w-4" />
                         {uploading ? t("receiptImageUploading") : t("receiptImageUpload")}
                       </Button>
-                      {receiptImage && (
-                        <a href={receiptImage} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">
-                          {t("receiptImageView")}
-                        </a>
-                      )}
-                    </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label>{t("transferDate")}</Label>
@@ -496,7 +568,82 @@ export default function OrderDetailPage() {
         </CardContent>
       </Card>
 
-      {order.recipientName && (
+      {editMode ? (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle>{t("editShippingInfo")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{t("receiver")}</Label>
+                <Input
+                  value={editFields.recipientName}
+                  onChange={(e) => setEditFields((prev) => ({ ...prev, recipientName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("contact")}</Label>
+                <Input
+                  value={editFields.recipientPhone}
+                  onChange={(e) => setEditFields((prev) => ({ ...prev, recipientPhone: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("address")}</Label>
+              <Input
+                value={editFields.shippingAddress}
+                onChange={(e) => setEditFields((prev) => ({ ...prev, shippingAddress: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("shippingMemo")}</Label>
+              <Textarea
+                value={editFields.shippingMemo}
+                onChange={(e) => setEditFields((prev) => ({ ...prev, shippingMemo: e.target.value }))}
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("paymentMethod")}</Label>
+              <div className="space-y-2">
+                {([
+                  { value: "BANK_TRANSFER", label: t("bankTransfer") },
+                  { value: "ALIPAY", label: t("alipay") },
+                  { value: "WECHAT", label: t("wechat") },
+                ] as const).filter((m) => enabledMethods.includes(m.value)).map((method) => (
+                  <label
+                    key={method.value}
+                    className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm transition-colors ${
+                      editFields.paymentMethod === method.value
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.value}
+                      checked={editFields.paymentMethod === method.value}
+                      onChange={(e) => setEditFields((prev) => ({ ...prev, paymentMethod: e.target.value }))}
+                    />
+                    <span className="font-medium">{method.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleEditSave} disabled={editSaving} className="flex-1">
+                {editSaving ? t("editSaving") : t("editSave")}
+              </Button>
+              <Button variant="outline" onClick={() => setEditMode(false)} className="flex-1">
+                {tc("cancel")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : order.recipientName ? (
         <Card>
           <CardHeader>
             <CardTitle>{t("shippingInfo")}</CardTitle>
@@ -522,38 +669,49 @@ export default function OrderDetailPage() {
             )}
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
-      {showPaymentConfirmSection && paymentInfo && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("paymentMethodInfo")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {paymentInfo.bankName && paymentInfo.accountNumber && (
-              <div className="rounded-lg bg-muted p-4 space-y-1 text-sm">
-                <p className="font-medium">{t("bankTransfer")}</p>
-                <p>{t("bankLabel")}: {paymentInfo.bankName}</p>
-                <p>{t("accountLabel")}: {paymentInfo.accountNumber}</p>
-                <p>{t("holderLabel")}: {paymentInfo.accountHolder || "-"}</p>
-                {paymentInfo.bankNote && <p className="text-muted-foreground">{paymentInfo.bankNote}</p>}
-                <p className="font-medium mt-2">{t("depositAmountLabel")}: {formatPrice(order.totalAmount, locale, rate)}</p>
+      {order.paymentStatus === "PENDING" && paymentConfig && (
+        <Card className="border-primary">
+          <CardContent className="py-4 space-y-3">
+            <p className="font-medium">
+              {order.paymentMethod === "BANK_TRANSFER" ? t("bankInfo")
+                : order.paymentMethod === "ALIPAY" ? t("alipayInfo")
+                : t("wechatInfo")}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {order.paymentMethod === "BANK_TRANSFER" ? t("bankInfoDesc")
+                : order.paymentMethod === "ALIPAY" ? t("alipayInfoDesc")
+                : t("wechatInfoDesc")}
+            </p>
+            <div className="space-y-1 text-sm">
+              {paymentConfig.bankName && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t("bankAccountLabel")}</span>
+                  <span>{paymentConfig.bankName} {paymentConfig.accountInfo} ({paymentConfig.accountName})</span>
+                </div>
+              )}
+              {!paymentConfig.bankName && paymentConfig.accountInfo && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {order.paymentMethod === "ALIPAY" ? t("alipayAccountLabel") : t("wechatAccountLabel")}
+                  </span>
+                  <span>{paymentConfig.accountInfo} ({paymentConfig.accountName})</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("depositAmountLabel")}</span>
+                <span className="font-medium">{formatPrice(order.totalAmount, locale, rate)}</span>
+              </div>
+            </div>
+            {paymentConfig.qrCodeUrl && (
+              <div className="flex justify-center pt-2">
+                <img src={paymentConfig.qrCodeUrl} alt="QR Code" className="h-40 w-40 rounded border object-contain" />
               </div>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              {paymentInfo.alipayQrImage && (
-                <div className="rounded-lg bg-muted p-4 text-center">
-                  <p className="text-sm font-medium mb-2">Alipay</p>
-                  <img src={paymentInfo.alipayQrImage} alt="Alipay QR" className="mx-auto h-48 w-48 object-contain" />
-                </div>
-              )}
-              {paymentInfo.wechatQrImage && (
-                <div className="rounded-lg bg-muted p-4 text-center">
-                  <p className="text-sm font-medium mb-2">WeChat Pay</p>
-                  <img src={paymentInfo.wechatQrImage} alt="WeChat QR" className="mx-auto h-48 w-48 object-contain" />
-                </div>
-              )}
-            </div>
+            {paymentConfig.memo && (
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap">{paymentConfig.memo}</p>
+            )}
           </CardContent>
         </Card>
       )}

@@ -2,6 +2,38 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth()
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await params
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      businessName: true,
+      businessNumber: true,
+      businessAddress: true,
+      approvalStatus: true,
+      buyerGrade: true,
+    },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
+  return NextResponse.json(user)
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -12,11 +44,19 @@ export async function PUT(
   }
 
   const { id } = await params
-  const { approvalStatus, buyerGrade } = await request.json()
+  const body = await request.json()
+
+  const allowedFields = [
+    "approvalStatus", "buyerGrade",
+    "name", "phone", "businessName", "businessNumber", "businessAddress",
+  ] as const
 
   const data: Record<string, string> = {}
-  if (approvalStatus) data.approvalStatus = approvalStatus
-  if (buyerGrade) data.buyerGrade = buyerGrade
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      data[field] = body[field]
+    }
+  }
 
   const user = await prisma.user.update({
     where: { id },

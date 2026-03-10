@@ -15,14 +15,16 @@ function createPool() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
-    max: 5,
-    idleTimeoutMillis: 60000,
+    max: 3,
+    idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
   })
 
-  // 커넥션 에러 시 풀이 죽지 않도록 에러 핸들링
+  // 커넥션 에러 시 풀/클라이언트 재생성
   pool.on("error", (err) => {
     console.error("Unexpected PG pool error:", err.message)
+    globalForPrisma.pool = undefined
+    globalForPrisma.prisma = undefined
   })
 
   return pool

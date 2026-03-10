@@ -12,22 +12,16 @@ import { Prisma } from "@prisma/client"
 const STATUS_COLORS: Record<string, string> = {
   ORDER_PLACED: "bg-gray-100 text-gray-700",
   INVOICE_SENT: "bg-blue-100 text-blue-700",
-  AWAITING_PAYMENT: "bg-yellow-100 text-yellow-700",
   PAYMENT_CONFIRMED: "bg-cyan-100 text-cyan-700",
-  PREPARING: "bg-purple-100 text-purple-700",
   SHIPPED: "bg-indigo-100 text-indigo-700",
-  DELIVERED: "bg-green-100 text-green-700",
   CANCELLED: "bg-red-100 text-red-700",
 }
 
 const STATUS_KEYS: Record<string, string> = {
   ORDER_PLACED: "statusReceived",
   INVOICE_SENT: "statusInvoiceSent",
-  AWAITING_PAYMENT: "statusAwaitingPayment",
   PAYMENT_CONFIRMED: "statusPaymentConfirmed",
-  PREPARING: "statusPreparing",
   SHIPPED: "statusShipped",
-  DELIVERED: "statusDelivered",
   CANCELLED: "statusCancelled",
 }
 
@@ -274,7 +268,6 @@ export default async function AdminDashboard() {
                 "INVOICE_SENT",
                 "PAYMENT_CONFIRMED",
                 "SHIPPED",
-                "DELIVERED",
                 "CANCELLED",
               ] as const
             ).map((status) => (

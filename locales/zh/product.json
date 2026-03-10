@@ -9,6 +9,8 @@
   "adding": "添加中...",
   "enterQuantity": "请输入数量。",
   "addedToCart": "已加入购物车。",
+  "goToCart": "前往购物车",
+  "continueShopping": "继续购物",
   "composition": "成分",
   "compositionPlaceholder": "例：棉 100%，涤纶 80% 棉 20%",
   "originalPrice": "原价",

@@ -9,6 +9,8 @@
   "adding": "Adding...",
   "enterQuantity": "Please enter a quantity.",
   "addedToCart": "Added to cart.",
+  "goToCart": "Go to Cart",
+  "continueShopping": "Continue Shopping",
   "composition": "Composition",
   "compositionPlaceholder": "e.g. Cotton 100%, Polyester 80% Cotton 20%",
   "originalPrice": "Original",
