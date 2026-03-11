@@ -7,6 +7,7 @@ import { ProductSearch } from "@/components/shop/product-search"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { ProductPrice } from "@/components/shop/product-price"
+import { ShopProductGrid } from "@/components/shop/product-grid"
 
 export default async function ProductsPage({
   searchParams,
@@ -67,7 +68,7 @@ export default async function ProductsPage({
         <p className="py-10 text-center text-muted-foreground">{t("noProducts")}</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+          <ShopProductGrid>
             {products.map((product: any) => {
               const minPrice = product.variants.length > 0
                 ? Math.min(...product.variants.map((v: any) => v.price))
@@ -118,7 +119,7 @@ export default async function ProductsPage({
                 </Link>
               )
             })}
-          </div>
+          </ShopProductGrid>
 
           {/* Pagination */}
           {totalPages > 1 && (
