@@ -195,7 +195,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
                         )}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {order.user.name} ({order.user.email})
+                        {order.user?.name ?? order.deletedUserName ?? "-"} ({order.user?.email ?? order.deletedUserEmail ?? "-"})
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {t("orderItemCount", { count: order.items.length })} | {formatDateTime(order.createdAt, locale)}

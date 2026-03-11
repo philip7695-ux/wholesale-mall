@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
@@ -63,6 +64,8 @@ export async function PUT(
     data,
   })
 
+  revalidatePath("/[locale]/admin/members", "page")
+
   return NextResponse.json(user)
 }
 
@@ -84,26 +87,29 @@ export async function DELETE(
 
   const user = await prisma.user.findUnique({
     where: { id },
-    include: { _count: { select: { orders: true } } },
   })
 
   if (!user) {
     return NextResponse.json({ error: "회원을 찾을 수 없습니다." }, { status: 404 })
   }
 
-  // 관련 데이터 모두 삭제 후 회원 삭제
+  // 주문 내역은 보존하고 회원만 삭제
   await prisma.$transaction(async (tx) => {
-    // 주문 항목 삭제
-    await tx.orderItem.deleteMany({
-      where: { order: { userId: id } },
+    // 주문에 삭제된 회원 정보 기록 (나중에 조회 가능하도록)
+    await tx.order.updateMany({
+      where: { userId: id },
+      data: {
+        deletedUserName: user.name,
+        deletedUserEmail: user.email,
+      },
     })
-    // 주문 삭제
-    await tx.order.deleteMany({ where: { userId: id } })
     // 장바구니 삭제
     await tx.cartItem.deleteMany({ where: { userId: id } })
-    // 회원 삭제
+    // 회원 삭제 (onDelete: SetNull로 주문의 userId는 자동으로 null 처리)
     await tx.user.delete({ where: { id } })
   })
+
+  revalidatePath("/[locale]/admin/members", "page")
 
   return NextResponse.json({ message: "회원이 삭제되었습니다." })
 }

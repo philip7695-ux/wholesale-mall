@@ -125,7 +125,7 @@ model Order {
   id              String         @id @default(cuid())
   orderNumber     String         @unique
   invoiceNumber   String?        @unique
-  userId          String
+  userId          String?
   status               OrderStatus    @default(ORDER_PLACED)
   totalAmount          Int
   paymentMethod        PaymentMethod?
@@ -149,7 +149,9 @@ model Order {
   currency        String         @default("KRW")
   exchangeRate    Float          @default(1)
   gradeDiscount   Float          @default(0)
-  user            User           @relation(fields: [userId], references: [id])
+  deletedUserName String?
+  deletedUserEmail String?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   items           OrderItem[]
   paymentConfirmations PaymentConfirmation[]
 

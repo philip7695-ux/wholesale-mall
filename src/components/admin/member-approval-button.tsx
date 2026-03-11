@@ -26,7 +26,7 @@ export function MemberApprovalButton({
 
     if (res.ok) {
       toast.success(approvalStatus === "APPROVED" ? t("memberApproved") : t("memberRejected"))
-      router.refresh()
+      window.location.reload()
     } else {
       toast.error(t("memberProcessError"))
     }
@@ -41,7 +41,7 @@ export function MemberApprovalButton({
 
     if (res.ok) {
       toast.success(t("memberDeleted"))
-      router.refresh()
+      window.location.reload()
     } else {
       const data = await res.json()
       toast.error(data.error || t("memberDeleteError"))

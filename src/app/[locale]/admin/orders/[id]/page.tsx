@@ -78,9 +78,9 @@ export default async function AdminOrderDetailPage({
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("ordererLabel")}</span>
-              <span>{order.user.name} ({order.user.email})</span>
+              <span>{order.user?.name ?? order.deletedUserName ?? "-"} ({order.user?.email ?? order.deletedUserEmail ?? "-"})</span>
             </div>
-            {order.user.businessName && (
+            {(order.user?.businessName) && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("businessLabel")}</span>
                 <span>{order.user.businessName}</span>
