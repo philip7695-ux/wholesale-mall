@@ -107,6 +107,30 @@ export function OrderList({ orders }: { orders: Order[] }) {
     setLoading(null)
   }
 
+  async function handleBulkDelete() {
+    if (!confirm(t("orderBulkDeleteConfirm", { count: selected.size }))) return
+
+    setLoading("bulk-delete")
+    try {
+      const results = await Promise.all(
+        Array.from(selected).map((id) =>
+          fetch(`/api/orders/${id}?permanent=true`, { method: "DELETE" })
+        )
+      )
+      const failed = results.filter((r) => !r.ok).length
+      if (failed > 0) {
+        toast.error(t("orderBulkDeletePartial", { failed }))
+      } else {
+        toast.success(t("orderBulkDeleteSuccess", { count: selected.size }))
+      }
+      setSelected(new Set())
+      window.location.reload()
+    } catch {
+      toast.error(t("orderDeleteError"))
+    }
+    setLoading(null)
+  }
+
   async function handleDelete(orderId: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
@@ -128,7 +152,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
         next.delete(orderId)
         return next
       })
-      router.refresh()
+      window.location.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("orderDeleteError"))
     }
@@ -145,18 +169,30 @@ export function OrderList({ orders }: { orders: Order[] }) {
             <Badge variant="secondary">{t("orderSelectedCount", { count: selected.size })}</Badge>
           )}
         </div>
-        <Button
-          variant="outline"
-          onClick={handleExport}
-          disabled={loading === "export"}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          {loading === "export"
-            ? t("orderDownloading")
-            : selected.size > 0
-              ? t("orderExportSelected", { count: selected.size })
-              : t("orderExportAll")}
-        </Button>
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={loading === "bulk-delete"}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {loading === "bulk-delete" ? t("orderDeleting") : t("orderDeleteSelected", { count: selected.size })}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={loading === "export"}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {loading === "export"
+              ? t("orderDownloading")
+              : selected.size > 0
+                ? t("orderExportSelected", { count: selected.size })
+                : t("orderExportAll")}
+          </Button>
+        </div>
       </div>
 
       {/* Select All */}
@@ -203,17 +239,15 @@ export function OrderList({ orders }: { orders: Order[] }) {
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="text-lg font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
-                      {order.status === "CANCELLED" && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={(e) => handleDelete(order.id, e)}
-                          disabled={loading === order.id}
-                        >
-                          <Trash2 className="mr-1 h-3.5 w-3.5" />
-                          {loading === order.id ? t("orderDeleting") : tc("delete")}
-                        </Button>
-                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => handleDelete(order.id, e)}
+                        disabled={loading === order.id}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        {loading === order.id ? t("orderDeleting") : tc("delete")}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

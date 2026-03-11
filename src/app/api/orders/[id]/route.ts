@@ -65,20 +65,17 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  // 영구 삭제 (관리자 전용, 취소된 주문만)
+  // 영구 삭제 (관리자 전용)
   if (permanent) {
     if (session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
-    if (order.status !== "CANCELLED") {
-      return NextResponse.json(
-        { error: "취소된 주문만 삭제할 수 있습니다." },
-        { status: 400 },
-      )
-    }
 
-    await prisma.orderItem.deleteMany({ where: { orderId: id } })
-    await prisma.order.delete({ where: { id } })
+    await prisma.$transaction(async (tx) => {
+      await tx.paymentConfirmation.deleteMany({ where: { orderId: id } })
+      await tx.orderItem.deleteMany({ where: { orderId: id } })
+      await tx.order.delete({ where: { id } })
+    })
 
     return NextResponse.json({ message: "주문이 삭제되었습니다." })
   }
@@ -213,7 +210,7 @@ export async function PUT(
   })
 
   // 출하 완료 시 고객 이메일 알림
-  if (order.status === "SHIPPED" && order.trackingNumber) {
+  if (order.status === "SHIPPED" && order.trackingNumber && order.user) {
     notifyCustomerShipped(order.user.email, {
       orderNumber: order.orderNumber,
       customerName: order.user.name,
@@ -224,7 +221,7 @@ export async function PUT(
 
   // SHIPPED로 변경 시 자동 승급 체크
   let promotedGrade: string | null = null
-  if (order.status === "SHIPPED") {
+  if (order.status === "SHIPPED" && order.userId) {
     promotedGrade = await checkAndPromoteGrade(order.userId)
   }
 
