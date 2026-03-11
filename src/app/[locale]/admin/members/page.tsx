@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MemberApprovalButton } from "@/components/admin/member-approval-button"
 import { MemberGradeSelect } from "@/components/admin/member-grade-select"
+import { MemberRoleSelect } from "@/components/admin/member-role-select"
 import { formatDate, formatPrice } from "@/lib/utils"
 import { getExchangeRate } from "@/lib/currency.server"
+import { auth } from "@/lib/auth"
 
 const approvalVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   PENDING: "outline",
@@ -27,7 +29,10 @@ const gradeVariant: Record<string, "default" | "secondary" | "destructive" | "ou
 export default async function AdminMembersPage() {
   const t = await getTranslations("admin")
   const locale = await getLocale()
-  const { rate } = await getExchangeRate(locale)
+  const [{ rate }, session] = await Promise.all([
+    getExchangeRate(locale),
+    auth(),
+  ])
 
   const approvalLabels: Record<string, string> = {
     PENDING: t("approvalPending"),
@@ -35,14 +40,19 @@ export default async function AdminMembersPage() {
     REJECTED: t("approvalRejected"),
   }
 
+  const roleLabels: Record<string, string> = {
+    ADMIN: t("adminRole"),
+    BUYER: t("buyer"),
+  }
+
   const members = await prisma.user.findMany({
-    where: { role: "BUYER" },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ role: "asc" }, { createdAt: "desc" }],
     select: {
       id: true,
       name: true,
       email: true,
       phone: true,
+      role: true,
       businessName: true,
       businessNumber: true,
       approvalStatus: true,
@@ -84,12 +94,19 @@ export default async function AdminMembersPage() {
                       <p className="text-sm text-muted-foreground">{member.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={gradeVariant[member.buyerGrade]}>
-                        {member.buyerGrade}
+                      <Badge variant={member.role === "ADMIN" ? "destructive" : "secondary"}>
+                        {roleLabels[member.role]}
                       </Badge>
-                      <Badge variant={approvalVariant[member.approvalStatus]}>
-                        {approvalLabels[member.approvalStatus]}
-                      </Badge>
+                      {member.role === "BUYER" && (
+                        <>
+                          <Badge variant={gradeVariant[member.buyerGrade]}>
+                            {member.buyerGrade}
+                          </Badge>
+                          <Badge variant={approvalVariant[member.approvalStatus]}>
+                            {approvalLabels[member.approvalStatus]}
+                          </Badge>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -103,17 +120,26 @@ export default async function AdminMembersPage() {
                       <p>{t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/admin/members/${member.id}/edit`}>{t("editMember")}</Link>
-                      </Button>
-                      <MemberGradeSelect
+                      <MemberRoleSelect
                         memberId={member.id}
-                        currentGrade={member.buyerGrade}
+                        currentRole={member.role}
+                        isSelf={member.id === session?.user?.id}
                       />
-                      <MemberApprovalButton
-                        memberId={member.id}
-                        currentStatus={member.approvalStatus}
-                      />
+                      {member.role === "BUYER" && (
+                        <>
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/admin/members/${member.id}/edit`}>{t("editMember")}</Link>
+                          </Button>
+                          <MemberGradeSelect
+                            memberId={member.id}
+                            currentGrade={member.buyerGrade}
+                          />
+                          <MemberApprovalButton
+                            memberId={member.id}
+                            currentStatus={member.approvalStatus}
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>

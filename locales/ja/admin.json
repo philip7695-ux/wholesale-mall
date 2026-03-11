@@ -354,5 +354,7 @@
   "editMember": "編集",
   "editMemberTitle": "会員情報編集",
   "memberUpdated": "会員情報が更新されました。",
-  "memberUpdateError": "会員情報の更新に失敗しました。"
+  "memberUpdateError": "会員情報の更新に失敗しました。",
+  "roleChanged": "役割が変更されました。",
+  "roleChangeFail": "役割の変更に失敗しました。"
 }

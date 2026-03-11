@@ -354,5 +354,7 @@
   "editMember": "Edit",
   "editMemberTitle": "Edit Member",
   "memberUpdated": "Member has been updated.",
-  "memberUpdateError": "Failed to update member."
+  "memberUpdateError": "Failed to update member.",
+  "roleChanged": "Role has been changed.",
+  "roleChangeFail": "Failed to change role."
 }

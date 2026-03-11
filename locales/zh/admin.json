@@ -354,5 +354,7 @@
   "editMember": "编辑",
   "editMemberTitle": "编辑会员信息",
   "memberUpdated": "会员信息已更新。",
-  "memberUpdateError": "会员信息更新失败。"
+  "memberUpdateError": "会员信息更新失败。",
+  "roleChanged": "角色已变更。",
+  "roleChangeFail": "角色变更失败。"
 }

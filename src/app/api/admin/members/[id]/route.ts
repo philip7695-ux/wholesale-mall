@@ -48,9 +48,19 @@ export async function PUT(
   const body = await request.json()
 
   const allowedFields = [
-    "approvalStatus", "buyerGrade",
+    "approvalStatus", "buyerGrade", "role",
     "name", "phone", "businessName", "businessNumber", "businessAddress",
   ] as const
+
+  // 자기 자신의 역할은 변경 불가
+  if (body.role && id === session.user.id) {
+    return NextResponse.json({ error: "자기 자신의 역할은 변경할 수 없습니다." }, { status: 400 })
+  }
+
+  // role 값 검증
+  if (body.role && !["ADMIN", "BUYER"].includes(body.role)) {
+    return NextResponse.json({ error: "유효하지 않은 역할입니다." }, { status: 400 })
+  }
 
   const data: Record<string, string> = {}
   for (const field of allowedFields) {
