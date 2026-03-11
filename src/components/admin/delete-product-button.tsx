@@ -16,11 +16,13 @@ export function DeleteProductButton({
   const t = useTranslations("admin")
   const tc = useTranslations("common")
 
-  async function handleDelete() {
+  async function handleDelete(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
     if (!confirm(t("deleteConfirm", { name: productName }))) return
 
     await fetch(`/api/products/${productId}`, { method: "DELETE" })
-    router.refresh()
+    window.location.reload()
   }
 
   return (
