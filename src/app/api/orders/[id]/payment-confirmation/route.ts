@@ -65,9 +65,9 @@ export async function POST(
     )
   }
 
-  const { receiptImage, transferDate, amount, senderName } = await request.json()
+  const { receiptImage, transferDate, senderName } = await request.json()
 
-  if (!receiptImage || !transferDate || !amount || !senderName) {
+  if (!receiptImage || !transferDate || !senderName) {
     return NextResponse.json(
       { error: "모든 필드를 입력해주세요." },
       { status: 400 },
@@ -85,7 +85,6 @@ export async function POST(
       orderId: id,
       receiptImage,
       transferDate: new Date(transferDate),
-      amount: Number(amount),
       senderName,
     },
   })
@@ -101,7 +100,6 @@ export async function POST(
         notifyAdminPaymentSubmitted(adminEmail, {
           orderNumber: orderForNotify.orderNumber,
           customerName: orderForNotify.user?.name ?? senderName,
-          amount: Number(amount),
           senderName,
         })
       }

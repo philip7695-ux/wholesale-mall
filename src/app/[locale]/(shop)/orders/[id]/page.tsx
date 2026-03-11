@@ -61,7 +61,6 @@ interface PaymentConfirmation {
   id: string
   receiptImage: string
   transferDate: string
-  amount: number
   senderName: string
   status: "PENDING" | "CONFIRMED" | "REJECTED"
   rejectionReason: string | null
@@ -94,7 +93,6 @@ export default function OrderDetailPage() {
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmation | null>(null)
   const [receiptImage, setReceiptImage] = useState("")
   const [transferDate, setTransferDate] = useState("")
-  const [transferAmount, setTransferAmount] = useState("")
   const [senderName, setSenderName] = useState("")
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -198,7 +196,7 @@ export default function OrderDetailPage() {
   }
 
   async function handlePaymentConfirmSubmit() {
-    if (!receiptImage || !transferDate || !transferAmount || !senderName) return
+    if (!receiptImage || !transferDate || !senderName) return
     setSubmitting(true)
     try {
       const res = await fetch(`/api/orders/${params.id}/payment-confirmation`, {
@@ -207,7 +205,6 @@ export default function OrderDetailPage() {
         body: JSON.stringify({
           receiptImage,
           transferDate,
-          amount: Number(transferAmount),
           senderName,
         }),
       })
@@ -388,10 +385,6 @@ export default function OrderDetailPage() {
                     <span>{paymentConfirmation.senderName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t("transferAmount")}</span>
-                    <span>{formatPrice(paymentConfirmation.amount, locale, rate)}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-muted-foreground">{t("transferDate")}</span>
                     <span>{formatDateTime(paymentConfirmation.transferDate, locale)}</span>
                   </div>
@@ -482,15 +475,6 @@ export default function OrderDetailPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label>{t("transferAmount")}</Label>
-                    <Input
-                      type="number"
-                      value={transferAmount}
-                      onChange={(e) => setTransferAmount(e.target.value)}
-                      placeholder={String(order.totalAmount)}
-                    />
-                  </div>
-                  <div className="space-y-1">
                     <Label>{t("senderName")}</Label>
                     <Input
                       value={senderName}
@@ -499,7 +483,7 @@ export default function OrderDetailPage() {
                   </div>
                   <Button
                     onClick={handlePaymentConfirmSubmit}
-                    disabled={submitting || !receiptImage || !transferDate || !transferAmount || !senderName}
+                    disabled={submitting || !receiptImage || !transferDate || !senderName}
                     className="w-full"
                   >
                     {submitting ? t("submittingPaymentConfirm") : t("submitPaymentConfirm")}

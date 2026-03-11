@@ -230,7 +230,7 @@ model PaymentConfirmation {
   orderId         String
   receiptImage    String
   transferDate    DateTime
-  amount          Int
+  amount          Float?
   senderName      String
   status          PaymentConfirmationStatus  @default(PENDING)
   rejectionReason String?

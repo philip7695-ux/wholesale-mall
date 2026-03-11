@@ -103,7 +103,6 @@ export async function notifyCustomerInvoice(customerEmail: string, order: {
 export async function notifyAdminPaymentSubmitted(adminEmail: string, order: {
   orderNumber: string
   customerName: string
-  amount: number
   senderName: string
 }) {
   await send(adminEmail, `[입금확인 요청] ${order.orderNumber} - ${order.senderName}`,
@@ -113,7 +112,6 @@ export async function notifyAdminPaymentSubmitted(adminEmail: string, order: {
         <tr><td style="padding:8px;color:#666">주문번호</td><td style="padding:8px">${order.orderNumber}</td></tr>
         <tr><td style="padding:8px;color:#666">주문자</td><td style="padding:8px">${order.customerName}</td></tr>
         <tr><td style="padding:8px;color:#666">송금인</td><td style="padding:8px;font-weight:bold">${order.senderName}</td></tr>
-        <tr><td style="padding:8px;color:#666">금액</td><td style="padding:8px;font-weight:bold">₩${order.amount.toLocaleString()}</td></tr>
       </table>
       <p style="margin-top:16px;color:#666">관리자 페이지에서 확인해주세요.</p>
     </div>`)

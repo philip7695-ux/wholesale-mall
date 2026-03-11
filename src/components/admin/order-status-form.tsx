@@ -19,7 +19,6 @@ interface PaymentConfirmationData {
   id: string
   receiptImage: string
   transferDate: string
-  amount: number
   senderName: string
   status: "PENDING" | "CONFIRMED" | "REJECTED"
   rejectionReason: string | null
@@ -252,10 +251,6 @@ export function OrderStatusForm({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("senderName")}</span>
                 <span>{paymentConfirmation.senderName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("transferAmount")}</span>
-                <span>{formatPrice(paymentConfirmation.amount, locale, rate)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("transferDate")}</span>
