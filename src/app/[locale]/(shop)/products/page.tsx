@@ -26,7 +26,10 @@ export default async function ProductsPage({
   const page = parseInt(params.page || "1")
   const limit = 20
 
-  const where: Record<string, unknown> = { isActive: true }
+  const where: Record<string, unknown> = {
+    isActive: true,
+    variants: { some: { stock: { gt: 0 } } },
+  }
   if (category) where.category = { slug: category }
   if (search) where.OR = [
     { name: { contains: search, mode: "insensitive" } },

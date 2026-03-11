@@ -73,6 +73,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const [loading, setLoading] = useState(false)
   const [showCartDialog, setShowCartDialog] = useState(false)
 
+  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
+  const allSoldOut = totalStock <= 0
   const currentColor = product.colors.find((c) => c.id === selectedColor)
 
   function handleColorSelect(colorId: string) {
@@ -290,6 +292,9 @@ export function ProductDetail({ product }: { product: Product }) {
           <div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{translateCategory(product.category.slug, tCat)}</Badge>
+              {allSoldOut && (
+                <Badge variant="destructive">{t("soldOut")}</Badge>
+              )}
               {discountRate > 0 && (
                 <Badge variant="destructive">
                   {tProd("gradeDiscountBadge", { rate: Math.round(discountRate * 100) })}
@@ -492,7 +497,7 @@ export function ProductDetail({ product }: { product: Product }) {
           {/* 장바구니 담기 */}
           <Button
             onClick={handleAddToCart}
-            disabled={loading || totalQuantity() === 0 || (moqResult != null && !moqResult.valid)}
+            disabled={loading || allSoldOut || totalQuantity() === 0 || (moqResult != null && !moqResult.valid)}
             className="w-full"
             size="lg"
           >
