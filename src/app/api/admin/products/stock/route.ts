@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 사이즈별 재고 업데이트
+      // 빈 셀 = 변경 없음, 숫자 > 0 = 재고 설정 (없으면 생성), 0 = variant 삭제
       for (const sizeName of sizeColumns) {
         const val = row[sizeName]
         if (val === undefined || val === null || val === "") continue
@@ -166,28 +167,49 @@ export async function POST(request: NextRequest) {
           (v: any) => v.colorId === color.id && v.size.name === sizeName
         )
 
-        if (variant) {
+        if (stock <= 0) {
+          // 0 입력 → variant 삭제 (해당 사이즈 제거)
+          if (variant) {
+            await prisma.productVariant.delete({ where: { id: variant.id } })
+            // 해당 사이즈에 다른 variant가 없으면 ProductSize도 삭제
+            const remainingVariants = await prisma.productVariant.count({
+              where: { productId: product.id, sizeId: variant.sizeId },
+            })
+            if (remainingVariants === 0) {
+              await prisma.productSize.delete({ where: { id: variant.sizeId } })
+            }
+            updated++
+          }
+        } else if (variant) {
+          // 기존 variant 재고 업데이트
           await prisma.productVariant.update({
             where: { id: variant.id },
             data: { stock },
           })
           updated++
         } else {
-          // variant가 없으면 해당 사이즈가 존재하는지 확인 후 생성
-          const size = product.sizes.find((s: any) => s.name === sizeName)
-          if (size) {
-            const price = product.variants.find((v: any) => v.colorId === color.id)?.price ?? 0
-            await prisma.productVariant.create({
+          // variant가 없으면 사이즈 확인/생성 후 variant 생성
+          let size = product.sizes.find((s: any) => s.name === sizeName)
+          if (!size) {
+            size = await prisma.productSize.create({
               data: {
                 productId: product.id,
-                colorId: color.id,
-                sizeId: size.id,
-                price,
-                stock,
+                name: sizeName,
+                sortOrder: ALL_SIZES.indexOf(sizeName) >= 0 ? ALL_SIZES.indexOf(sizeName) : 999,
               },
             })
-            updated++
           }
+          const price = product.variants.find((v: any) => v.colorId === color.id)?.price ?? 0
+          await prisma.productVariant.create({
+            data: {
+              productId: product.id,
+              colorId: color.id,
+              sizeId: size.id,
+              price,
+              stock,
+            },
+          })
+          updated++
         }
       }
     }

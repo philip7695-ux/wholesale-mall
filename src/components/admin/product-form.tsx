@@ -14,9 +14,19 @@ import { toast } from "sonner"
 import { translateCategory } from "@/lib/translate"
 import { useCurrency } from "@/hooks/use-currency"
 import { getCurrencyForLocale, convertPrice } from "@/lib/currency"
-import { ADULT_SIZES, KIDS_SIZES } from "@/lib/product-sizes"
+import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES } from "@/lib/product-sizes"
 
-const ALL_SIZE_ORDER = [...ADULT_SIZES, ...KIDS_SIZES.filter((s) => !ADULT_SIZES.includes(s))]
+const KIDS_SIZES_ALL = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
+const ALL_SIZE_ORDER = ALL_SIZES
+
+// 사이즈 프리셋 그룹
+const SIZE_PRESETS: { label: string; sizes: string[] }[] = [
+  { label: "성인복 (XS~3XL)", sizes: ADULT_SIZES.filter((s) => s !== "FREE") },
+  { label: "성인복 FREE", sizes: ["FREE"] },
+  { label: "유아 (80~100)", sizes: ["80", "85", "90", "95", "100"] },
+  { label: "아동 (100~140)", sizes: ["100", "110", "120", "130", "140"] },
+  { label: "아동 영어 (F,S,M,L)", sizes: KIDS_LETTER_SIZES },
+]
 
 interface Category {
   id: string
@@ -406,57 +416,57 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
           <CardTitle>{t("size")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Quick preset */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">빠른 선택:</span>
-            <Button
-              type="button" variant="outline" size="sm"
-              onClick={() => setSizes(ADULT_SIZES.map((n) => ({ name: n })))}
-            >
-              성인복 (XS~XL)
-            </Button>
-            <Button
-              type="button" variant="outline" size="sm"
-              onClick={() => setSizes(KIDS_SIZES.map((n) => ({ name: n })))}
-            >
-              아동복 (F~130)
-            </Button>
-            {sizes.length > 0 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setSizes([])}>
-                초기화
-              </Button>
-            )}
-          </div>
-
-          {/* Predefined size toggles - Adult */}
+          {/* Preset buttons */}
           <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">성인복</p>
-            <div className="flex flex-wrap gap-1.5">
-              {ADULT_SIZES.map((name) => {
-                const selected = sizes.some((s) => s.name === name)
+            <p className="mb-2 text-sm text-muted-foreground">프리셋 선택 (클릭하면 해당 사이즈가 설정됩니다)</p>
+            <div className="flex flex-wrap gap-2">
+              {SIZE_PRESETS.map((preset) => {
+                const allSelected = preset.sizes.every((s) => sizes.some((sz) => sz.name === s))
                 return (
-                  <button
-                    key={name}
+                  <Button
+                    key={preset.label}
                     type="button"
-                    onClick={() => toggleSize(name)}
-                    className={`rounded border px-3 py-1 text-sm transition-colors ${
-                      selected
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-input hover:bg-muted"
-                    }`}
+                    variant={allSelected ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      if (allSelected) {
+                        // 해당 프리셋 사이즈 제거
+                        setSizes(sizes.filter((s) => !preset.sizes.includes(s.name)))
+                      } else {
+                        // 해당 프리셋 사이즈 추가 (기존 유지 + 새로 추가)
+                        const existing = new Set(sizes.map((s) => s.name))
+                        const newSizes = [...sizes]
+                        for (const name of preset.sizes) {
+                          if (!existing.has(name)) {
+                            newSizes.push({ name })
+                          }
+                        }
+                        newSizes.sort((a, b) => {
+                          const ai = ALL_SIZE_ORDER.indexOf(a.name)
+                          const bi = ALL_SIZE_ORDER.indexOf(b.name)
+                          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+                        })
+                        setSizes(newSizes)
+                      }
+                    }}
                   >
-                    {name}
-                  </button>
+                    {preset.label}
+                  </Button>
                 )
               })}
+              {sizes.length > 0 && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSizes([])}>
+                  초기화
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Predefined size toggles - Kids */}
+          {/* Individual size toggles */}
           <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">아동복</p>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">개별 사이즈 토글</p>
             <div className="flex flex-wrap gap-1.5">
-              {KIDS_SIZES.map((name) => {
+              {ALL_SIZE_ORDER.filter((v, i, arr) => arr.indexOf(v) === i).map((name) => {
                 const selected = sizes.some((s) => s.name === name)
                 return (
                   <button
