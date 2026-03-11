@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Download } from "lucide-react"
-import { formatPrice } from "@/lib/utils"
+import { formatPriceCross } from "@/lib/utils"
 import { translateCategory } from "@/lib/translate"
 import { DeleteProductButton } from "@/components/admin/delete-product-button"
 import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
-import { getExchangeRate } from "@/lib/currency.server"
+import { getAllExchangeRates } from "@/lib/currency.server"
 import { ProductGrid } from "@/components/admin/product-grid"
 
 export default async function AdminProductsPage() {
@@ -19,7 +19,7 @@ export default async function AdminProductsPage() {
   const tc = await getTranslations("common")
   const tCat = await getTranslations("categories")
   const locale = await getLocale()
-  const { rate } = await getExchangeRate(locale)
+  const rates = await getAllExchangeRates()
 
   const products = await prisma.product.findMany({
     include: {
@@ -102,7 +102,7 @@ export default async function AdminProductsPage() {
                       {translateCategory(product.category.slug, tCat)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
                     </p>
                     <p className="text-sm font-medium mt-1">
-                      {minPrice > 0 ? formatPrice(minPrice, locale, rate) : "-"}~
+                      {minPrice > 0 ? formatPriceCross(minPrice, product.priceCurrency, locale, rates) : "-"}~
                     </p>
                   </CardHeader>
                   <CardContent className="mt-auto flex gap-2 pt-0">

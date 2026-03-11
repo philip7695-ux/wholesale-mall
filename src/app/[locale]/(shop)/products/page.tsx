@@ -3,11 +3,11 @@ export const dynamic = 'force-dynamic'
 import { Link } from "@/i18n/navigation"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatPrice } from "@/lib/utils"
+import { formatPriceCross } from "@/lib/utils"
 import { ProductSearch } from "@/components/shop/product-search"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
-import { getExchangeRate } from "@/lib/currency.server"
+import { getAllExchangeRates } from "@/lib/currency.server"
 import { auth } from "@/lib/auth"
 import { GRADE_DISCOUNT } from "@/lib/grade"
 import { Badge } from "@/components/ui/badge"
@@ -37,8 +37,8 @@ export default async function ProductsPage({
   ]
 
   // auth, 환율, DB 쿼리를 모두 병렬 실행
-  const [exchangeData, session, productsResult] = await Promise.all([
-    getExchangeRate(locale),
+  const [rates, session, productsResult] = await Promise.all([
+    getAllExchangeRates(),
     auth().catch(() => null),
     Promise.all([
       prisma.product.findMany({
@@ -60,7 +60,6 @@ export default async function ProductsPage({
     }),
   ])
 
-  const { rate } = exchangeData
   const buyerGrade = (session as any)?.user?.buyerGrade || "BRONZE"
   const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
   const [products, categories, total] = productsResult
@@ -129,14 +128,14 @@ export default async function ProductsPage({
                           discountRate > 0 ? (
                             <>
                               <span className="text-muted-foreground font-normal line-through text-xs">
-                                {formatPrice(minPrice, locale, rate)}
+                                {formatPriceCross(minPrice, product.priceCurrency, locale, rates)}
                               </span>{" "}
                               <span className="text-primary">
-                                {formatPrice(Math.round(minPrice * (1 - discountRate)), locale, rate)}
+                                {formatPriceCross(Math.round(minPrice * (1 - discountRate) * 100) / 100, product.priceCurrency, locale, rates)}
                               </span>
                             </>
                           ) : (
-                            formatPrice(minPrice, locale, rate)
+                            formatPriceCross(minPrice, product.priceCurrency, locale, rates)
                           )
                         ) : "-"}
                       </p>

@@ -38,6 +38,7 @@ export default async function ProductDetailPage({
     sizeSpec: raw.sizeSpec,
     moq: raw.moq,
     colorMoq: raw.colorMoq,
+    priceCurrency: raw.priceCurrency,
     category: { name: raw.category.name, slug: raw.category.slug },
     colors: raw.colors.map((c: any) => ({
       id: c.id,

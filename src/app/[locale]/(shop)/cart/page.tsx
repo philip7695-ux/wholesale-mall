@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trash2, Pencil, AlertTriangle } from "lucide-react"
-import { formatPrice } from "@/lib/utils"
+import { formatPriceCross } from "@/lib/utils"
+import { convertCurrency, getCurrencyForLocale } from "@/lib/currency"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSession } from "next-auth/react"
@@ -32,6 +33,7 @@ interface CartItem {
       thumbnail: string | null
       moq: number
       colorMoq: number
+      priceCurrency: string
       colors: ProductColor[]
     }
     color: { id: string; name: string; colorCode: string | null; hexColor: string | null }
@@ -106,7 +108,7 @@ export default function CartPage() {
   const t = useTranslations("cart")
   const tc = useTranslations("common")
   const locale = useLocale()
-  const { rate } = useCurrency()
+  const { rates } = useCurrency()
   const { data: session } = useSession()
   const buyerGrade = session?.user?.buyerGrade || "BRONZE"
   const [items, setItems] = useState<CartItem[]>([])
@@ -163,8 +165,11 @@ export default function CartPage() {
   }
 
   const groups = groupByProduct(items)
+  const customerCurrency = getCurrencyForLocale(locale)
+  const fp = (amount: number, fromCurrency: string) => formatPriceCross(amount, fromCurrency, locale, rates)
+  // 총액은 고객 통화 기준으로 환산 합산
   const totalAmount = items.reduce(
-    (sum, item) => sum + item.variant.price * item.quantity,
+    (sum, item) => sum + convertCurrency(item.variant.price * item.quantity, item.variant.product.priceCurrency, customerCurrency, rates),
     0,
   )
   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0)
@@ -244,7 +249,7 @@ export default function CartPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <p className="text-lg font-bold">{formatPrice(group.subtotal, locale, rate)}</p>
+                        <p className="text-lg font-bold">{fp(group.subtotal, group.items[0].variant.product.priceCurrency)}</p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -279,7 +284,7 @@ export default function CartPage() {
                             )}
                             <span className="text-sm font-medium">{colorGroup.colorName}</span>
                             <span className="text-xs text-muted-foreground">
-                              {t("subtotalUnit", { qty: colorGroup.totalQty, price: formatPrice(colorGroup.subtotal, locale, rate) })}
+                              {t("subtotalUnit", { qty: colorGroup.totalQty, price: fp(colorGroup.subtotal, group.items[0].variant.product.priceCurrency) })}
                             </span>
                           </div>
                           {/* 사이즈 행 */}
@@ -297,7 +302,7 @@ export default function CartPage() {
                               {colorGroup.items.map((item) => (
                                 <tr key={item.id} className="border-b last:border-0">
                                   <td className="px-3 py-1.5">{item.variant.size.name}</td>
-                                  <td className="px-3 py-1.5 text-right">{formatPrice(item.variant.price, locale, rate)}</td>
+                                  <td className="px-3 py-1.5 text-right">{fp(item.variant.price, item.variant.product.priceCurrency)}</td>
                                   <td className="px-3 py-1.5 text-right">
                                     {isEditing ? (
                                       <Input
@@ -314,7 +319,7 @@ export default function CartPage() {
                                     )}
                                   </td>
                                   <td className="px-3 py-1.5 text-right font-medium">
-                                    {formatPrice(item.variant.price * item.quantity, locale, rate)}
+                                    {fp(item.variant.price * item.quantity, item.variant.product.priceCurrency)}
                                   </td>
                                   {isEditing && (
                                     <td className="px-1 py-1.5 text-center">
@@ -369,11 +374,11 @@ export default function CartPage() {
             <CardContent className="space-y-3 py-4">
               <div className="flex justify-between text-sm">
                 <span>{t("productSummary", { count: groups.length, qty: totalQty })}</span>
-                <span>{formatPrice(totalAmount, locale, rate)}</span>
+                <span>{fp(totalAmount, customerCurrency)}</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-lg font-bold">
                 <span>{t("totalPayment")}</span>
-                <span className="text-primary">{formatPrice(totalAmount, locale, rate)}</span>
+                <span className="text-primary">{fp(totalAmount, customerCurrency)}</span>
               </div>
               {session?.user?.approvalStatus !== "APPROVED" && (
                 <p className="text-sm text-destructive text-center">{t("approvalRequired")}</p>

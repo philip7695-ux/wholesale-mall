@@ -6,6 +6,7 @@ import { useLocale } from "next-intl"
 interface CurrencyState {
   currency: string
   rate: number
+  rates: Record<string, number>
   loading: boolean
 }
 
@@ -14,6 +15,7 @@ export function useCurrency(): CurrencyState {
   const [state, setState] = useState<CurrencyState>({
     currency: "KRW",
     rate: 1,
+    rates: { KRW: 1 },
     loading: true,
   })
 
@@ -21,10 +23,15 @@ export function useCurrency(): CurrencyState {
     fetch(`/api/exchange-rates/current?locale=${locale}`)
       .then((res) => res.json())
       .then((data) => {
-        setState({ currency: data.currency, rate: data.rate, loading: false })
+        setState({
+          currency: data.currency,
+          rate: data.rate,
+          rates: data.rates || { KRW: 1 },
+          loading: false,
+        })
       })
       .catch(() => {
-        setState({ currency: "KRW", rate: 1, loading: false })
+        setState({ currency: "KRW", rate: 1, rates: { KRW: 1 }, loading: false })
       })
   }, [locale])
 

@@ -14,6 +14,7 @@ type ProductGroups = Map<string, {
   category: string
   description: string
   material: string
+  priceCurrency: string
   variants: { colorName: string; colorCode: string; hexColor: string; sizeName: string; price: number; stock: number }[]
 }>
 
@@ -60,9 +61,10 @@ function parseSheetNew(
     const colorCode = String(row["컬러코드"] ?? "").trim()
     const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
     const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
+    const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
 
     if (!groups.has(name)) {
-      groups.set(name, { code, category, description, material, variants: [] })
+      groups.set(name, { code, category, description, material, priceCurrency, variants: [] })
     }
 
     const group = groups.get(name)!
@@ -117,9 +119,10 @@ function parseSheetSizeColumns(
     const colorCode = String(row["컬러코드"] ?? "").trim()
     const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
     const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
+    const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
 
     if (!groups.has(name)) {
-      groups.set(name, { code, category, description, material, variants: [] })
+      groups.set(name, { code, category, description, material, priceCurrency, variants: [] })
     }
 
     const group = groups.get(name)!
@@ -231,6 +234,7 @@ export async function POST(request: NextRequest) {
             categoryId,
             images: [],
             isActive: true,
+            priceCurrency: group.priceCurrency || "KRW",
             colors: { create: colors },
             sizes: { create: sizes },
           },

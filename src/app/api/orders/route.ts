@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateOrderNumber } from "@/lib/utils"
-import { getExchangeRate } from "@/lib/currency.server"
+import { getExchangeRate, getAllExchangeRates } from "@/lib/currency.server"
+import { convertCurrency, getCurrencyForLocale } from "@/lib/currency"
 import { GRADE_DISCOUNT } from "@/lib/grade"
 import { checkMoq } from "@/lib/moq"
 import { notifyAdminNewOrder } from "@/lib/email"
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
 
     // 통화/환율 스냅샷
     const { currency, rate: exchangeRateValue } = await getExchangeRate(locale || "ko")
+    const allRates = await getAllExchangeRates()
+    const customerCurrency = getCurrencyForLocale(locale || "ko")
 
     // Get cart items
     const cartItems = await prisma.cartItem.findMany({
@@ -125,11 +128,18 @@ export async function POST(request: Request) {
       }
     }
 
+    // 가격을 고객 통화로 변환하여 주문 저장
     const itemsTotal = cartItems.reduce(
-      (sum: any, item: any) => sum + item.variant.price * item.quantity,
+      (sum: any, item: any) => {
+        const priceCurrency = item.variant.product.priceCurrency || "KRW"
+        const converted = convertCurrency(item.variant.price * item.quantity, priceCurrency, customerCurrency, allRates)
+        return sum + converted
+      },
       0,
     )
-    const totalAmount = gradeDiscount > 0 ? Math.round(itemsTotal * (1 - gradeDiscount)) : itemsTotal
+    const totalAmount = gradeDiscount > 0
+      ? Math.round(itemsTotal * (1 - gradeDiscount) * 100) / 100
+      : Math.round(itemsTotal * 100) / 100
 
     const order = await prisma.order.create({
       data: {
@@ -146,14 +156,18 @@ export async function POST(request: Request) {
         shippingAddress,
         shippingMemo,
         items: {
-          create: cartItems.map((item: any) => ({
-            variantId: item.variant.id,
-            quantity: item.quantity,
-            price: item.variant.price,
-            productName: item.variant.product.name,
-            colorName: item.variant.color.name,
-            sizeName: item.variant.size.name,
-          })),
+          create: cartItems.map((item: any) => {
+            const priceCurrency = item.variant.product.priceCurrency || "KRW"
+            const convertedPrice = Math.round(convertCurrency(item.variant.price, priceCurrency, customerCurrency, allRates) * 100) / 100
+            return {
+              variantId: item.variant.id,
+              quantity: item.quantity,
+              price: convertedPrice,
+              productName: item.variant.product.name,
+              colorName: item.variant.color.name,
+              sizeName: item.variant.size.name,
+            }
+          }),
         },
       },
       include: { items: true },

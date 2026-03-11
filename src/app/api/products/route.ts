@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, moq, colorMoq, colors, sizes, variants } = body
+    const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, moq, colorMoq, priceCurrency, colors, sizes, variants } = body
 
     const product = await prisma.product.create({
       data: {
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
         isActive: isActive ?? true,
         moq: moq ?? 0,
         colorMoq: colorMoq ?? 0,
+        priceCurrency: priceCurrency || "KRW",
         colors: {
           create: (colors || []).map((c: { name: string; colorCode?: string; hexColor?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
             name: c.name,

@@ -40,16 +40,17 @@ model Product {
   description String?
   categoryId  String
   thumbnail   String?
-  isActive    Boolean          @default(true)
-  sortOrder   Int              @default(0)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  sizeSpec    String?
-  images      String[]
-  code        String?          @unique
-  material    String?
-  moq         Int              @default(0)
-  colorMoq    Int              @default(0)
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  sizeSpec      String?
+  images        String[]
+  code          String?          @unique
+  material      String?
+  moq           Int              @default(0)
+  colorMoq      Int              @default(0)
+  priceCurrency String           @default("KRW")
   category    Category         @relation(fields: [categoryId], references: [id])
   colors      ProductColor[]
   sizes       ProductSize[]
@@ -93,7 +94,7 @@ model ProductVariant {
   productId  String
   colorId    String
   sizeId     String
-  price      Int
+  price      Float
   stock      Int          @default(0)
   sku        String?      @unique
   createdAt  DateTime     @default(now())
@@ -173,7 +174,7 @@ model OrderItem {
   orderId     String
   variantId   String?
   quantity    Int
-  price       Int
+  price       Float
   productName String
   colorName   String
   sizeName    String

@@ -12,8 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, X, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { translateCategory } from "@/lib/translate"
-import { useCurrency } from "@/hooks/use-currency"
-import { getCurrencyForLocale, convertPrice } from "@/lib/currency"
+import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES } from "@/lib/product-sizes"
 
 const KIDS_SIZES_ALL = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
@@ -67,6 +66,7 @@ interface ProductFormProps {
     isActive: boolean
     moq: number
     colorMoq: number
+    priceCurrency: string
     colors: { name: string; colorCode: string | null; hexColor: string | null; images: string[]; moq: number }[]
     sizes: { name: string }[]
     variants: { color: { name: string }; size: { name: string }; price: number; stock: number }[]
@@ -80,13 +80,8 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const tc = useTranslations("common")
   const tCat = useTranslations("categories")
   const isEdit = !!initialData
-  const { currency, rate } = useCurrency()
 
-  // KRW → locale 통화 변환 (표시용)
-  const toLocal = (krw: number) => rate > 0 && rate !== 1 ? Math.round(krw / rate * 100) / 100 : krw
-  // locale 통화 → KRW 변환 (저장용)
-  const toKRW = (local: number) => rate > 0 && rate !== 1 ? Math.round(local * rate) : local
-
+  const [priceCurrency, setPriceCurrency] = useState(initialData?.priceCurrency || "KRW")
   const [code, setCode] = useState(initialData?.code || "")
   const [name, setName] = useState(initialData?.name || "")
   const [description, setDescription] = useState(initialData?.description || "")
@@ -248,6 +243,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         isActive,
         moq,
         colorMoq,
+        priceCurrency,
         colors: validColors.map((c) => ({ name: c.name, colorCode: c.colorCode || null, hexColor: c.hexColor || null, moq: c.moq, images: [] })),
         sizes: validSizes,
         variants,
@@ -284,7 +280,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
           <CardTitle>{t("basicInfo")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-4">
             <div className="space-y-2">
               <Label>{t("productCode")}</Label>
               <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("productCodePlaceholder")} />
@@ -292,6 +288,19 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             <div className="space-y-2">
               <Label>{t("productName")} *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("priceCurrency") || "가격 통화"}</Label>
+              <Select value={priceCurrency} onValueChange={setPriceCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>{t("category")} *</Label>
@@ -557,16 +566,16 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       {/* Price & Stock Matrix */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("priceStockMatrix")} ({currency})</CardTitle>
+          <CardTitle>{t("priceStockMatrix")} ({priceCurrency})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex items-center gap-3">
-            <Label>{t("basePrice")} ({currency})</Label>
+            <Label>{t("basePrice")} ({priceCurrency})</Label>
             <Input
               type="number"
-              step={rate !== 1 ? "0.01" : "1"}
-              value={toLocal(defaultPrice) || ""}
-              onChange={(e) => setDefaultPrice(toKRW(parseFloat(e.target.value) || 0))}
+              step={priceCurrency === "KRW" || priceCurrency === "JPY" ? "1" : "0.01"}
+              value={defaultPrice || ""}
+              onChange={(e) => setDefaultPrice(parseFloat(e.target.value) || 0)}
               className="w-32"
             />
             <Button
@@ -605,13 +614,13 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                         <div className="flex flex-col gap-1">
                           <Input
                             type="number"
-                            step={rate !== 1 ? "0.01" : "1"}
+                            step={priceCurrency === "KRW" || priceCurrency === "JPY" ? "1" : "0.01"}
                             placeholder={t("price")}
-                            value={toLocal(getVariantPrice(color.name, size.name)) || ""}
+                            value={getVariantPrice(color.name, size.name) || ""}
                             onChange={(e) => {
                               setVariantPrices((prev) => ({
                                 ...prev,
-                                [`${color.name}-${size.name}`]: toKRW(parseFloat(e.target.value) || 0),
+                                [`${color.name}-${size.name}`]: parseFloat(e.target.value) || 0,
                               }))
                             }}
                             className="h-8 w-24 text-xs"

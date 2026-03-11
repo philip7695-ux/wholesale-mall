@@ -17,7 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { formatPrice } from "@/lib/utils"
+import { formatPriceCross } from "@/lib/utils"
 import { translateCategory, translateColor, translateSizeSpecHeader } from "@/lib/translate"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
@@ -43,6 +43,7 @@ interface Product {
   sizeSpec: string | null
   moq: number
   colorMoq: number
+  priceCurrency: string
   category: { name: string; slug: string }
   colors: { id: string; name: string; colorCode: string | null; hexColor: string | null; images: string[]; moq: number }[]
   sizes: { id: string; name: string }[]
@@ -58,7 +59,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const tColor = useTranslations("colors")
   const tSpec = useTranslations("sizeSpec")
   const locale = useLocale()
-  const { rate } = useCurrency()
+  const { rates } = useCurrency()
+  const fp = (amount: number) => formatPriceCross(amount, product.priceCurrency, locale, rates)
   const tProd = useTranslations("product")
   const buyerGrade = session?.user?.buyerGrade || "BRONZE"
   const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
@@ -396,14 +398,14 @@ export function ProductDetail({ product }: { product: Product }) {
                         <span className="w-24 text-xs text-muted-foreground">
                           {discountRate > 0 ? (
                             <>
-                              <span className="line-through">{formatPrice(variant.price, locale, rate)}</span>
+                              <span className="line-through">{fp(variant.price)}</span>
                               {" "}
                               <span className="text-primary font-medium">
-                                {formatPrice(Math.round(variant.price * (1 - discountRate)), locale, rate)}
+                                {fp(Math.round(variant.price * (1 - discountRate) * 100) / 100)}
                               </span>
                             </>
                           ) : (
-                            formatPrice(variant.price, locale, rate)
+                            fp(variant.price)
                           )}
                         </span>
                         <span className={`w-16 text-xs text-center ${outOfStock ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
@@ -425,10 +427,8 @@ export function ProductDetail({ product }: { product: Product }) {
                         />
                         {(quantities[key] || 0) > 0 && (
                           <span className="text-sm font-medium">
-                            {formatPrice(
-                              Math.round(variant.price * (1 - discountRate)) * (quantities[key] || 0),
-                              locale,
-                              rate,
+                            {fp(
+                              Math.round(variant.price * (1 - discountRate) * 100) / 100 * (quantities[key] || 0),
                             )}
                           </span>
                         )}
@@ -463,7 +463,7 @@ export function ProductDetail({ product }: { product: Product }) {
                   })}
                   <div className="flex justify-between border-t pt-1 font-bold">
                     <span>{t("totalSummary", { count: totalQuantity() })}</span>
-                    <span className="text-primary">{formatPrice(totalAmount(), locale, rate)}</span>
+                    <span className="text-primary">{fp(totalAmount())}</span>
                   </div>
                 </div>
               </CardContent>
@@ -505,7 +505,7 @@ export function ProductDetail({ product }: { product: Product }) {
             {loading
               ? t("adding")
               : totalQuantity() > 0
-                ? t("addToCartWithQty", { count: totalQuantity(), price: formatPrice(totalAmount(), locale, rate) })
+                ? t("addToCartWithQty", { count: totalQuantity(), price: fp(totalAmount()) })
                 : t("addToCart")}
           </Button>
         </div>

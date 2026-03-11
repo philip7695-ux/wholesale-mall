@@ -37,13 +37,13 @@ export async function PUT(
 
   const { id } = await params
   const body = await request.json()
-  const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, moq, colorMoq, colors, sizes, variants } = body
+  const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, moq, colorMoq, priceCurrency, colors, sizes, variants } = body
 
   try {
     // Update basic product info
     await prisma.product.update({
       where: { id },
-      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined },
+      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined, priceCurrency: priceCurrency || undefined },
     })
 
     // Delete cart items referencing this product's variants (to avoid FK constraint)
