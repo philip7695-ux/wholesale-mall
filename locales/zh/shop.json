@@ -13,5 +13,7 @@
   "noProducts": "没有找到商品。",
   "productsTitle": "商品列表",
   "goToShop": "前往商城",
-  "welcome": "欢迎, {name}"
+  "welcome": "欢迎, {name}",
+  "baby": "婴儿",
+  "kids": "儿童"
 }

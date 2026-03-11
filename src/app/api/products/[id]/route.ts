@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { determineAgeGroup } from "@/lib/product-sizes"
 
 export async function GET(
   _request: Request,
@@ -41,9 +42,12 @@ export async function PUT(
 
   try {
     // Update basic product info
+    const sizeNames = (sizes || []).map((s: { name: string }) => s.name)
+    const ageGroup = determineAgeGroup(name, sizeNames)
+
     await prisma.product.update({
       where: { id },
-      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined, priceCurrency: priceCurrency || undefined },
+      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined, priceCurrency: priceCurrency || undefined, ageGroup },
     })
 
     // Delete cart items referencing this product's variants (to avoid FK constraint)

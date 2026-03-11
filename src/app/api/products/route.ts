@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { determineAgeGroup } from "@/lib/product-sizes"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, code, description, categoryId, thumbnail, images, material, sizeSpec, isActive, moq, colorMoq, priceCurrency, colors, sizes, variants } = body
 
+    const sizeNames = (sizes || []).map((s: { name: string }) => s.name)
+    const ageGroup = determineAgeGroup(name, sizeNames)
+
     const product = await prisma.product.create({
       data: {
         name,
@@ -59,6 +63,7 @@ export async function POST(request: Request) {
         moq: moq ?? 0,
         colorMoq: colorMoq ?? 0,
         priceCurrency: priceCurrency || "KRW",
+        ageGroup,
         colors: {
           create: (colors || []).map((c: { name: string; colorCode?: string; hexColor?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
             name: c.name,

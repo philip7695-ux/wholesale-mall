@@ -13,5 +13,7 @@
   "noProducts": "商品が見つかりません。",
   "productsTitle": "商品一覧",
   "goToShop": "ショップへ",
-  "welcome": "{name}様、ようこそ"
+  "welcome": "{name}様、ようこそ",
+  "baby": "ベビー",
+  "kids": "キッズ"
 }

@@ -1,21 +1,17 @@
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 import { Link } from "@/i18n/navigation"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatPriceCross } from "@/lib/utils"
 import { ProductSearch } from "@/components/shop/product-search"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
-import { getAllExchangeRates } from "@/lib/currency.server"
-import { auth } from "@/lib/auth"
-import { GRADE_DISCOUNT } from "@/lib/grade"
-import { Badge } from "@/components/ui/badge"
+import { ProductPrice } from "@/components/shop/product-price"
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; search?: string; page?: string }>
+  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string }>
 }) {
   const t = await getTranslations("shop")
   const tCat = await getTranslations("categories")
@@ -23,6 +19,7 @@ export default async function ProductsPage({
   const params = await searchParams
   const category = params.category
   const search = params.search
+  const ageGroup = params.ageGroup
   const page = parseInt(params.page || "1")
   const limit = 20
 
@@ -31,38 +28,27 @@ export default async function ProductsPage({
     variants: { some: { stock: { gt: 0 } } },
   }
   if (category) where.category = { slug: category }
+  if (ageGroup === "BABY" || ageGroup === "KIDS") where.ageGroup = ageGroup
   if (search) where.OR = [
     { name: { contains: search, mode: "insensitive" } },
     { code: { contains: search, mode: "insensitive" } },
   ]
 
-  // auth, 환율, DB 쿼리를 모두 병렬 실행
-  const [rates, session, productsResult] = await Promise.all([
-    getAllExchangeRates(),
-    auth().catch(() => null),
-    Promise.all([
-      prisma.product.findMany({
-        where,
-        include: {
-          category: true,
-          colors: { orderBy: { sortOrder: "asc" } },
-          variants: true,
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.product.count({ where }),
-    ]).catch((err) => {
-      console.error("[ProductsPage] DB error:", err)
-      throw err
+  const [products, categories, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        colors: { orderBy: { sortOrder: "asc" } },
+        variants: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
     }),
+    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.product.count({ where }),
   ])
-
-  const buyerGrade = (session as any)?.user?.buyerGrade || "BRONZE"
-  const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
-  const [products, categories, total] = productsResult
 
   const totalPages = Math.ceil(total / limit)
 
@@ -74,6 +60,7 @@ export default async function ProductsPage({
         categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
         currentCategory={category}
         currentSearch={search}
+        currentAgeGroup={ageGroup}
       />
 
       {products.length === 0 ? (
@@ -124,20 +111,7 @@ export default async function ProductsPage({
                         )}
                       </div>
                       <p className="mt-2 text-sm font-bold">
-                        {minPrice > 0 ? (
-                          discountRate > 0 ? (
-                            <>
-                              <span className="text-muted-foreground font-normal line-through text-xs">
-                                {formatPriceCross(minPrice, product.priceCurrency, locale, rates)}
-                              </span>{" "}
-                              <span className="text-primary">
-                                {formatPriceCross(Math.round(minPrice * (1 - discountRate) * 100) / 100, product.priceCurrency, locale, rates)}
-                              </span>
-                            </>
-                          ) : (
-                            formatPriceCross(minPrice, product.priceCurrency, locale, rates)
-                          )
-                        ) : "-"}
+                        <ProductPrice minPrice={minPrice} priceCurrency={product.priceCurrency} />
                       </p>
                     </CardContent>
                   </Card>

@@ -51,6 +51,7 @@ model Product {
   moq           Int              @default(0)
   colorMoq      Int              @default(0)
   priceCurrency String           @default("KRW")
+  ageGroup      AgeGroup?
   category    Category         @relation(fields: [categoryId], references: [id])
   colors      ProductColor[]
   sizes       ProductSize[]
@@ -240,6 +241,11 @@ model PaymentConfirmation {
   order           Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+enum AgeGroup {
+  BABY
+  KIDS
 }
 
 enum PaymentConfirmationStatus {

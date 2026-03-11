@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES } from "@/lib/product-sizes"
+import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup } from "@/lib/product-sizes"
 
 interface FailedRow {
   row: number
@@ -225,6 +225,9 @@ export async function POST(request: NextRequest) {
           })
           .map((name, i) => ({ name, sortOrder: i }))
 
+        const allSizeNames = sizes.map((s) => s.name)
+        const ageGroup = determineAgeGroup(productName, allSizeNames)
+
         const product = await prisma.product.create({
           data: {
             name: productName,
@@ -235,6 +238,7 @@ export async function POST(request: NextRequest) {
             images: [],
             isActive: true,
             priceCurrency: group.priceCurrency || "KRW",
+            ageGroup,
             colors: { create: colors },
             sizes: { create: sizes },
           },

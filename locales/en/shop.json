@@ -13,5 +13,7 @@
   "noProducts": "No products found.",
   "productsTitle": "Product List",
   "goToShop": "Go to Shop",
-  "welcome": "Welcome, {name}"
+  "welcome": "Welcome, {name}",
+  "baby": "Baby",
+  "kids": "Kids"
 }
