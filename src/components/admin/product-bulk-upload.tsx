@@ -4,11 +4,16 @@ import { useState, useRef } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle } from "lucide-react"
+import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle, Package } from "lucide-react"
 import { toast } from "sonner"
 
 interface UploadResult {
   success: number
+  failed: { row: number; error: string }[]
+}
+
+interface StockUpdateResult {
+  updated: number
   failed: { row: number; error: string }[]
 }
 
@@ -80,6 +85,60 @@ export function ProductBulkUpload() {
     setFile(null)
     setResult(null)
     if (inputRef.current) inputRef.current.value = ""
+  }
+
+  // ── Stock update state ──
+  const [stockFile, setStockFile] = useState<File | null>(null)
+  const [stockUploading, setStockUploading] = useState(false)
+  const [stockResult, setStockResult] = useState<StockUpdateResult | null>(null)
+  const stockInputRef = useRef<HTMLInputElement>(null)
+
+  const handleStockDownload = () => {
+    window.open("/api/admin/products/stock")
+  }
+
+  const handleStockFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0]
+    if (selected) {
+      if (!selected.name.endsWith(".xlsx") && !selected.name.endsWith(".xls")) {
+        toast.error(t("bulkExcelOnly"))
+        return
+      }
+      setStockFile(selected)
+      setStockResult(null)
+    }
+  }
+
+  const handleStockUpload = async () => {
+    if (!stockFile) return
+    setStockUploading(true)
+    setStockResult(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", stockFile)
+      const res = await fetch("/api/admin/products/stock", {
+        method: "POST",
+        body: formData,
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || t("bulkUploadFail"))
+      }
+      const data: StockUpdateResult = await res.json()
+      setStockResult(data)
+      if (data.updated > 0) toast.success(t("stockUpdateSuccess", { count: data.updated }))
+      if (data.failed.length > 0) toast.error(t("bulkErrors", { count: data.failed.length }))
+    } catch (err: any) {
+      toast.error(err.message || t("bulkUploadError"))
+    } finally {
+      setStockUploading(false)
+    }
+  }
+
+  const handleStockReset = () => {
+    setStockFile(null)
+    setStockResult(null)
+    if (stockInputRef.current) stockInputRef.current.value = ""
   }
 
   // ── Image bulk upload state ──
@@ -223,6 +282,85 @@ export function ProductBulkUpload() {
               </div>
             )}
             <Button variant="outline" size="sm" onClick={handleReset}>
+              {t("bulkReupload")}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+
+    {/* Stock Update */}
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-orange-600" />
+          <span className="font-medium">{t("stockManagement")}</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleStockDownload}>
+            <Download className="mr-1 h-4 w-4" />
+            {t("stockDownload")}
+          </Button>
+
+          <input
+            ref={stockInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleStockFileChange}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => stockInputRef.current?.click()}
+          >
+            <Upload className="mr-1 h-4 w-4" />
+            {t("stockSelectFile")}
+          </Button>
+
+          {stockFile && (
+            <>
+              <span className="text-sm text-muted-foreground">{stockFile.name}</span>
+              <Button variant="ghost" size="sm" onClick={handleStockReset} className="h-6 w-6 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t("stockUploadHint")}</p>
+
+        {stockFile && !stockResult && (
+          <Button size="sm" onClick={handleStockUpload} disabled={stockUploading} className="w-fit">
+            {stockUploading ? t("bulkUploading") : t("stockStartUpload")}
+          </Button>
+        )}
+
+        {stockResult && (
+          <div className="space-y-2 text-sm">
+            {stockResult.updated > 0 && (
+              <div className="flex items-center gap-1 text-green-600">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>{t("stockUpdateSuccess", { count: stockResult.updated })}</span>
+              </div>
+            )}
+            {stockResult.failed.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-1 text-red-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{t("bulkErrorCount", { count: stockResult.failed.length })}</span>
+                </div>
+                <ul className="ml-5 list-disc space-y-0.5 text-red-600">
+                  {stockResult.failed.map((f, i) => (
+                    <li key={i}>
+                      {f.row > 0 ? t("bulkRowError", { row: f.row, error: f.error }) : f.error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={handleStockReset}>
               {t("bulkReupload")}
             </Button>
           </div>
