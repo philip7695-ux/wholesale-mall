@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "@/i18n/navigation"
 import { useTranslations, useLocale } from "next-intl"
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, X, ZoomIn } from "lucide-react"
+import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -74,8 +74,28 @@ export function ProductDetail({ product }: { product: Product }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
   const [showCartDialog, setShowCartDialog] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({ display: "none" })
+  const imgContainerRef = useRef<HTMLDivElement>(null)
+
+  const ZOOM_SCALE = 2.5
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const container = imgContainerRef.current
+    if (!container || !mainImage) return
+    const rect = container.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+    setZoomStyle({
+      display: "block",
+      backgroundImage: `url(${mainImage})`,
+      backgroundSize: `${rect.width * ZOOM_SCALE}px ${rect.height * ZOOM_SCALE}px`,
+      backgroundPosition: `${x}% ${y}%`,
+    })
+  }, [mainImage])
+
+  const handleMouseLeave = useCallback(() => {
+    setZoomStyle({ display: "none" })
+  }, [])
 
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
   const allSoldOut = totalStock <= 0
@@ -194,33 +214,29 @@ export function ProductDetail({ product }: { product: Product }) {
       <div className="grid gap-6 md:grid-cols-2">
         {/* 이미지 갤러리 */}
         <div className="space-y-3">
-          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+          <div
+            ref={imgContainerRef}
+            className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
             {mainImage ? (
               <img
                 src={mainImage}
                 alt={product.name}
-                className="h-full w-full object-cover cursor-zoom-in"
-                onClick={() => {
-                  setLightboxIndex(allImages.indexOf(mainImage))
-                  setLightboxOpen(true)
-                }}
+                className="h-full w-full object-cover"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
                 No Image
               </div>
             )}
-            {mainImage && (
-              <button
-                onClick={() => {
-                  setLightboxIndex(allImages.indexOf(mainImage))
-                  setLightboxOpen(true)
-                }}
-                className="absolute top-2 right-2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60 transition-colors"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </button>
-            )}
+            {/* hover zoom overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none cursor-crosshair"
+              style={zoomStyle}
+            />
+            {/* 모바일에서는 hover 불가하므로 안내 없음 */}
             {allImages.length > 1 && (
               <>
                 <button
@@ -557,47 +573,6 @@ export function ProductDetail({ product }: { product: Product }) {
         </DialogContent>
       </Dialog>
 
-      {/* 이미지 확대 라이트박스 */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-black/95 sm:max-w-[95vw]">
-          <DialogTitle className="sr-only">{product.name}</DialogTitle>
-          <DialogDescription className="sr-only">{product.name}</DialogDescription>
-          <button
-            onClick={() => setLightboxOpen(false)}
-            className="absolute top-3 right-3 z-50 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div className="relative flex items-center justify-center w-full h-[90vh]">
-            {allImages[lightboxIndex] && (
-              <img
-                src={allImages[lightboxIndex]}
-                alt={product.name}
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
-            {allImages.length > 1 && (
-              <>
-                <button
-                  onClick={() => setLightboxIndex((lightboxIndex - 1 + allImages.length) % allImages.length)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  onClick={() => setLightboxIndex((lightboxIndex + 1) % allImages.length)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
-                  {lightboxIndex + 1} / {allImages.length}
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
