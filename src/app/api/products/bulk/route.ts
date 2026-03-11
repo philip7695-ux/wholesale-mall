@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { ADULT_SIZES, KIDS_SIZES } from "@/lib/product-sizes"
+import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES } from "@/lib/product-sizes"
 
 interface FailedRow {
   row: number
@@ -74,8 +74,8 @@ function parseSheetNew(
   }
 }
 
-// 구 형식: 각 사이즈가 별도 컬럼 (하위 호환)
-function parseSheetLegacy(
+// 사이즈별 컬럼 형식: 각 사이즈가 별도 컬럼 (사이즈 컬럼 값 = 재고 수량)
+function parseSheetSizeColumns(
   rows: Record<string, any>[],
   sizeColumns: readonly string[],
   sheetLabel: string,
@@ -129,6 +129,15 @@ function parseSheetLegacy(
   }
 }
 
+// 시트명으로 사이즈 컬럼 결정
+function getSizeColumnsForSheet(sheetName: string): readonly string[] {
+  const lower = sheetName.toLowerCase()
+  if (lower.includes("숫자")) return KIDS_NUM_SIZES
+  if (lower.includes("영어")) return KIDS_LETTER_SIZES
+  if (lower.includes("아동")) return [...KIDS_NUM_SIZES, ...KIDS_LETTER_SIZES]
+  return ADULT_SIZES
+}
+
 export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session || session.user.role !== "ADMIN") {
@@ -146,7 +155,6 @@ export async function POST(request: NextRequest) {
     const failed: FailedRow[] = []
     const productGroups: ProductGroups = new Map()
 
-    // 새 형식(사이즈* 컬럼) vs 구 형식(사이즈별 컬럼) 자동 감지
     const sheetsToProcess = wb.SheetNames.length > 0 ? wb.SheetNames : []
 
     for (const sheetName of sheetsToProcess) {
@@ -155,14 +163,15 @@ export async function POST(request: NextRequest) {
       const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
       if (rows.length === 0) continue
 
-      // 첫 행의 키를 보고 새 형식인지 구 형식인지 판단
+      // 첫 행의 키를 보고 형식 판단
       const firstRow = rows[0]
       if ("사이즈*" in firstRow) {
+        // 구 형식: "사이즈*" 컬럼에 쉼표 구분 사이즈
         parseSheetNew(rows, sheetName, failed, productGroups)
       } else {
-        // 구 형식: 시트명으로 성인복/아동복 구분
-        const sizeColumns = sheetName === "아동복" ? KIDS_SIZES : ADULT_SIZES
-        parseSheetLegacy(rows, sizeColumns, sheetName, failed, productGroups)
+        // 새 형식: 사이즈별 컬럼 (사이즈명 = 컬럼 헤더, 값 = 재고 수량)
+        const sizeColumns = getSizeColumnsForSheet(sheetName)
+        parseSheetSizeColumns(rows, sizeColumns, sheetName, failed, productGroups)
       }
     }
 
@@ -183,7 +192,7 @@ export async function POST(request: NextRequest) {
 
     // 상품 생성
     let success = 0
-    const sizeOrder = [...ADULT_SIZES, ...KIDS_SIZES]
+    const sizeOrder = ALL_SIZES
 
     for (const [productName, group] of productGroups) {
       try {
@@ -203,7 +212,11 @@ export async function POST(request: NextRequest) {
         }))
 
         const sizes = [...sizesSet]
-          .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b))
+          .sort((a, b) => {
+            const ai = sizeOrder.indexOf(a)
+            const bi = sizeOrder.indexOf(b)
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+          })
           .map((name, i) => ({ name, sortOrder: i }))
 
         const product = await prisma.product.create({

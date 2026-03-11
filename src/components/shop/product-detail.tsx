@@ -384,8 +384,9 @@ export function ProductDetail({ product }: { product: Product }) {
                     const variant = getVariant(selectedColor, size.id)
                     const key = `${selectedColor}-${size.id}`
                     if (!variant) return null
+                    const outOfStock = variant.stock <= 0
                     return (
-                      <div key={size.id} className="flex items-center gap-3">
+                      <div key={size.id} className={`flex items-center gap-3 ${outOfStock ? "opacity-50" : ""}`}>
                         <span className="w-14 text-sm font-medium">{size.name}</span>
                         <span className="w-24 text-xs text-muted-foreground">
                           {discountRate > 0 ? (
@@ -400,15 +401,21 @@ export function ProductDetail({ product }: { product: Product }) {
                             formatPrice(variant.price, locale, rate)
                           )}
                         </span>
+                        <span className={`w-16 text-xs text-center ${outOfStock ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
+                          {outOfStock ? t("soldOut") : t("stockCount", { count: variant.stock })}
+                        </span>
                         <Input
                           type="number"
                           min={0}
+                          max={variant.stock > 0 ? variant.stock : undefined}
                           value={quantities[key] || ""}
                           onChange={(e) => {
                             const val = parseInt(e.target.value) || 0
-                            setQuantities((prev) => ({ ...prev, [key]: val }))
+                            const capped = variant.stock > 0 ? Math.min(val, variant.stock) : val
+                            setQuantities((prev) => ({ ...prev, [key]: capped }))
                           }}
                           placeholder="0"
+                          disabled={outOfStock}
                           className="h-8 w-20 text-center text-sm"
                         />
                         {(quantities[key] || 0) > 0 && (

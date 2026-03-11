@@ -22,5 +22,7 @@
   "moqGradeRelaxed": "{rate}% 등급 MOQ 완화 적용중",
   "moqNotMet": "최소주문수량 미달",
   "moqProductError": "전체 최소 {required}장 필요 (현재 {actual}장)",
-  "moqColorError": "{colorName}: 최소 {required}장 필요 (현재 {actual}장)"
+  "moqColorError": "{colorName}: 최소 {required}장 필요 (현재 {actual}장)",
+  "soldOut": "품절",
+  "stockCount": "재고 {count}"
 }

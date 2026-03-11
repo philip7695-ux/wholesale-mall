@@ -22,5 +22,7 @@
   "moqGradeRelaxed": "{rate}%ランクMOQ緩和適用中",
   "moqNotMet": "最小注文数量未達",
   "moqProductError": "最低{required}枚必要 (現在{actual}枚)",
-  "moqColorError": "{colorName}: 最低{required}枚必要 (現在{actual}枚)"
+  "moqColorError": "{colorName}: 最低{required}枚必要 (現在{actual}枚)",
+  "soldOut": "品切れ",
+  "stockCount": "在庫 {count}"
 }

@@ -1,2 +1,5 @@
-export const ADULT_SIZES: string[] = ["XS", "S", "M", "L", "XL"]
-export const KIDS_SIZES: string[] = ["F", "S", "M", "L", "80", "85", "90", "100", "110", "120", "130"]
+export const ADULT_SIZES: string[] = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "FREE"]
+export const KIDS_NUM_SIZES: string[] = ["80", "85", "90", "95", "100", "110", "120", "130"]
+export const KIDS_LETTER_SIZES: string[] = ["F", "S", "M", "L"]
+export const KIDS_SIZES: string[] = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
+export const ALL_SIZES: string[] = [...ADULT_SIZES, ...KIDS_SIZES]

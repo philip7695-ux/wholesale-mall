@@ -22,5 +22,7 @@
   "moqGradeRelaxed": "{rate}%会员MOQ优惠已应用",
   "moqNotMet": "未达到最低订购量",
   "moqProductError": "最少需要{required}件 (当前{actual}件)",
-  "moqColorError": "{colorName}: 最少需要{required}件 (当前{actual}件)"
+  "moqColorError": "{colorName}: 最少需要{required}件 (当前{actual}件)",
+  "soldOut": "售罄",
+  "stockCount": "库存 {count}"
 }
