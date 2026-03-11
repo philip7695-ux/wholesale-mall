@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { OrderStatusForm } from "@/components/admin/order-status-form"
 import { getExchangeRate } from "@/lib/currency.server"
-import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
+import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_DOT_COLOR, STATUS_TEXT_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
 
 export default async function AdminOrderDetailPage({
   params,
@@ -132,12 +132,12 @@ export default async function AdminOrderDetailPage({
           <div className="space-y-3">
             {timelineSteps.map((step) => (
               <div key={step.status} className="flex items-center gap-3">
-                <div className={`h-3 w-3 rounded-full ${step.timestamp ? (STATUS_COLOR[step.status]?.split(" ")[0] || "bg-gray-300") : "bg-gray-200"}`} />
-                <span className={`text-sm font-medium ${step.timestamp ? "" : "text-muted-foreground"}`}>
+                <div className={`h-3 w-3 rounded-full shrink-0 ${step.timestamp ? (STATUS_DOT_COLOR[step.status] || "bg-gray-300") : "bg-gray-200"}`} />
+                <span className={`text-sm font-medium ${step.timestamp ? (STATUS_TEXT_COLOR[step.status] || "") : "text-muted-foreground"}`}>
                   {step.label}
                 </span>
                 {step.timestamp && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className={`text-xs ${STATUS_TEXT_COLOR[step.status] || "text-muted-foreground"}`}>
                     {formatDateTime(step.timestamp, locale)}
                   </span>
                 )}
