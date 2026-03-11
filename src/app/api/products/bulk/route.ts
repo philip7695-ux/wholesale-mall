@@ -14,7 +14,7 @@ type ProductGroups = Map<string, {
   category: string
   description: string
   material: string
-  variants: { colorName: string; colorCode: string; sizeName: string; price: number; stock: number }[]
+  variants: { colorName: string; colorCode: string; hexColor: string; sizeName: string; price: number; stock: number }[]
 }>
 
 function toSlug(name: string): string {
@@ -57,8 +57,9 @@ function parseSheetNew(
 
     const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
-    const rawColorCode = String(row["컬러코드"] ?? "").trim()
-    const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
+    const colorCode = String(row["컬러코드"] ?? "").trim()
+    const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
+    const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
 
     if (!groups.has(name)) {
       groups.set(name, { code, category, description, material, variants: [] })
@@ -69,7 +70,7 @@ function parseSheetNew(
     if (material && !group.material) group.material = material
 
     for (const sizeName of sizeNames) {
-      group.variants.push({ colorName, colorCode, sizeName, price, stock })
+      group.variants.push({ colorName, colorCode, hexColor, sizeName, price, stock })
     }
   }
 }
@@ -113,8 +114,9 @@ function parseSheetSizeColumns(
 
     const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
-    const rawColorCode = String(row["컬러코드"] ?? "").trim()
-    const colorCode = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawColorCode) ? rawColorCode : ""
+    const colorCode = String(row["컬러코드"] ?? "").trim()
+    const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
+    const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
 
     if (!groups.has(name)) {
       groups.set(name, { code, category, description, material, variants: [] })
@@ -125,7 +127,7 @@ function parseSheetSizeColumns(
     if (material && !group.material) group.material = material
 
     for (const { sizeName, stock } of sizeVariants) {
-      group.variants.push({ colorName, colorCode, sizeName, price, stock })
+      group.variants.push({ colorName, colorCode, hexColor, sizeName, price, stock })
     }
   }
 }
@@ -200,16 +202,16 @@ export async function POST(request: NextRequest) {
         const categoryId = categoryMap.get(group.category)
         if (!categoryId) { failed.push({ row: 0, error: `카테고리 "${group.category}" 처리 실패` }); continue }
 
-        const colorsMap = new Map<string, string>()
+        const colorsMap = new Map<string, { colorCode: string; hexColor: string }>()
         const sizesSet = new Set<string>()
 
         for (const v of group.variants) {
-          if (!colorsMap.has(v.colorName)) colorsMap.set(v.colorName, v.colorCode)
+          if (!colorsMap.has(v.colorName)) colorsMap.set(v.colorName, { colorCode: v.colorCode, hexColor: v.hexColor })
           sizesSet.add(v.sizeName)
         }
 
-        const colors = [...colorsMap.entries()].map(([name, colorCode], i) => ({
-          name, colorCode: colorCode || undefined, images: [] as string[], sortOrder: i,
+        const colors = [...colorsMap.entries()].map(([name, { colorCode, hexColor }], i) => ({
+          name, colorCode: colorCode || undefined, hexColor: hexColor || undefined, images: [] as string[], sortOrder: i,
         }))
 
         const sizes = [...sizesSet]

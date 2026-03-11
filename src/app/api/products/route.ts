@@ -59,9 +59,10 @@ export async function POST(request: Request) {
         moq: moq ?? 0,
         colorMoq: colorMoq ?? 0,
         colors: {
-          create: (colors || []).map((c: { name: string; colorCode?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
+          create: (colors || []).map((c: { name: string; colorCode?: string; hexColor?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
             name: c.name,
-            colorCode: c.colorCode,
+            colorCode: c.colorCode || null,
+            hexColor: c.hexColor || null,
             images: c.images || [],
             sortOrder: c.sortOrder ?? i,
             moq: c.moq ?? 0,

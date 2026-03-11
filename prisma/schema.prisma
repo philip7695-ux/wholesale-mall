@@ -63,6 +63,7 @@ model ProductColor {
   productId String
   name      String
   colorCode String?
+  hexColor  String?
   images    String[]
   sortOrder Int              @default(0)
   moq       Int              @default(0)

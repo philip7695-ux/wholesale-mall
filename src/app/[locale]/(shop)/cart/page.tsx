@@ -34,7 +34,7 @@ interface CartItem {
       colorMoq: number
       colors: ProductColor[]
     }
-    color: { id: string; name: string; colorCode: string | null }
+    color: { id: string; name: string; colorCode: string | null; hexColor: string | null }
     size: { name: string }
   }
 }
@@ -51,6 +51,7 @@ interface GroupedProduct {
 interface ColorGroup {
   colorName: string
   colorCode: string | null
+  hexColor: string | null
   items: CartItem[]
   subtotal: number
   totalQty: number
@@ -64,6 +65,7 @@ function groupItemsByColor(items: CartItem[]): ColorGroup[] {
       map.set(cname, {
         colorName: cname,
         colorCode: item.variant.color.colorCode,
+        hexColor: item.variant.color.hexColor,
         items: [],
         subtotal: 0,
         totalQty: 0,
@@ -269,10 +271,10 @@ export default function CartPage() {
                         <div key={colorGroup.colorName} className="overflow-x-auto rounded border">
                           {/* 컬러 헤더 */}
                           <div className="flex items-center gap-2 border-b bg-gray-50 px-3 py-2">
-                            {colorGroup.colorCode && (
+                            {colorGroup.hexColor && (
                               <span
                                 className="inline-block h-3.5 w-3.5 rounded-full border"
-                                style={{ backgroundColor: colorGroup.colorCode }}
+                                style={{ backgroundColor: colorGroup.hexColor }}
                               />
                             )}
                             <span className="text-sm font-medium">{colorGroup.colorName}</span>

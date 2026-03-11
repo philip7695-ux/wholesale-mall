@@ -37,6 +37,7 @@ interface Category {
 interface ColorInput {
   name: string
   colorCode: string
+  hexColor: string
   moq: number
 }
 
@@ -66,7 +67,7 @@ interface ProductFormProps {
     isActive: boolean
     moq: number
     colorMoq: number
-    colors: { name: string; colorCode: string | null; images: string[]; moq: number }[]
+    colors: { name: string; colorCode: string | null; hexColor: string | null; images: string[]; moq: number }[]
     sizes: { name: string }[]
     variants: { color: { name: string }; size: { name: string }; price: number; stock: number }[]
   }
@@ -100,8 +101,9 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
     initialData?.colors.map((c) => ({
       name: c.name,
       colorCode: c.colorCode || "",
+      hexColor: c.hexColor || "",
       moq: c.moq || 0,
-    })) || [{ name: "", colorCode: "", moq: 0 }],
+    })) || [{ name: "", colorCode: "", hexColor: "", moq: 0 }],
   )
   const [sizes, setSizes] = useState<SizeInput[]>(
     initialData?.sizes.map((s) => ({ name: s.name })) || [{ name: "" }],
@@ -161,7 +163,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   }
 
   function addColor() {
-    setColors([...colors, { name: "", colorCode: "", moq: 0 }])
+    setColors([...colors, { name: "", colorCode: "", hexColor: "", moq: 0 }])
   }
 
   function removeColor(index: number) {
@@ -246,7 +248,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         isActive,
         moq,
         colorMoq,
-        colors: validColors.map((c) => ({ ...c, images: [] })),
+        colors: validColors.map((c) => ({ name: c.name, colorCode: c.colorCode || null, hexColor: c.hexColor || null, moq: c.moq, images: [] })),
         sizes: validSizes,
         variants,
       }
@@ -391,11 +393,21 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 className="flex-1"
               />
               <Input
-                type="color"
-                value={/^#[0-9A-Fa-f]{6}$/.test(color.colorCode) ? color.colorCode : "#000000"}
+                placeholder={t("colorCodePlaceholder") || "코드 (예: 01, BK)"}
+                value={color.colorCode}
                 onChange={(e) => {
                   const next = [...colors]
                   next[i].colorCode = e.target.value
+                  setColors(next)
+                }}
+                className="w-24"
+              />
+              <Input
+                type="color"
+                value={/^#[0-9A-Fa-f]{6}$/.test(color.hexColor) ? color.hexColor : "#000000"}
+                onChange={(e) => {
+                  const next = [...colors]
+                  next[i].hexColor = e.target.value
                   setColors(next)
                 }}
                 className="h-10 w-14 p-1"
@@ -670,7 +682,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                     <div key={i} className="flex items-center gap-3">
                       <span
                         className="inline-block h-4 w-4 rounded-full border"
-                        style={{ backgroundColor: color.colorCode || "#ccc" }}
+                        style={{ backgroundColor: color.hexColor || "#ccc" }}
                       />
                       <span className="w-24 text-sm">{color.name}</span>
                       <Input

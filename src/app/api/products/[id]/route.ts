@@ -54,10 +54,11 @@ export async function PUT(
       await prisma.productColor.deleteMany({ where: { productId: id } })
       if (colors.length > 0) {
         await prisma.productColor.createMany({
-          data: colors.map((c: { name: string; colorCode?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
+          data: colors.map((c: { name: string; colorCode?: string; hexColor?: string; images?: string[]; sortOrder?: number; moq?: number }, i: number) => ({
             productId: id,
             name: c.name,
-            colorCode: c.colorCode,
+            colorCode: c.colorCode || null,
+            hexColor: c.hexColor || null,
             images: c.images || [],
             sortOrder: c.sortOrder ?? i,
             moq: c.moq ?? 0,

@@ -44,7 +44,7 @@ interface Product {
   moq: number
   colorMoq: number
   category: { name: string; slug: string }
-  colors: { id: string; name: string; colorCode: string | null; images: string[]; moq: number }[]
+  colors: { id: string; name: string; colorCode: string | null; hexColor: string | null; images: string[]; moq: number }[]
   sizes: { id: string; name: string }[]
   variants: Variant[]
 }
@@ -326,7 +326,7 @@ export function ProductDetail({ product }: { product: Product }) {
                   >
                     <span
                       className="inline-block h-4 w-4 rounded-full border"
-                      style={{ backgroundColor: color.colorCode || "#ccc" }}
+                      style={{ backgroundColor: color.hexColor || "#ccc" }}
                     />
                     {translateColor(color.name, tColor)}
                     {qty > 0 && (
@@ -378,7 +378,7 @@ export function ProductDetail({ product }: { product: Product }) {
                 <CardTitle className="text-sm flex items-center gap-2">
                   <span
                     className="inline-block h-3 w-3 rounded-full border"
-                    style={{ backgroundColor: currentColor.colorCode || "#ccc" }}
+                    style={{ backgroundColor: currentColor.hexColor || "#ccc" }}
                   />
                   {t("sizeQuantity", { colorName: translateColor(currentColor.name, tColor) })}
                 </CardTitle>
@@ -453,7 +453,7 @@ export function ProductDetail({ product }: { product: Product }) {
                         <span className="flex items-center gap-1.5">
                           <span
                             className="inline-block h-2.5 w-2.5 rounded-full border"
-                            style={{ backgroundColor: color.colorCode || "#ccc" }}
+                            style={{ backgroundColor: color.hexColor || "#ccc" }}
                           />
                           {translateColor(color.name, tColor)}
                         </span>

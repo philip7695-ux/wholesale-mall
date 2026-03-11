@@ -117,7 +117,7 @@ export default async function ProductsPage({
                           <span
                             key={color.id}
                             className="inline-block h-3 w-3 rounded-full border"
-                            style={{ backgroundColor: color.colorCode || "#ccc" }}
+                            style={{ backgroundColor: color.hexColor || "#ccc" }}
                           />
                         ))}
                         {product.colors.length > 4 && (

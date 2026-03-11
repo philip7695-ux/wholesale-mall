@@ -52,7 +52,7 @@ export default async function EditProductPage({
           isActive: product.isActive,
           moq: product.moq,
           colorMoq: product.colorMoq,
-          colors: product.colors.map((c) => ({ name: c.name, colorCode: c.colorCode, images: c.images, moq: c.moq })),
+          colors: product.colors.map((c) => ({ name: c.name, colorCode: c.colorCode, hexColor: c.hexColor, images: c.images, moq: c.moq })),
           sizes: product.sizes.map((s) => ({ name: s.name })),
           variants: product.variants.map((v) => ({ color: { name: v.color.name }, size: { name: v.size.name }, price: v.price, stock: v.stock })),
         }}

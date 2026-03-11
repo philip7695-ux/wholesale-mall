@@ -43,6 +43,7 @@ export default async function ProductDetailPage({
       id: c.id,
       name: c.name,
       colorCode: c.colorCode,
+      hexColor: c.hexColor,
       images: c.images,
       moq: c.moq,
     })),
