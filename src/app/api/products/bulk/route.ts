@@ -102,7 +102,8 @@ function parseSheetSizeColumns(
       const val = row[sizeName]
       if (val === undefined || val === null || val === "") continue
       const stock = Number(val)
-      sizeVariants.push({ sizeName, stock: isNaN(stock) ? 0 : stock })
+      if (isNaN(stock) || stock <= 0) continue
+      sizeVariants.push({ sizeName, stock })
     }
 
     if (sizeVariants.length === 0) {
