@@ -29,7 +29,9 @@ interface Order {
   paymentStatus: string
   totalAmount: number
   createdAt: string
-  user: { name: string; email: string }
+  user: { name: string; email: string } | null
+  deletedUserName?: string | null
+  deletedUserEmail?: string | null
   items: OrderItem[]
   hasPaymentRequest?: boolean
 }

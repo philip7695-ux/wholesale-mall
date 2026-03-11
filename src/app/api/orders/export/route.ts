@@ -64,11 +64,11 @@ export async function GET(request: NextRequest) {
       결제수단: order.paymentMethod
         ? paymentMethodLabels[order.paymentMethod] || order.paymentMethod
         : "-",
-      주문자명: order.user.name,
-      이메일: order.user.email,
-      연락처: order.user.phone || "-",
-      상호명: order.user.businessName || "-",
-      사업자번호: order.user.businessNumber || "-",
+      주문자명: order.user?.name ?? order.deletedUserName ?? "-",
+      이메일: order.user?.email ?? order.deletedUserEmail ?? "-",
+      연락처: order.user?.phone || "-",
+      상호명: order.user?.businessName || "-",
+      사업자번호: order.user?.businessNumber || "-",
       수령인: order.recipientName || "-",
       수령인연락처: order.recipientPhone || "-",
       배송주소: order.shippingAddress || "-",

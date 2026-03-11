@@ -382,8 +382,8 @@ export default async function AdminDashboard() {
                         {order.orderNumber}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">{order.user.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{order.user.businessName ?? "-"}</td>
+                    <td className="px-4 py-3">{order.user?.name ?? order.deletedUserName ?? "-"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{order.user?.businessName ?? "-"}</td>
                     <td className="px-4 py-3 text-right">{formatPrice(order.totalAmount, locale)}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[order.status]}`}>

@@ -116,11 +116,11 @@ export async function GET(
       day: "numeric",
     }),
     buyer: {
-      name: order.user.name,
-      businessName: order.user.businessName,
-      address: order.user.businessAddress,
-      phone: order.user.phone,
-      email: order.user.email,
+      name: order.user?.name ?? order.deletedUserName ?? "-",
+      businessName: order.user?.businessName ?? null,
+      address: order.user?.businessAddress ?? null,
+      phone: order.user?.phone ?? null,
+      email: order.user?.email ?? order.deletedUserEmail ?? "-",
     },
     items: order.items.map((item) => ({
       productName: item.productName,
@@ -157,13 +157,13 @@ export async function GET(
   } catch { /* table may not exist */ }
 
   // 인보이스 최초 생성 시 고객에게 이메일 발송
-  if (!order.invoiceNumber) {
+  if (!order.invoiceNumber && order.user) {
     getPaymentSetting().then((setting) => {
-      notifyCustomerInvoice(order.user.email, {
+      notifyCustomerInvoice(order.user!.email, {
         orderNumber: order.orderNumber,
         invoiceNumber: invoiceNumber!,
         totalAmount: order.totalAmount,
-        customerName: order.user.name,
+        customerName: order.user!.name,
       }, {
         bankName: setting?.bankName,
         accountNumber: setting?.accountNumber,

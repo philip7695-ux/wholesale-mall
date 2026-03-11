@@ -100,7 +100,7 @@ export async function POST(
       if (adminEmail) {
         notifyAdminPaymentSubmitted(adminEmail, {
           orderNumber: orderForNotify.orderNumber,
-          customerName: orderForNotify.user.name,
+          customerName: orderForNotify.user?.name ?? senderName,
           amount: Number(amount),
           senderName,
         })
@@ -156,7 +156,7 @@ export async function PUT(
       where: { id },
       select: { orderNumber: true, user: { select: { name: true, email: true } } },
     })
-    if (confirmedOrder) {
+    if (confirmedOrder?.user) {
       notifyCustomerPaymentConfirmed(confirmedOrder.user.email, {
         orderNumber: confirmedOrder.orderNumber,
         customerName: confirmedOrder.user.name,
