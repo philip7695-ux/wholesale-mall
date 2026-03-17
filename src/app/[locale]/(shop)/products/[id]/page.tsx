@@ -32,6 +32,7 @@ export default async function ProductDetailPage({
   const product = {
     id: raw.id,
     name: raw.name,
+    code: raw.code,
     description: raw.description,
     thumbnail: raw.thumbnail,
     images: raw.images,

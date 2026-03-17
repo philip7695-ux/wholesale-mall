@@ -37,6 +37,7 @@ interface Variant {
 interface Product {
   id: string
   name: string
+  code: string | null
   description: string | null
   thumbnail: string | null
   images: string[]
@@ -97,6 +98,9 @@ export function ProductDetail({ product }: { product: Product }) {
     setZoomStyle({ display: "none" })
   }, [])
 
+  const minPrice = product.variants.length > 0
+    ? Math.round(Math.min(...product.variants.map((v) => v.price)) * (1 - discountRate) * 100) / 100
+    : 0
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
   const allSoldOut = totalStock <= 0
   const currentColor = product.colors.find((c) => c.id === selectedColor)
@@ -337,6 +341,12 @@ export function ProductDetail({ product }: { product: Product }) {
               )}
             </div>
             <h1 className="mt-2 text-2xl font-bold">{product.name}</h1>
+            {product.code && (
+              <p className="mt-1 text-sm font-mono text-muted-foreground">{product.code}</p>
+            )}
+            <p className="mt-2 text-lg font-bold text-primary">
+              {fp(minPrice)}~
+            </p>
           </div>
 
           {product.description && (
