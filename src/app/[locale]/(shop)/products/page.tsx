@@ -75,7 +75,7 @@ export default async function ProductsPage({
                 : 0
               return (
                 <Link key={product.id} href={`/products/${product.id}`}>
-                  <Card className="overflow-hidden transition-shadow hover:shadow-md">
+                  <Card className="overflow-hidden transition-shadow hover:shadow-md py-0 gap-0 sm:py-6 sm:gap-6">
                     <div className="relative w-full bg-gray-100" style={{ paddingBottom: "100%" }}>
                       {product.thumbnail ? (
                         <img
