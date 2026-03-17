@@ -89,7 +89,7 @@ export default async function ProductsPage({
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-3">
+                    <CardContent className="p-1.5 sm:p-3">
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-muted-foreground">{translateCategory(product.category.slug, tCat)}</p>
                         {product.code && (
@@ -99,7 +99,7 @@ export default async function ProductsPage({
                       <h3 className="mt-1 text-sm font-medium leading-tight line-clamp-2 hidden sm:block">
                         {product.name}
                       </h3>
-                      <div className="mt-1 flex items-center gap-1">
+                      <div className="mt-0.5 sm:mt-1 flex items-center gap-1">
                         {product.colors.slice(0, 4).map((color: any) => (
                           <span
                             key={color.id}
@@ -111,7 +111,7 @@ export default async function ProductsPage({
                           <span className="text-xs text-muted-foreground">+{product.colors.length - 4}</span>
                         )}
                       </div>
-                      <p className="mt-2 text-sm font-bold">
+                      <p className="mt-1 sm:mt-2 text-sm font-bold">
                         <ProductPrice minPrice={minPrice} priceCurrency={product.priceCurrency} />
                       </p>
                     </CardContent>
