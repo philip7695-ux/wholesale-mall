@@ -96,7 +96,7 @@ export default async function ProductsPage({
                           <p className="hidden sm:block text-xs font-mono text-muted-foreground">{product.code}</p>
                         )}
                       </div>
-                      <h3 className="mt-1 text-sm font-medium leading-tight line-clamp-2">
+                      <h3 className="mt-1 text-sm font-medium leading-tight line-clamp-2 hidden sm:block">
                         {product.name}
                       </h3>
                       <div className="mt-1 flex items-center gap-1">
