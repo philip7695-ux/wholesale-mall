@@ -210,7 +210,7 @@ export function ProductDetail({ product }: { product: Product }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div className="grid gap-6 md:grid-cols-2">
         {/* 이미지 갤러리 */}
         <div className="space-y-3">
@@ -426,9 +426,9 @@ export function ProductDetail({ product }: { product: Product }) {
                     if (!variant) return null
                     const outOfStock = variant.stock <= 0
                     return (
-                      <div key={size.id} className={`flex items-center gap-3 ${outOfStock ? "opacity-50" : ""}`}>
-                        <span className="w-14 text-sm font-medium">{size.name}</span>
-                        <span className="w-24 text-xs text-muted-foreground">
+                      <div key={size.id} className={`flex items-center gap-2 sm:gap-3 ${outOfStock ? "opacity-50" : ""}`}>
+                        <span className="w-10 sm:w-14 text-xs sm:text-sm font-medium shrink-0">{size.name}</span>
+                        <span className="hidden sm:inline w-24 text-xs text-muted-foreground shrink-0">
                           {discountRate > 0 ? (
                             <>
                               <span className="line-through">{fp(variant.price)}</span>
@@ -441,7 +441,7 @@ export function ProductDetail({ product }: { product: Product }) {
                             fp(variant.price)
                           )}
                         </span>
-                        <span className={`w-16 text-xs text-center ${outOfStock ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
+                        <span className={`w-12 sm:w-16 text-xs text-center shrink-0 ${outOfStock ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
                           {outOfStock ? t("soldOut") : t("stockCount", { count: variant.stock })}
                         </span>
                         <Input
@@ -456,10 +456,10 @@ export function ProductDetail({ product }: { product: Product }) {
                           }}
                           placeholder="0"
                           disabled={outOfStock}
-                          className="h-8 w-20 text-center text-sm"
+                          className="h-8 w-16 sm:w-20 text-center text-sm"
                         />
                         {(quantities[key] || 0) > 0 && (
-                          <span className="text-sm font-medium">
+                          <span className="text-xs sm:text-sm font-medium shrink-0">
                             {fp(
                               Math.round(variant.price * (1 - discountRate) * 100) / 100 * (quantities[key] || 0),
                             )}
