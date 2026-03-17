@@ -93,7 +93,7 @@ export default async function ProductsPage({
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-muted-foreground">{translateCategory(product.category.slug, tCat)}</p>
                         {product.code && (
-                          <p className="text-xs font-mono text-muted-foreground">{product.code}</p>
+                          <p className="hidden sm:block text-xs font-mono text-muted-foreground">{product.code}</p>
                         )}
                       </div>
                       <h3 className="mt-1 text-sm font-medium leading-tight line-clamp-2">
