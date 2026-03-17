@@ -284,46 +284,6 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
-          {/* 사이즈 스펙 */}
-          {sizeSpecData && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">{t("sizeSpecCm")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b">
-                        {sizeSpecData.headers.map((h) => (
-                          <th key={h} className="px-2 py-1.5 text-center font-medium">{translateSizeSpecHeader(h, tSpec)}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sizeSpecData.rows.map((row, i) => (
-                        <tr key={i} className="border-b last:border-0">
-                          {sizeSpecData!.headers.map((h) => (
-                            <td key={h} className="px-2 py-1.5 text-center">{row[h] || "-"}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {product.sizeSpec && !sizeSpecData && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">{t("sizeSpec")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{product.sizeSpec}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* 상품 정보 + 컬러 선택 + 주문 */}
@@ -553,6 +513,47 @@ export function ProductDetail({ product }: { product: Product }) {
           </Button>
         </div>
       </div>
+
+      {/* 사이즈 스펙 */}
+      {sizeSpecData && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">{t("sizeSpecCm")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b">
+                    {sizeSpecData.headers.map((h) => (
+                      <th key={h} className="px-2 py-1.5 text-center font-medium">{translateSizeSpecHeader(h, tSpec)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizeSpecData.rows.map((row, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      {sizeSpecData!.headers.map((h) => (
+                        <td key={h} className="px-2 py-1.5 text-center">{row[h] || "-"}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {product.sizeSpec && !sizeSpecData && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">{t("sizeSpec")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{product.sizeSpec}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 장바구니 담기 완료 팝업 */}
       <Dialog open={showCartDialog} onOpenChange={setShowCartDialog}>
