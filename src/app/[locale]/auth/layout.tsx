@@ -4,7 +4,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Left: Fashion hero image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=80"
+          src="/images/login-hero.jpg"
           alt="Fashion"
           className="absolute inset-0 h-full w-full object-cover"
         />
