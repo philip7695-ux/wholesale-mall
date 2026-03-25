@@ -15,5 +15,11 @@
   "goToShop": "쇼핑몰로 이동",
   "welcome": "{name}님 환영합니다",
   "baby": "베이비",
-  "kids": "키즈"
+  "kids": "키즈",
+  "allBrands": "All Brands",
+  "newArrivals": "New Arrivals",
+  "myAccount": "My Account",
+  "searchProducts": "Search",
+  "chatConcierge": "Chat with Concierge",
+  "loginToViewPrice": "Login to view pricing"
 }

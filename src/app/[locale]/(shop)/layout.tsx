@@ -22,17 +22,17 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     const t = await getTranslations("auth")
     return (
       <AuthSessionProvider>
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <div className="flex min-h-screen items-center justify-center bg-[#F9F9F9] p-4">
           <div className="absolute right-4 top-4 flex items-center gap-2">
             <LanguageSelector />
             <LogoutButton />
           </div>
-          <Card className="w-full max-w-md text-center">
+          <Card className="w-full max-w-md text-center border-0 shadow-sm">
             <CardHeader>
-              <CardTitle>{t("pendingApprovalTitle")}</CardTitle>
+              <CardTitle className="font-light tracking-wide">{t("pendingApprovalTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-muted-foreground">{t("pendingApprovalDesc")}</p>
+              <p className="text-muted-foreground font-light">{t("pendingApprovalDesc")}</p>
               {session.user.approvalStatus === "REJECTED" && (
                 <p className="text-sm text-destructive">{t("approvalRejected")}</p>
               )}
@@ -45,7 +45,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthSessionProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden bg-[#F9F9F9]">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
           <ShopSidebar />
@@ -54,7 +54,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         {/* Main area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           <ShopHeader />
-          <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10">
             <div className="mx-auto max-w-7xl">
               {children}
             </div>

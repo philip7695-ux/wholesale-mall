@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Grid2X2, Grid3X3, LayoutGrid, Rows3 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 const STORAGE_KEY = "shop-grid-cols"
 
@@ -14,7 +13,7 @@ const GRID_OPTIONS = [
 ] as const
 
 export function ShopProductGrid({ children }: { children: React.ReactNode }) {
-  const [cols, setCols] = useState(3)
+  const [cols, setCols] = useState(4)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -31,22 +30,24 @@ export function ShopProductGrid({ children }: { children: React.ReactNode }) {
 
   return (
     <div>
-      <div className="flex items-center justify-end gap-1 mb-3">
+      <div className="flex items-center justify-end gap-1.5 mb-6">
         {GRID_OPTIONS.map((opt) => (
-          <Button
+          <button
             key={opt.cols}
-            variant={cols === opt.cols ? "default" : "ghost"}
-            size="sm"
-            className="h-8 w-8 p-0"
+            className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
+              cols === opt.cols
+                ? "bg-[#1A1A1A] text-white"
+                : "text-gray-300 hover:text-gray-500"
+            }`}
             onClick={() => handleChange(opt.cols)}
             title={opt.label}
           >
             <opt.icon className="h-4 w-4" />
-          </Button>
+          </button>
         ))}
       </div>
       <div
-        className="grid gap-3"
+        className="grid gap-x-5 gap-y-10"
         style={{
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
         }}

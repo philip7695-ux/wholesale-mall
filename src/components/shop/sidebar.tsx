@@ -26,16 +26,13 @@ export function ShopSidebar() {
   ]
 
   return (
-    <aside className="flex h-screen w-56 flex-shrink-0 flex-col border-r bg-white">
-      <div className="flex h-14 items-center border-b px-5">
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-white">
-            W
-          </div>
+    <aside className="flex h-screen w-56 flex-shrink-0 flex-col border-r border-gray-100 bg-white">
+      <div className="flex h-16 items-center border-b border-gray-100 px-5">
+        <Link href="/" className="text-lg font-light tracking-[0.15em] uppercase text-[#1A1A1A]">
           {t("logo")}
         </Link>
       </div>
-      <nav className="flex-1 space-y-0.5 px-3 py-4">
+      <nav className="flex-1 space-y-0.5 px-3 py-6">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
           const Icon = item.icon
@@ -44,10 +41,10 @@ export function ShopSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-none px-3 py-2.5 text-sm font-light tracking-wide transition-colors",
                 isActive
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                  ? "text-[#1A1A1A] font-normal border-l-2 border-[#1A1A1A] bg-gray-50"
+                  : "text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50/50",
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
@@ -56,11 +53,11 @@ export function ShopSidebar() {
           )
         })}
       </nav>
-      <div className="border-t px-3 py-3">
+      <div className="border-t border-gray-100 px-3 py-4">
         {session && (
           <button
             onClick={() => signOut({ callbackUrl: "/auth/login" })}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-light text-gray-400 hover:text-red-500 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             {tc("logout")}
