@@ -21,5 +21,15 @@
   "myAccount": "My Account",
   "searchProducts": "Search",
   "chatConcierge": "Chat with Concierge",
-  "loginToViewPrice": "Login to view pricing"
+  "loginToViewPrice": "Login to view pricing",
+  "home": "Home",
+  "breadcrumbGallery": "Member-Only Wholesale Product Gallery",
+  "breadcrumbMain": "Main",
+  "curatedSelection": "Curated Selection",
+  "category": "Category",
+  "size": "Size",
+  "color": "Color",
+  "priceRange": "Price Range",
+  "categories": "Categories",
+  "oneSize": "One Size"
 }

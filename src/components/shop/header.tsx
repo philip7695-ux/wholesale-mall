@@ -2,13 +2,13 @@
 
 import { Link } from "@/i18n/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Menu, LogOut, Search, User } from "lucide-react"
+import { Menu, LogOut, Search } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { LanguageSelector } from "@/components/language-selector"
 import { useState } from "react"
-import { ShoppingCart, Package, ClipboardList } from "lucide-react"
+import { ShoppingCart, Package, ClipboardList, User } from "lucide-react"
 
 export function ShopHeader() {
   const { data: session } = useSession()
@@ -17,9 +17,8 @@ export function ShopHeader() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-white">
-      {/* Top bar */}
-      <div className="flex h-16 items-center justify-between px-6 lg:px-10">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 lg:px-10">
         {/* Mobile: hamburger */}
         <div className="lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
@@ -69,55 +68,45 @@ export function ShopHeader() {
           </Sheet>
         </div>
 
-        {/* Desktop: Logo */}
-        <Link href="/products" className="hidden lg:block">
-          <span className="text-xl font-light tracking-[0.2em] uppercase text-[#1A1A1A]">
-            {t("logo")}
-          </span>
+        {/* Logo */}
+        <Link href="/products" className="text-xl font-light tracking-[0.2em] uppercase text-[#1A1A1A]">
+          {t("logo")}
         </Link>
 
         {/* Desktop: Center nav */}
         <nav className="hidden lg:flex items-center gap-10">
           <Link
             href="/products"
-            className="text-xs font-medium uppercase tracking-[0.15em] text-[#1A1A1A] hover:text-gray-500 transition-colors"
+            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
           >
             {t("allBrands")}
           </Link>
           <Link
             href="/products?sort=newest"
-            className="text-xs font-medium uppercase tracking-[0.15em] text-[#1A1A1A] hover:text-gray-500 transition-colors"
+            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
           >
             {t("newArrivals")}
           </Link>
           <Link
-            href="/orders"
-            className="text-xs font-medium uppercase tracking-[0.15em] text-[#1A1A1A] hover:text-gray-500 transition-colors"
+            href="/products"
+            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
           >
-            {t("orders")}
+            {t("categories")}
+          </Link>
+          <Link
+            href="/mypage"
+            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
+          >
+            {t("myAccount")}
           </Link>
         </nav>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
           <LanguageSelector />
           <Link href="/products" className="hidden lg:block">
-            <Search className="h-4 w-4 text-gray-500 hover:text-[#1A1A1A] transition-colors" />
+            <Search className="h-[18px] w-[18px] text-[#1A1A1A] hover:text-gray-500 transition-colors" />
           </Link>
-          <Link href="/cart" className="hidden lg:block">
-            <ShoppingCart className="h-4 w-4 text-gray-500 hover:text-[#1A1A1A] transition-colors" />
-          </Link>
-          {session ? (
-            <Link href="/mypage" className="hidden lg:flex items-center gap-2">
-              <User className="h-4 w-4 text-gray-500 hover:text-[#1A1A1A] transition-colors" />
-            </Link>
-          ) : (
-            <Link href="/auth/login">
-              <Button size="sm" variant="ghost" className="text-xs uppercase tracking-wider">
-                {tc("login")}
-              </Button>
-            </Link>
-          )}
         </div>
       </div>
     </header>

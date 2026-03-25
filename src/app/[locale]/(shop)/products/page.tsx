@@ -3,6 +3,7 @@ export const revalidate = 60
 import { Link } from "@/i18n/navigation"
 import { prisma } from "@/lib/prisma"
 import { ProductSearch } from "@/components/shop/product-search"
+import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { ProductPrice } from "@/components/shop/product-price"
@@ -54,100 +55,119 @@ export default async function ProductsPage({
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div className="space-y-8">
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-light tracking-tight text-[#1A1A1A]">{t("productsTitle")}</h1>
-        <p className="mt-1 text-xs text-gray-400 tracking-wide">{total} items</p>
+    <div>
+      {/* Breadcrumb */}
+      <nav className="mb-6 text-xs text-gray-400">
+        <Link href="/products" className="hover:text-[#1A1A1A] transition-colors">{t("home")}</Link>
+        <span className="mx-2">/</span>
+        <span>{t("breadcrumbGallery")}</span>
+        <span className="mx-2">/</span>
+        <span className="text-[#1A1A1A]">{t("breadcrumbMain")}</span>
+      </nav>
+
+      {/* Tabs */}
+      <div className="mb-8 flex items-baseline gap-8">
+        <h1 className="text-2xl font-semibold text-[#1A1A1A]">{t("curatedSelection")}</h1>
+        <Link
+          href="/products?sort=newest"
+          className="text-2xl font-light text-gray-300 hover:text-[#1A1A1A] transition-colors"
+        >
+          {t("newArrivals")}
+        </Link>
       </div>
 
-      <ProductSearch
-        categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
-        currentCategory={category}
-        currentSearch={search}
-        currentAgeGroup={ageGroup}
-      />
+      {/* Main: sidebar + grid */}
+      <div className="flex gap-10">
+        {/* Left filter sidebar - desktop only */}
+        <div className="hidden lg:block">
+          <ProductFilterSidebar
+            categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
+            currentCategory={category}
+            currentAgeGroup={ageGroup}
+          />
+        </div>
 
-      {products.length === 0 ? (
-        <p className="py-20 text-center text-gray-400 font-light">{t("noProducts")}</p>
-      ) : (
-        <>
-          <ShopProductGrid>
-            {products.map((product: any) => {
-              const minPrice = product.variants.length > 0
-                ? Math.min(...product.variants.map((v: any) => v.price))
-                : 0
-              return (
-                <Link key={product.id} href={`/products/${product.id}`} className="group block">
-                  {/* Image */}
-                  <div className="relative w-full overflow-hidden bg-gray-100" style={{ paddingBottom: "120%" }}>
-                    {product.thumbnail ? (
-                      <img
-                        src={product.thumbnail}
-                        alt={product.name}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm">
-                        No Image
+        {/* Right content */}
+        <div className="flex-1 min-w-0">
+          {/* Mobile search + filter */}
+          <div className="lg:hidden mb-6">
+            <ProductSearch
+              categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
+              currentCategory={category}
+              currentSearch={search}
+              currentAgeGroup={ageGroup}
+            />
+          </div>
+
+          {products.length === 0 ? (
+            <p className="py-20 text-center text-gray-400 font-light">{t("noProducts")}</p>
+          ) : (
+            <>
+              <ShopProductGrid>
+                {products.map((product: any) => {
+                  const minPrice = product.variants.length > 0
+                    ? Math.min(...product.variants.map((v: any) => v.price))
+                    : 0
+                  return (
+                    <Link key={product.id} href={`/products/${product.id}`} className="group block">
+                      {/* Image */}
+                      <div className="relative w-full overflow-hidden bg-[#F0EEEB]" style={{ paddingBottom: "120%" }}>
+                        {product.thumbnail ? (
+                          <img
+                            src={product.thumbnail}
+                            alt={product.name}
+                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm">
+                            No Image
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Info */}
-                  <div className="mt-3 space-y-1">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-gray-400">
-                      {translateCategory(product.category.slug, tCat)}
-                    </p>
-                    <h3 className="text-sm font-light text-[#1A1A1A] leading-snug line-clamp-2">
-                      {product.name}
-                    </h3>
-                    {/* Color swatches */}
-                    <div className="flex items-center gap-1 pt-0.5">
-                      {product.colors.slice(0, 4).map((color: any) => (
-                        <span
-                          key={color.id}
-                          className="inline-block h-2.5 w-2.5 rounded-full border border-gray-200"
-                          style={{ backgroundColor: color.hexColor || "#ccc" }}
-                        />
-                      ))}
-                      {product.colors.length > 4 && (
-                        <span className="text-[10px] text-gray-400">+{product.colors.length - 4}</span>
-                      )}
-                    </div>
-                    <p className="text-sm font-medium text-[#1A1A1A] pt-0.5">
-                      <ProductPrice minPrice={minPrice} priceCurrency={product.priceCurrency} />
-                    </p>
-                  </div>
-                </Link>
-              )
-            })}
-          </ShopProductGrid>
+                      {/* Info */}
+                      <div className="mt-3 space-y-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">
+                          {translateCategory(product.category.slug, tCat)}
+                        </p>
+                        <h3 className="text-sm text-[#1A1A1A] leading-snug line-clamp-2">
+                          {product.name}
+                        </h3>
+                        <p className="text-sm text-[#1A1A1A] pt-1">
+                          <ProductPrice minPrice={minPrice} priceCurrency={product.priceCurrency} />
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </ShopProductGrid>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2 pt-8">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <Link
-                  key={p}
-                  href={`/products?${new URLSearchParams({
-                    ...(category ? { category } : {}),
-                    ...(search ? { search } : {}),
-                    page: p.toString(),
-                  })}`}
-                  className={`flex h-9 w-9 items-center justify-center text-sm transition-colors ${
-                    p === page
-                      ? "bg-[#1A1A1A] text-white"
-                      : "text-gray-400 hover:text-[#1A1A1A]"
-                  }`}
-                >
-                  {p}
-                </Link>
-              ))}
-            </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 pt-10">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <Link
+                      key={p}
+                      href={`/products?${new URLSearchParams({
+                        ...(category ? { category } : {}),
+                        ...(search ? { search } : {}),
+                        page: p.toString(),
+                      })}`}
+                      className={`flex h-9 w-9 items-center justify-center text-sm transition-colors ${
+                        p === page
+                          ? "bg-[#1A1A1A] text-white"
+                          : "text-gray-400 hover:text-[#1A1A1A]"
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
 
       {/* Floating concierge button */}
       <ConciergeButton />
