@@ -1,12 +1,16 @@
+import Image from "next/image"
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {/* Left: Fashion hero image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
-        <img
+        <Image
           src="/images/login-hero.jpg"
           alt="Fashion"
-          className="absolute inset-0 h-full w-full object-cover"
+          fill
+          className="object-cover"
+          priority
         />
         <div className="absolute inset-0 bg-black/20" />
         {/* Overlay brand text */}
