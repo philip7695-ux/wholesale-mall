@@ -87,6 +87,15 @@ export function ShopHeader() {
               {t("welcome", { name: session.user.name })}
             </span>
           )}
+          {session && (
+            <button
+              onClick={() => signOut({ callbackUrl: "/auth/login" })}
+              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              {tc("logout")}
+            </button>
+          )}
         </div>
         <div className="lg:hidden flex items-center gap-3">
           <LanguageSelector />
