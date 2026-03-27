@@ -2,7 +2,6 @@
 
 import { useRouter } from "@/i18n/navigation"
 import { useTranslations } from "next-intl"
-import { Lock } from "lucide-react"
 import { translateCategory } from "@/lib/translate"
 
 interface Category {
@@ -56,58 +55,6 @@ export function ProductFilterSidebar({
             </li>
           ))}
         </ul>
-      </div>
-
-      {/* Size */}
-      <div>
-        <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("size")}</h3>
-        <ul className="space-y-2">
-          {["S", "M", "L, XL"].map((size) => (
-            <li key={size}>
-              <button className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
-                {size}
-              </button>
-            </li>
-          ))}
-          <li>
-            <button className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
-              {t("oneSize")}
-            </button>
-          </li>
-        </ul>
-      </div>
-
-      {/* Color */}
-      <div>
-        <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("color")}</h3>
-        <ul className="space-y-2">
-          {[
-            { name: "Black", hex: "#000000" },
-            { name: "White", hex: "#FFFFFF" },
-            { name: "Beige", hex: "#D4B896" },
-            { name: "Navy", hex: "#1B2A4A" },
-            { name: "Red", hex: "#C0392B" },
-          ].map((color) => (
-            <li key={color.name} className="flex items-center gap-2">
-              <span
-                className="inline-block h-3 w-3 rounded-full border border-gray-300"
-                style={{ backgroundColor: color.hex }}
-              />
-              <button className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
-                {color.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Price Range */}
-      <div>
-        <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("priceRange")}</h3>
-        <div className="flex items-start gap-2 text-sm text-gray-500">
-          <Lock className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>{t("loginToViewPrice")}</span>
-        </div>
       </div>
     </aside>
   )

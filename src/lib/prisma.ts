@@ -44,6 +44,15 @@ if (globalForPrisma.prismaVersion !== SCHEMA_VERSION) {
   globalForPrisma.prismaVersion = SCHEMA_VERSION
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient()
+  }
+  return globalForPrisma.prisma
+}
 
-globalForPrisma.prisma = prisma
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return (getPrisma() as any)[prop]
+  },
+})

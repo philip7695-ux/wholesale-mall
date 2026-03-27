@@ -8,7 +8,6 @@ import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { ProductPrice } from "@/components/shop/product-price"
 import { ShopProductGrid } from "@/components/shop/product-grid"
-import { ConciergeButton } from "@/components/shop/concierge-button"
 
 export default async function ProductsPage({
   searchParams,
@@ -56,25 +55,8 @@ export default async function ProductsPage({
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <nav className="mb-6 text-xs text-gray-400">
-        <Link href="/products" className="hover:text-[#1A1A1A] transition-colors">{t("home")}</Link>
-        <span className="mx-2">/</span>
-        <span>{t("breadcrumbGallery")}</span>
-        <span className="mx-2">/</span>
-        <span className="text-[#1A1A1A]">{t("breadcrumbMain")}</span>
-      </nav>
-
-      {/* Tabs */}
-      <div className="mb-8 flex items-baseline gap-8">
-        <h1 className="text-2xl font-semibold text-[#1A1A1A]">{t("curatedSelection")}</h1>
-        <Link
-          href="/products?sort=newest"
-          className="text-2xl font-light text-gray-300 hover:text-[#1A1A1A] transition-colors"
-        >
-          {t("newArrivals")}
-        </Link>
-      </div>
+      {/* Title */}
+      <h1 className="mb-8 text-2xl font-semibold text-[#1A1A1A]">{t("curatedSelection")}</h1>
 
       {/* Main: sidebar + grid */}
       <div className="flex gap-10">
@@ -168,9 +150,6 @@ export default async function ProductsPage({
           )}
         </div>
       </div>
-
-      {/* Floating concierge button */}
-      <ConciergeButton />
     </div>
   )
 }

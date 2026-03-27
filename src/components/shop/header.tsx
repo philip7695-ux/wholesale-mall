@@ -2,7 +2,7 @@
 
 import { Link } from "@/i18n/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Menu, LogOut, Search } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -73,40 +73,28 @@ export function ShopHeader() {
           {t("logo")}
         </Link>
 
-        {/* Desktop: Center nav */}
-        <nav className="hidden lg:flex items-center gap-10">
-          <Link
-            href="/products"
-            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
-          >
-            {t("allBrands")}
-          </Link>
-          <Link
-            href="/products?sort=newest"
-            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
-          >
-            {t("newArrivals")}
-          </Link>
-          <Link
-            href="/products"
-            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
-          >
-            {t("categories")}
-          </Link>
+        {/* Right: actions */}
+        <div className="hidden lg:flex items-center gap-6">
           <Link
             href="/mypage"
             className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
           >
             {t("myAccount")}
           </Link>
-        </nav>
-
-        {/* Right: actions */}
-        <div className="flex items-center gap-4">
           <LanguageSelector />
-          <Link href="/products" className="hidden lg:block">
-            <Search className="h-[18px] w-[18px] text-[#1A1A1A] hover:text-gray-500 transition-colors" />
-          </Link>
+          {session?.user?.name && (
+            <span className="text-sm text-gray-500 font-light">
+              {t("welcome", { name: session.user.name })}
+            </span>
+          )}
+        </div>
+        <div className="lg:hidden flex items-center gap-3">
+          <LanguageSelector />
+          {session?.user?.name && (
+            <span className="text-xs text-gray-500 font-light">
+              {t("welcome", { name: session.user.name })}
+            </span>
+          )}
         </div>
       </div>
     </header>
