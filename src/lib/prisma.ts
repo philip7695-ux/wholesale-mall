@@ -19,10 +19,12 @@ function createPool() {
       process.env.DATABASE_SSL === "true"
         ? { rejectUnauthorized: false }
         : undefined,
-    // 서버리스: 인스턴스가 여러 개로 늘어나므로 인스턴스당 커넥션은 작게 유지
-    max: 2,
+    // 대시보드처럼 한 요청이 여러 쿼리를 병렬 실행하므로 인스턴스당 풀이 너무 작으면
+    // 커넥션 획득 대기 → 타임아웃 → 500이 발생한다. 광저우 RDS 국경 간 지연을 감안해
+    // 병렬 쿼리를 소화할 정도(max 10)로 두되, RDS는 clothing-erp와 공유하므로 과도하게 키우지 않는다.
+    max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 15000,
   })
 
   // 커넥션 에러 시 죽은 커넥션을 정리하고 풀/클라이언트 재생성

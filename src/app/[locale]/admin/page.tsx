@@ -167,8 +167,9 @@ export default async function AdminDashboard() {
       ),
     ])
   } catch (err) {
+    // 일시적 DB 연결 오류(광저우 RDS 국경 간 지연 등)로 전체 페이지가 500이 되지 않도록,
+    // 위에 선언된 안전 기본값으로 렌더를 이어간다.
     console.error("[AdminDashboard] DB error:", err)
-    throw err
   }
 
   // 월별 매출 데이터 가공
