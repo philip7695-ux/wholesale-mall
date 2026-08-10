@@ -1,4 +1,4 @@
-export const revalidate = 60
+export const dynamic = "force-dynamic"
 
 import { Link } from "@/i18n/navigation"
 import { prisma } from "@/lib/prisma"
