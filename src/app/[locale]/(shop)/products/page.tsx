@@ -35,21 +35,31 @@ export default async function ProductsPage({
     { code: { contains: search, mode: "insensitive" } },
   ]
 
-  const [products, categories, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: {
-        category: true,
-        colors: { orderBy: { sortOrder: "asc" } },
-        variants: true,
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.product.count({ where }),
-  ])
+  let products: any[] = [], categories: any[] = [], total = 0
+  try {
+    ;[products, categories, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          colors: { orderBy: { sortOrder: "asc" } },
+          variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+      prisma.product.count({ where }),
+    ])
+  } catch (err: any) {
+    // 임시 진단: 실제 에러를 응답에 노출 (확인 후 제거 예정)
+    return (
+      <pre style={{ padding: 20, whiteSpace: "pre-wrap" }}>
+        {"DEBUG PRODUCTS ERROR\n" + (err?.name || "") + "\n" + (err?.code || "") + "\n" + (err?.message || "") + "\n" + (err?.stack || "").slice(0, 1500)}
+      </pre>
+    )
+  }
 
   const totalPages = Math.ceil(total / limit)
 
