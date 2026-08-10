@@ -73,31 +73,8 @@ export function ShopHeader() {
           {t("logo")}
         </Link>
 
-        {/* Right: actions */}
-        <div className="hidden lg:flex items-center gap-6">
-          <Link
-            href="/mypage"
-            className="text-sm text-[#1A1A1A] hover:text-gray-500 transition-colors"
-          >
-            {t("myAccount")}
-          </Link>
-          <LanguageSelector />
-          {session?.user?.name && (
-            <span className="text-sm text-gray-500 font-light">
-              {t("welcome", { name: session.user.name })}
-            </span>
-          )}
-          {session && (
-            <button
-              onClick={() => signOut({ callbackUrl: "/auth/login" })}
-              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              {tc("logout")}
-            </button>
-          )}
-        </div>
-        <div className="lg:hidden flex items-center gap-3">
+        {/* Right: actions (헤더 자체가 lg:hidden이므로 모바일 전용) */}
+        <div className="flex items-center gap-3">
           <LanguageSelector />
           {session?.user?.name && (
             <span className="text-xs text-gray-500 font-light">

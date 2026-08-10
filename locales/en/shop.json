@@ -15,5 +15,7 @@
   "goToShop": "Go to Shop",
   "welcome": "Welcome, {name}",
   "baby": "Baby",
-  "kids": "Kids"
+  "kids": "Kids",
+  "myAccount": "My Account",
+  "curatedSelection": "Curated Selection"
 }
