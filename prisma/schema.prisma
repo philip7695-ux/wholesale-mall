@@ -1,9 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["mall"]
 }
 
 model User {
@@ -22,6 +23,8 @@ model User {
   buyerGrade      BuyerGrade     @default(BRONZE)
   cartItems       CartItem[]
   orders          Order[]
+
+  @@schema("mall")
 }
 
 model Category {
@@ -32,6 +35,8 @@ model Category {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
+
+  @@schema("mall")
 }
 
 model Product {
@@ -58,6 +63,7 @@ model Product {
   variants    ProductVariant[]
 
   @@index([categoryId])
+  @@schema("mall")
 }
 
 model ProductColor {
@@ -75,6 +81,7 @@ model ProductColor {
   variants  ProductVariant[]
 
   @@index([productId])
+  @@schema("mall")
 }
 
 model ProductSize {
@@ -88,6 +95,7 @@ model ProductSize {
   variants  ProductVariant[]
 
   @@index([productId])
+  @@schema("mall")
 }
 
 model ProductVariant {
@@ -108,6 +116,7 @@ model ProductVariant {
 
   @@unique([productId, colorId, sizeId])
   @@index([productId])
+  @@schema("mall")
 }
 
 model CartItem {
@@ -122,6 +131,7 @@ model CartItem {
 
   @@unique([userId, variantId])
   @@index([userId])
+  @@schema("mall")
 }
 
 model Order {
@@ -160,6 +170,7 @@ model Order {
 
   @@index([userId])
   @@index([orderNumber])
+  @@schema("mall")
 }
 
 model ExchangeRate {
@@ -168,6 +179,8 @@ model ExchangeRate {
   rate      Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("mall")
 }
 
 model OrderItem {
@@ -184,17 +197,22 @@ model OrderItem {
   variant     ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([orderId])
+  @@schema("mall")
 }
 
 enum UserRole {
   ADMIN
   BUYER
+
+  @@schema("mall")
 }
 
 enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+
+  @@schema("mall")
 }
 
 enum BuyerGrade {
@@ -202,6 +220,8 @@ enum BuyerGrade {
   SILVER
   GOLD
   VIP
+
+  @@schema("mall")
 }
 
 enum OrderStatus {
@@ -210,6 +230,8 @@ enum OrderStatus {
   PAYMENT_CONFIRMED
   SHIPPED
   CANCELLED
+
+  @@schema("mall")
 }
 
 enum PaymentMethod {
@@ -218,6 +240,8 @@ enum PaymentMethod {
   VIRTUAL_ACCOUNT
   ALIPAY
   WECHAT
+
+  @@schema("mall")
 }
 
 enum PaymentStatus {
@@ -225,6 +249,8 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
+
+  @@schema("mall")
 }
 
 model PaymentConfirmation {
@@ -241,17 +267,22 @@ model PaymentConfirmation {
   order           Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@schema("mall")
 }
 
 enum AgeGroup {
   BABY
   KIDS
+
+  @@schema("mall")
 }
 
 enum PaymentConfirmationStatus {
   PENDING
   CONFIRMED
   REJECTED
+
+  @@schema("mall")
 }
 
 model WiseConfig {
@@ -259,6 +290,8 @@ model WiseConfig {
   profileId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("mall")
 }
 
 model WiseWebhookLog {
@@ -270,6 +303,8 @@ model WiseWebhookLog {
   orderId    String?
   error      String?
   createdAt  DateTime @default(now())
+
+  @@schema("mall")
 }
 
 model PaymentConfig {
@@ -283,6 +318,8 @@ model PaymentConfig {
   memo        String   @default("") // 추가 안내 메모
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@schema("mall")
 }
 
 model StoreConfig {
@@ -295,6 +332,8 @@ model StoreConfig {
   footerTerms    String   @default("Payment is due within 7 days of invoice date.")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@schema("mall")
 }
 
 model PaymentSetting {
@@ -310,6 +349,8 @@ model PaymentSetting {
   wechatNote     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@schema("mall")
 }
 
 model GradeConfig {
@@ -318,4 +359,6 @@ model GradeConfig {
   discountRate Float  @default(0)
   moqRate      Float  @default(1.0)
   threshold    Int    @default(0) // USD 승급 기준 (0=해당없음)
+
+  @@schema("mall")
 }

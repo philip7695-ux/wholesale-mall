@@ -14,7 +14,11 @@ const globalForPrisma = globalThis as unknown as {
 function createPool() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    // 알리클라우드 RDS는 SSL 미지원 — DATABASE_SSL=true일 때만 SSL 사용
+    ssl:
+      process.env.DATABASE_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : undefined,
     max: 5,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
