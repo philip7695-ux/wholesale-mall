@@ -17,5 +17,6 @@
   "baby": "ベビー",
   "kids": "キッズ",
   "myAccount": "マイアカウント",
-  "curatedSelection": "厳選アイテム"
+  "curatedSelection": "厳選アイテム",
+  "loadError": "商品を読み込めませんでした。しばらくしてから再度お試しください。"
 }

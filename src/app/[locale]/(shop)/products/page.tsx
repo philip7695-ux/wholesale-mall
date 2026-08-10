@@ -36,6 +36,7 @@ export default async function ProductsPage({
   ]
 
   let products: any[] = [], categories: any[] = [], total = 0
+  let loadError = false
   try {
     ;[products, categories, total] = await Promise.all([
       prisma.product.findMany({
@@ -52,12 +53,17 @@ export default async function ProductsPage({
       prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.product.count({ where }),
     ])
-  } catch (err: any) {
-    // 임시 진단: 실제 에러를 응답에 노출 (확인 후 제거 예정)
+  } catch (err) {
+    // 일시적 DB 연결 오류 시 전체 페이지 500 대신 안내 메시지로 대체
+    console.error("[ProductsPage] DB error:", err)
+    loadError = true
+  }
+
+  if (loadError) {
     return (
-      <pre style={{ padding: 20, whiteSpace: "pre-wrap" }}>
-        {"DEBUG PRODUCTS ERROR\n" + (err?.name || "") + "\n" + (err?.code || "") + "\n" + (err?.message || "") + "\n" + (err?.stack || "").slice(0, 1500)}
-      </pre>
+      <div className="py-20 text-center text-gray-400 font-light">
+        {t("loadError")}
+      </div>
     )
   }
 

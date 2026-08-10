@@ -17,5 +17,6 @@
   "baby": "婴儿",
   "kids": "儿童",
   "myAccount": "我的账户",
-  "curatedSelection": "精选好物"
+  "curatedSelection": "精选好物",
+  "loadError": "暂时无法加载商品，请稍后重试。"
 }

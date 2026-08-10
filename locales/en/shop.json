@@ -17,5 +17,6 @@
   "baby": "Baby",
   "kids": "Kids",
   "myAccount": "My Account",
-  "curatedSelection": "Curated Selection"
+  "curatedSelection": "Curated Selection",
+  "loadError": "Unable to load products right now. Please try again shortly."
 }
