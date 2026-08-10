@@ -43,8 +43,17 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  // Generate invoice number if not exists
+  const isAdmin = session.user.role === "ADMIN"
+
+  // 인보이스 발행은 관리자 행위. 고객은 이미 발행된 인보이스만 열람 가능.
+  // (고객이 인보이스를 여는 것만으로 INVOICE_SENT로 전이되던 부수효과 방지)
   let invoiceNumber = order.invoiceNumber
+  if (!invoiceNumber && !isAdmin) {
+    return NextResponse.json(
+      { error: "아직 인보이스가 발행되지 않았습니다." },
+      { status: 404 },
+    )
+  }
   if (!invoiceNumber) {
     invoiceNumber = generateInvoiceNumber()
     try {

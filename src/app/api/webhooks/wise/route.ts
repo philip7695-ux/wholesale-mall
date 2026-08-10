@@ -134,9 +134,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  // 9. Auto-confirm payment in a transaction
+  // 9. 입금액 검증: 통화가 일치하고 입금액이 주문 총액 이상일 때만 자동 확정
+  //    (부분입금·통화불일치는 자동확정하지 않고 관리자 수동 확인으로 넘김)
   const amount = payload.data?.resource?.amount ?? 0
+  const paidCurrency = (payload.data?.resource?.currency ?? "").toUpperCase()
+  const orderCurrency = (order.currency ?? "KRW").toUpperCase()
+  const sameCurrency = paidCurrency !== "" && paidCurrency === orderCurrency
+  // 부동소수 오차 및 소액 수수료 감안 1% 허용
+  const amountOk = sameCurrency && amount >= order.totalAmount * 0.99
 
+  if (!amountOk) {
+    await prisma.wiseWebhookLog.create({
+      data: {
+        deliveryId: deliveryId || `unknown-${Date.now()}`,
+        eventType,
+        payload: rawBody,
+        matched: true,
+        orderId: order.id,
+        error: `Amount/currency mismatch: paid ${amount} ${paidCurrency || "?"}, expected ${order.totalAmount} ${orderCurrency} — 수동 확인 필요`,
+      },
+    })
+    return NextResponse.json({ ok: true })
+  }
+
+  // 10. Auto-confirm payment in a transaction
   await prisma.$transaction([
     prisma.order.update({
       where: { id: order.id },

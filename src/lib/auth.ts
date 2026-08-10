@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "@/lib/auth.config"
+import { rateLimit } from "@/lib/rate-limit"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -17,13 +18,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
+        const email = credentials.email as string
+
+        // 브루트포스 완화: 이메일당 15분에 10회 실패 시도까지만 허용 (best-effort)
+        if (!rateLimit(`login:${email.toLowerCase()}`, 10, 15 * 60 * 1000)) {
+          console.warn("[Auth] rate limit exceeded for login")
+          return null
+        }
+
         try {
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email as string },
+            where: { email },
           })
 
           if (!user) {
-            console.error("[Auth] user not found:", credentials.email)
+            console.warn("[Auth] login failed: user not found")
             return null
           }
 
@@ -33,7 +42,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           )
 
           if (!isValid) {
-            console.error("[Auth] invalid password for:", credentials.email)
+            console.warn("[Auth] login failed: invalid password")
             return null
           }
 

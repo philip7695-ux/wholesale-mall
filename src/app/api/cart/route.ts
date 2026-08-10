@@ -31,32 +31,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { items } = await request.json()
+  // 승인된 회원만 장바구니 담기 가능
+  if (session.user.approvalStatus !== "APPROVED") {
+    return NextResponse.json({ error: "회원 승인 후 이용 가능합니다." }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const items = body?.items
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
+  }
 
   for (const item of items as { variantId: string; quantity: number }[]) {
-    const existing = await prisma.cartItem.findUnique({
+    // 입력 검증: variantId 문자열 + quantity 양의 정수
+    if (
+      !item ||
+      typeof item.variantId !== "string" ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity <= 0
+    ) {
+      return NextResponse.json({ error: "잘못된 상품 정보입니다." }, { status: 400 })
+    }
+
+    // variant 실재 여부 확인 (FK 오류로 인한 500 방지)
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: item.variantId },
+      select: { id: true },
+    })
+    if (!variant) {
+      return NextResponse.json({ error: "존재하지 않는 상품입니다." }, { status: 404 })
+    }
+
+    // 동시 요청 시 unique 충돌 없이 누적 (upsert)
+    await prisma.cartItem.upsert({
       where: {
         userId_variantId: {
           userId: session.user.id,
           variantId: item.variantId,
         },
       },
+      update: { quantity: { increment: item.quantity } },
+      create: {
+        userId: session.user.id,
+        variantId: item.variantId,
+        quantity: item.quantity,
+      },
     })
-
-    if (existing) {
-      await prisma.cartItem.update({
-        where: { id: existing.id },
-        data: { quantity: existing.quantity + item.quantity },
-      })
-    } else {
-      await prisma.cartItem.create({
-        data: {
-          userId: session.user.id,
-          variantId: item.variantId,
-          quantity: item.quantity,
-        },
-      })
-    }
   }
 
   return NextResponse.json({ message: "장바구니에 추가되었습니다." })
@@ -70,13 +90,26 @@ export async function PUT(request: Request) {
 
   const { cartItemId, quantity } = await request.json()
 
+  if (typeof cartItemId !== "string" || !Number.isInteger(quantity)) {
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
+  }
+
+  // 소유권 검증: 본인 장바구니 항목만 수정/삭제 (IDOR 방지)
   if (quantity <= 0) {
-    await prisma.cartItem.delete({ where: { id: cartItemId } })
+    const res = await prisma.cartItem.deleteMany({
+      where: { id: cartItemId, userId: session.user.id },
+    })
+    if (res.count === 0) {
+      return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 })
+    }
   } else {
-    await prisma.cartItem.update({
-      where: { id: cartItemId },
+    const res = await prisma.cartItem.updateMany({
+      where: { id: cartItemId, userId: session.user.id },
       data: { quantity },
     })
+    if (res.count === 0) {
+      return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 })
+    }
   }
 
   return NextResponse.json({ message: "수량이 변경되었습니다." })
@@ -89,7 +122,17 @@ export async function DELETE(request: Request) {
   }
 
   const { cartItemId } = await request.json()
-  await prisma.cartItem.delete({ where: { id: cartItemId } })
+  if (typeof cartItemId !== "string") {
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
+  }
+
+  // 소유권 검증: 본인 항목만 삭제 (IDOR 방지)
+  const res = await prisma.cartItem.deleteMany({
+    where: { id: cartItemId, userId: session.user.id },
+  })
+  if (res.count === 0) {
+    return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 })
+  }
 
   return NextResponse.json({ message: "삭제되었습니다." })
 }

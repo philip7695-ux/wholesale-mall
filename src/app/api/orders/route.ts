@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { generateOrderNumber } from "@/lib/utils"
 import { getExchangeRate, getAllExchangeRates } from "@/lib/currency.server"
 import { convertCurrency, getCurrencyForLocale } from "@/lib/currency"
-import { GRADE_DISCOUNT } from "@/lib/grade"
+import { getGradeDiscount } from "@/lib/grade.server"
 import { checkMoq } from "@/lib/moq"
 import { notifyAdminNewOrder } from "@/lib/email"
 import { getAdminNotificationEmail } from "@/lib/payment-setting.server"
@@ -54,6 +54,14 @@ export async function POST(request: Request) {
     const allRates = await getAllExchangeRates()
     const customerCurrency = getCurrencyForLocale(locale || "ko")
 
+    // 환율 가드: 고객 통화가 KRW가 아닌데 유효한 환율이 없으면 가격이 붕괴되므로 주문 거부
+    if (customerCurrency !== "KRW" && !(allRates[customerCurrency] > 0)) {
+      return NextResponse.json(
+        { error: "현재 환율 정보가 없어 주문을 진행할 수 없습니다. 관리자에게 문의해주세요." },
+        { status: 503 },
+      )
+    }
+
     // Get cart items
     const cartItems = await prisma.cartItem.findMany({
       where: { userId: session.user.id },
@@ -72,13 +80,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "장바구니가 비어있습니다." }, { status: 400 })
     }
 
-    // 유저 등급 조회 및 할인율 계산
+    // 상품 원본 통화의 환율도 확인
+    for (const item of cartItems) {
+      const pc = item.variant.product.priceCurrency || "KRW"
+      if (pc !== "KRW" && !(allRates[pc] > 0)) {
+        return NextResponse.json(
+          { error: "현재 환율 정보가 없어 주문을 진행할 수 없습니다. 관리자에게 문의해주세요." },
+          { status: 503 },
+        )
+      }
+    }
+
+    // 유저 등급 조회 및 할인율 계산 (DB GradeConfig 우선)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { buyerGrade: true },
     })
     const buyerGrade = user?.buyerGrade || "BRONZE"
-    const gradeDiscount = GRADE_DISCOUNT[buyerGrade] || 0
+    const gradeDiscount = await getGradeDiscount(buyerGrade)
 
     // MOQ 검증: 상품별로 그룹화
     const productGroups = new Map<string, typeof cartItems>()
@@ -141,42 +160,82 @@ export async function POST(request: Request) {
       ? Math.round(itemsTotal * (1 - gradeDiscount) * 100) / 100
       : Math.round(itemsTotal * 100) / 100
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        userId: session.user.id,
-        status: "ORDER_PLACED",
-        totalAmount,
-        gradeDiscount,
-        currency,
-        exchangeRate: exchangeRateValue,
-        paymentMethod: paymentMethod || "BANK_TRANSFER",
-        recipientName,
-        recipientPhone,
-        shippingAddress,
-        shippingMemo,
-        items: {
-          create: cartItems.map((item: any) => {
-            const priceCurrency = item.variant.product.priceCurrency || "KRW"
-            const convertedPrice = Math.round(convertCurrency(item.variant.price, priceCurrency, customerCurrency, allRates) * 100) / 100
-            return {
-              variantId: item.variant.id,
-              quantity: item.quantity,
-              price: convertedPrice,
-              productName: item.variant.product.name,
-              colorName: item.variant.color.name,
-              sizeName: item.variant.size.name,
-            }
-          }),
-        },
-      },
-      include: { items: true },
+    const orderItemsData = cartItems.map((item: any) => {
+      const priceCurrency = item.variant.product.priceCurrency || "KRW"
+      const convertedPrice = Math.round(convertCurrency(item.variant.price, priceCurrency, customerCurrency, allRates) * 100) / 100
+      return {
+        variantId: item.variant.id,
+        quantity: item.quantity,
+        price: convertedPrice,
+        productName: item.variant.product.name,
+        colorName: item.variant.color.name,
+        sizeName: item.variant.size.name,
+      }
     })
 
-    // Clear cart
-    await prisma.cartItem.deleteMany({
-      where: { userId: session.user.id },
-    })
+    // 주문 생성 + 재고 차감 + 장바구니 비우기를 하나의 트랜잭션으로 처리
+    // (재고 부족/주문번호 충돌 시 전체 롤백)
+    const OUT_OF_STOCK = "OUT_OF_STOCK"
+    let order
+    try {
+      order = await prisma.$transaction(async (tx) => {
+        // 재고 원자적 차감: stock >= quantity 인 경우에만 차감 (초과판매 방지)
+        for (const item of cartItems as any[]) {
+          const res = await tx.productVariant.updateMany({
+            where: { id: item.variant.id, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          })
+          if (res.count === 0) {
+            throw new Error(
+              `${OUT_OF_STOCK}:${item.variant.product.name} (${item.variant.color.name}/${item.variant.size.name})`,
+            )
+          }
+        }
+
+        // 주문번호 충돌 시 최대 5회 재시도
+        let created
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            created = await tx.order.create({
+              data: {
+                orderNumber: generateOrderNumber(),
+                userId: session.user.id,
+                status: "ORDER_PLACED",
+                totalAmount,
+                gradeDiscount,
+                currency,
+                exchangeRate: exchangeRateValue,
+                paymentMethod: paymentMethod || "BANK_TRANSFER",
+                recipientName,
+                recipientPhone,
+                shippingAddress,
+                shippingMemo,
+                items: { create: orderItemsData },
+              },
+              include: { items: true },
+            })
+            break
+          } catch (e: any) {
+            // P2002 = unique 제약 위반(주문번호 충돌). 그 외 에러는 즉시 전파
+            if (e?.code === "P2002" && attempt < 4) continue
+            throw e
+          }
+        }
+        if (!created) throw new Error("ORDER_NUMBER_CONFLICT")
+
+        await tx.cartItem.deleteMany({ where: { userId: session.user.id } })
+        return created
+      })
+    } catch (e: any) {
+      if (typeof e?.message === "string" && e.message.startsWith(OUT_OF_STOCK)) {
+        const item = e.message.slice(OUT_OF_STOCK.length + 1)
+        return NextResponse.json(
+          { error: `재고가 부족합니다: ${item}` },
+          { status: 409 },
+        )
+      }
+      throw e
+    }
 
     // 관리자 이메일 알림 (비동기, 실패해도 주문에 영향 없음)
     getAdminNotificationEmail().then((adminEmail) => {

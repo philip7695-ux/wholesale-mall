@@ -140,7 +140,7 @@ model Order {
   invoiceNumber   String?        @unique
   userId          String?
   status               OrderStatus    @default(ORDER_PLACED)
-  totalAmount          Int
+  totalAmount          Float
   paymentMethod        PaymentMethod?
   paymentStatus        PaymentStatus  @default(PENDING)
   paymentKey           String?

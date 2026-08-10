@@ -47,13 +47,18 @@ export async function checkAndPromoteGrade(userId: string): Promise<string | nul
   // VIP는 자동 승급 불가
   if (user.buyerGrade === "VIP") return null
 
-  // SHIPPED 주문의 누적 금액 (KRW)
-  const result = await prisma.order.aggregate({
+  // SHIPPED 주문의 누적 금액 (KRW로 환산하여 합산)
+  // 주의: order.totalAmount는 주문 당시 고객 통화로 저장되고,
+  // order.exchangeRate는 "1 통화단위 = N KRW" 이므로 KRW = totalAmount * exchangeRate.
+  const shippedOrders = await prisma.order.findMany({
     where: { userId, status: "SHIPPED" },
-    _sum: { totalAmount: true },
+    select: { totalAmount: true, exchangeRate: true },
   })
 
-  const totalSpendingKRW = result._sum.totalAmount || 0
+  const totalSpendingKRW = shippedOrders.reduce(
+    (sum, o) => sum + o.totalAmount * (o.exchangeRate > 0 ? o.exchangeRate : 1),
+    0,
+  )
 
   // USD 환율 조회
   const usdRate = await prisma.exchangeRate.findUnique({

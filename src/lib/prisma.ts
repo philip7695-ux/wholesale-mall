@@ -19,16 +19,20 @@ function createPool() {
       process.env.DATABASE_SSL === "true"
         ? { rejectUnauthorized: false }
         : undefined,
-    max: 5,
+    // 서버리스: 인스턴스가 여러 개로 늘어나므로 인스턴스당 커넥션은 작게 유지
+    max: 2,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   })
 
-  // 커넥션 에러 시 풀/클라이언트 재생성
+  // 커넥션 에러 시 죽은 커넥션을 정리하고 풀/클라이언트 재생성
   pool.on("error", (err) => {
     console.error("Unexpected PG pool error:", err.message)
+    const dead = globalForPrisma.pool
     globalForPrisma.pool = undefined
     globalForPrisma.prisma = undefined
+    // 누수 방지: 기존 풀 종료 (이미 종료 중이면 무시)
+    dead?.end().catch(() => {})
   })
 
   return pool

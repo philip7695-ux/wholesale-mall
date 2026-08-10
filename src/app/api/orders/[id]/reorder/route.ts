@@ -22,7 +22,9 @@ export async function POST(
     return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
-  if (order.userId !== session.user.id && session.user.role !== "ADMIN") {
+  // reorder는 "내 주문을 내 장바구니로 복원"하는 행위이므로 주문 소유자만 허용.
+  // (관리자가 고객 주문을 reorder하면 관리자 장바구니로 잘못 들어가던 문제 방지)
+  if (order.userId !== session.user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 

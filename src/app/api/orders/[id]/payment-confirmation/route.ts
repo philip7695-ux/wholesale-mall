@@ -74,6 +74,17 @@ export async function POST(
     )
   }
 
+  // receiptImage는 http(s) URL만 허용 (관리자 화면에서 링크로 렌더되므로 스킴 악용 방지)
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(receiptImage)
+  } catch {
+    return NextResponse.json({ error: "올바른 이미지 URL이 아닙니다." }, { status: 400 })
+  }
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    return NextResponse.json({ error: "올바른 이미지 URL이 아닙니다." }, { status: 400 })
+  }
+
   // 기존 PENDING 건이 있으면 REJECTED로 변경 (재요청 시나리오)
   await prisma.paymentConfirmation.updateMany({
     where: { orderId: id, status: "PENDING" },

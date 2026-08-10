@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
-import { STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
+import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition } from "@/lib/order-status"
 import { notifyCustomerShipped } from "@/lib/email"
 
 export async function GET(
@@ -196,6 +196,13 @@ export async function PUT(
 
   // 수동 상태 변경 (배송완료, 취소 등 자동 전환 외)
   if (status) {
+    // 상태 전이 규칙 검증 (역행·종결상태 부활 차단)
+    if (!isValidStatusTransition(currentOrder.status, status)) {
+      return NextResponse.json(
+        { error: `'${currentOrder.status}' → '${status}' 상태 변경은 허용되지 않습니다.` },
+        { status: 400 },
+      )
+    }
     data.status = status
     const tsField = STATUS_TIMESTAMP_FIELD[status]
     if (tsField && tsField !== "createdAt") {

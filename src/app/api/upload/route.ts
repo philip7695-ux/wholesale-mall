@@ -24,15 +24,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
     }
 
-    // receipt 타입이 아니면 ADMIN만 허용
-    if (uploadType !== "receipt" && session.user.role !== "ADMIN") {
+    // 권한: receipt(입금증)는 승인된 회원, 그 외(상품/QR 등)는 ADMIN만
+    if (uploadType === "receipt") {
+      if (session.user.approvalStatus !== "APPROVED") {
+        return NextResponse.json({ error: "회원 승인 후 이용 가능합니다." }, { status: 403 })
+      }
+    } else if (session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // 파일 검증: 이미지 MIME 화이트리스트 + 용량 상한(10MB)
+    const ALLOWED = new Map<string, string>([
+      ["image/jpeg", "jpg"],
+      ["image/png", "png"],
+      ["image/webp", "webp"],
+      ["image/gif", "gif"],
+    ])
+    const MAX_BYTES = 10 * 1024 * 1024
+    if (!ALLOWED.has(file.type)) {
+      return NextResponse.json({ error: "이미지 파일(JPG/PNG/WEBP/GIF)만 업로드할 수 있습니다." }, { status: 400 })
+    }
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: "파일 용량은 10MB 이하여야 합니다." }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const ext = file.name.split(".").pop() || "jpg"
+    // 확장자는 파일명이 아니라 검증된 MIME 타입에서 결정 (파일명 조작 방지)
+    const ext = ALLOWED.get(file.type)!
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
     const folderMap: Record<string, string> = { receipt: "receipts", payment: "payment", qrcode: "qrcode" }
     const filePath = `${folderMap[uploadType || ""] || "products"}/${fileName}`
@@ -48,7 +68,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("Supabase upload error:", error)
-      return NextResponse.json({ error: "업로드 실패: " + error.message }, { status: 500 })
+      return NextResponse.json({ error: "업로드에 실패했습니다." }, { status: 500 })
     }
 
     const { data: urlData } = supabase.storage
