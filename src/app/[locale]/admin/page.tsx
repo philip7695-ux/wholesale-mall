@@ -158,7 +158,7 @@ export default async function AdminDashboard() {
           SELECT
             to_char("createdAt", 'YYYY-MM') as month,
             COALESCE(SUM("totalAmount"), 0) as revenue
-          FROM "Order"
+          FROM mall."Order"
           WHERE "status" != 'CANCELLED'
             AND "createdAt" >= ${sixMonthsAgo}
           GROUP BY to_char("createdAt", 'YYYY-MM')
