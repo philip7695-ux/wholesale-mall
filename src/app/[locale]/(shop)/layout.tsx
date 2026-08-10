@@ -1,4 +1,5 @@
 import { ShopHeader } from "@/components/shop/header"
+import { ShopSidebar } from "@/components/shop/sidebar"
 import { AuthSessionProvider } from "@/components/shop/session-provider"
 import { auth } from "@/lib/auth"
 import { redirect } from "@/i18n/navigation"
@@ -44,11 +45,18 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthSessionProvider>
-      <div className="min-h-screen bg-[#F9F9F9]">
-        <ShopHeader />
-        <main className="mx-auto max-w-[1400px] px-6 py-8 lg:px-10">
-          {children}
-        </main>
+      <div className="flex min-h-screen bg-[#F9F9F9]">
+        {/* Desktop: sidebar */}
+        <div className="hidden lg:block">
+          <ShopSidebar />
+        </div>
+        {/* Mobile: header */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <ShopHeader />
+          <main className="flex-1 overflow-y-auto px-6 py-8 lg:px-10">
+            {children}
+          </main>
+        </div>
       </div>
     </AuthSessionProvider>
   )

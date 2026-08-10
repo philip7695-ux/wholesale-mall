@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
 } from "lucide-react"
+import { LanguageSelector } from "@/components/language-selector"
 
 export function ShopSidebar() {
   const pathname = usePathname()
@@ -26,7 +27,7 @@ export function ShopSidebar() {
   ]
 
   return (
-    <aside className="flex h-screen w-56 flex-shrink-0 flex-col border-r border-gray-100 bg-white">
+    <aside className="sticky top-0 flex h-screen w-56 flex-shrink-0 flex-col border-r border-gray-100 bg-white">
       <div className="flex h-16 items-center border-b border-gray-100 px-5">
         <Link href="/" className="text-lg font-light tracking-[0.15em] uppercase text-[#1A1A1A]">
           {t("logo")}
@@ -53,7 +54,13 @@ export function ShopSidebar() {
           )
         })}
       </nav>
-      <div className="border-t border-gray-100 px-3 py-4">
+      <div className="border-t border-gray-100 px-3 py-4 space-y-2">
+        {session?.user?.name && (
+          <span className="block px-3 text-xs text-gray-400 font-light">
+            {t("welcome", { name: session.user.name })}
+          </span>
+        )}
+        <LanguageSelector className="w-full" />
         {session && (
           <button
             onClick={() => signOut({ callbackUrl: "/auth/login" })}
