@@ -356,5 +356,9 @@
   "memberUpdated": "会員情報が更新されました。",
   "memberUpdateError": "会員情報の更新に失敗しました。",
   "roleChanged": "役割が変更されました。",
-  "roleChangeFail": "役割の変更に失敗しました。"
+  "roleChangeFail": "役割の変更に失敗しました。",
+  "bulkReadingFile": "ファイルを読み込み中...",
+  "bulkNoData": "ファイルにデータがありません。",
+  "bulkProgress": "{done} / {total} 件処理",
+  "bulkElapsed": "{seconds}秒経過"
 }

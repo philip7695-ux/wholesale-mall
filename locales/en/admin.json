@@ -356,5 +356,9 @@
   "memberUpdated": "Member has been updated.",
   "memberUpdateError": "Failed to update member.",
   "roleChanged": "Role has been changed.",
-  "roleChangeFail": "Failed to change role."
+  "roleChangeFail": "Failed to change role.",
+  "bulkReadingFile": "Reading file...",
+  "bulkNoData": "No data found in the file.",
+  "bulkProgress": "{done} / {total} processed",
+  "bulkElapsed": "{seconds}s elapsed"
 }

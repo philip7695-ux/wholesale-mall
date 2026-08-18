@@ -356,5 +356,9 @@
   "memberUpdated": "회원 정보가 수정되었습니다.",
   "memberUpdateError": "회원 정보 수정에 실패했습니다.",
   "roleChanged": "역할이 변경되었습니다.",
-  "roleChangeFail": "역할 변경에 실패했습니다."
+  "roleChangeFail": "역할 변경에 실패했습니다.",
+  "bulkReadingFile": "파일 읽는 중...",
+  "bulkNoData": "엑셀에 데이터가 없습니다.",
+  "bulkProgress": "{done} / {total}개 처리",
+  "bulkElapsed": "{seconds}초 경과"
 }

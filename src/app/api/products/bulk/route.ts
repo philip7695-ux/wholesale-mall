@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue } from "@/lib/product-sizes"
 
+// 대량 생성은 DB 왕복이 많아 오래 걸린다. 청크로 나눠 보내더라도 여유를 둔다.
+export const maxDuration = 60
+
 interface FailedRow {
   row: number
   error: string
@@ -148,6 +151,21 @@ function parseSheetSizeColumns(
   }
 }
 
+// 행 배열의 형식을 보고 알맞은 파서로 위임
+function parseSheet(
+  rows: Record<string, any>[],
+  sheetName: string,
+  failed: FailedRow[],
+  groups: ProductGroups,
+) {
+  if (rows.length === 0) return
+  if ("사이즈*" in rows[0]) {
+    parseSheetNew(rows, sheetName, failed, groups)
+  } else {
+    parseSheetSizeColumns(rows, getSizeColumnsForSheet(sheetName), sheetName, failed, groups)
+  }
+}
+
 // 시트명으로 사이즈 컬럼 결정
 function getSizeColumnsForSheet(sheetName: string): readonly string[] {
   const lower = sheetName.toLowerCase()
@@ -164,33 +182,33 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const formData = await request.formData()
-    const file = formData.get("file") as File | null
-    if (!file) return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
-
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const wb = XLSX.read(buffer, { type: "buffer" })
-
     const failed: FailedRow[] = []
     const productGroups: ProductGroups = new Map()
+    const contentType = request.headers.get("content-type") ?? ""
 
-    const sheetsToProcess = wb.SheetNames.length > 0 ? wb.SheetNames : []
+    if (contentType.includes("application/json")) {
+      // 청크 업로드: 클라이언트가 엑셀을 파싱해 행 묶음을 나눠 보낸다
+      const body = await request.json()
+      const rows: Record<string, any>[] = Array.isArray(body?.rows) ? body.rows : []
+      const sheetName: string = String(body?.sheetName ?? "")
+      if (rows.length === 0) {
+        return NextResponse.json({ error: "처리할 행이 없습니다." }, { status: 400 })
+      }
+      parseSheet(rows, sheetName, failed, productGroups)
+    } else {
+      // 파일 업로드(기존 방식): 서버에서 엑셀 전체를 파싱한다
+      const formData = await request.formData()
+      const file = formData.get("file") as File | null
+      if (!file) return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
 
-    for (const sheetName of sheetsToProcess) {
-      const ws = wb.Sheets[sheetName]
-      if (!ws) continue
-      const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
-      if (rows.length === 0) continue
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const wb = XLSX.read(buffer, { type: "buffer" })
 
-      // 첫 행의 키를 보고 형식 판단
-      const firstRow = rows[0]
-      if ("사이즈*" in firstRow) {
-        // 구 형식: "사이즈*" 컬럼에 쉼표 구분 사이즈
-        parseSheetNew(rows, sheetName, failed, productGroups)
-      } else {
-        // 새 형식: 사이즈별 컬럼 (사이즈명 = 컬럼 헤더, 값 = 재고 수량)
-        const sizeColumns = getSizeColumnsForSheet(sheetName)
-        parseSheetSizeColumns(rows, sizeColumns, sheetName, failed, productGroups)
+      for (const sheetName of wb.SheetNames) {
+        const ws = wb.Sheets[sheetName]
+        if (!ws) continue
+        const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
+        parseSheet(rows, sheetName, failed, productGroups)
       }
     }
 
