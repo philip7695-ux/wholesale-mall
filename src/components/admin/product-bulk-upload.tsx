@@ -204,6 +204,8 @@ export function ProductBulkUpload() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imageUploading, setImageUploading] = useState(false)
   const [imageProgress, setImageProgress] = useState("")
+  const [imgDone, setImgDone] = useState(0)
+  const [imgElapsed, setImgElapsed] = useState(0)
   const [imageResult, setImageResult] = useState<ImageUploadResult | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -221,40 +223,84 @@ export function ProductBulkUpload() {
 
     setImageUploading(true)
     setImageResult(null)
-    setImageProgress(`0/${imageFiles.length}`)
+    setImgDone(0)
+    setImgElapsed(0)
+    const startedAt = Date.now()
+    const timer = setInterval(() => setImgElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000)
 
     try {
-      const formData = new FormData()
+      // Vercel 요청 본문 한도(4.5MB)를 넘지 않도록 나눠 보낸다.
+      // 한 상품의 이미지는 순서·썸네일 때문에 반드시 같은 요청에 담아야 하므로
+      // 상품코드 단위로 묶은 뒤 용량 기준으로 청크를 만든다.
+      const MAX_CHUNK_BYTES = 3 * 1024 * 1024
+
+      const byCode = new Map<string, File[]>()
       for (const f of imageFiles) {
-        formData.append("files", f)
+        const base = f.name.replace(/\.[^.]+$/, "")
+        const parts = base.split("_")
+        const code = parts.length >= 2 && !isNaN(parseInt(parts[parts.length - 1], 10))
+          ? parts.slice(0, -1).join("_")
+          : base
+        const arr = byCode.get(code) ?? []
+        arr.push(f)
+        byCode.set(code, arr)
       }
 
-      setImageProgress(t("bulkImageUploading", { count: imageFiles.length }))
+      const chunks: File[][] = []
+      let current: File[] = []
+      let currentBytes = 0
+      for (const group of byCode.values()) {
+        const groupBytes = group.reduce((sum, f) => sum + f.size, 0)
+        if (current.length > 0 && currentBytes + groupBytes > MAX_CHUNK_BYTES) {
+          chunks.push(current)
+          current = []
+          currentBytes = 0
+        }
+        current.push(...group)
+        currentBytes += groupBytes
+      }
+      if (current.length > 0) chunks.push(current)
 
-      const res = await fetch("/api/products/bulk-images", {
-        method: "POST",
-        body: formData,
-      })
+      const merged: ImageUploadResult = { success: 0, failed: [] }
+      let sent = 0
 
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || t("bulkUploadFail"))
+      for (const chunk of chunks) {
+        const formData = new FormData()
+        for (const f of chunk) formData.append("files", f)
+        // 같은 상품을 다시 올려도 이미지가 누적되지 않도록 교체 모드로 보낸다
+        formData.append("mode", "replace")
+
+        const res = await fetch("/api/products/bulk-images", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || t("bulkUploadFail"))
+        }
+
+        const data: ImageUploadResult = await res.json()
+        merged.success += data.success
+        merged.failed.push(...data.failed)
+        sent += chunk.length
+        setImgDone(sent)
       }
 
-      const data: ImageUploadResult = await res.json()
-      setImageResult(data)
+      setImageResult(merged)
       setImageProgress("")
 
-      if (data.success > 0) {
-        toast.success(t("bulkImagesUploaded", { count: data.success }))
+      if (merged.success > 0) {
+        toast.success(t("bulkImagesUploaded", { count: merged.success }))
       }
-      if (data.failed.length > 0) {
-        toast.error(t("bulkErrors", { count: data.failed.length }))
+      if (merged.failed.length > 0) {
+        toast.error(t("bulkErrors", { count: merged.failed.length }))
       }
     } catch (err: any) {
       toast.error(err.message || t("bulkImageUploadError"))
       setImageProgress("")
     } finally {
+      clearInterval(timer)
       setImageUploading(false)
     }
   }
@@ -263,6 +309,8 @@ export function ProductBulkUpload() {
     setImageFiles([])
     setImageResult(null)
     setImageProgress("")
+    setImgDone(0)
+    setImgElapsed(0)
     if (imageInputRef.current) imageInputRef.current.value = ""
   }
 
@@ -511,8 +559,31 @@ export function ProductBulkUpload() {
               ))}
             </div>
             <Button size="sm" onClick={handleImageUpload} disabled={imageUploading} className="w-fit">
-              {imageUploading ? imageProgress || t("bulkUploading") : t("bulkStartImageUpload")}
+              {imageUploading ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  {t("bulkUploading")}
+                </>
+              ) : (
+                t("bulkStartImageUpload")
+              )}
             </Button>
+
+            {imageUploading && (
+              <div className="space-y-1">
+                <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-blue-600 transition-[width] duration-300"
+                    style={{ width: `${Math.min(100, Math.round((imgDone / imageFiles.length) * 100))}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {t("bulkProgress", { done: imgDone, total: imageFiles.length })}
+                  {" · "}
+                  {t("bulkElapsed", { seconds: imgElapsed })}
+                </p>
+              </div>
+            )}
           </div>
         )}
 

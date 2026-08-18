@@ -10,6 +10,9 @@ function getSupabase() {
   )
 }
 
+// Vercel 요청 본문 한도(4.5MB) 때문에 클라이언트가 파일을 나눠 보낸다.
+export const maxDuration = 60
+
 interface ParsedFile {
   code: string
   order: number
@@ -46,6 +49,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const files = formData.getAll("files") as File[]
+    // 재업로드 시 이미지가 계속 누적되는 것을 막는다.
+    // 한 상품의 이미지는 항상 같은 요청에 담기므로 상품 단위로 안전하게 교체된다.
+    const replace = String(formData.get("mode") ?? "") === "replace"
 
     if (files.length === 0) {
       return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
@@ -136,9 +142,8 @@ export async function POST(request: NextRequest) {
       }
 
       if (uploadedUrls.length > 0) {
-        // Append new images after existing ones
-        const newImages = [...product.images, ...uploadedUrls]
-        const thumbnail = product.thumbnail || uploadedUrls[0]
+        const newImages = replace ? uploadedUrls : [...product.images, ...uploadedUrls]
+        const thumbnail = replace ? uploadedUrls[0] : (product.thumbnail || uploadedUrls[0])
 
         await prisma.product.update({
           where: { id: product.id },
@@ -150,8 +155,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success, failed })
   } catch (error: any) {
     console.error("Bulk image upload error:", error)
+    const detail = [error?.code, error?.message].filter(Boolean).join(" ")
     return NextResponse.json(
-      { error: "이미지 업로드 처리 중 오류가 발생했습니다." },
+      { error: `이미지 업로드 처리 중 오류가 발생했습니다. ${detail}`.trim() },
       { status: 500 },
     )
   }
