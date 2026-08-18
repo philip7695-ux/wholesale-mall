@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { createClient } from "@supabase/supabase-js"
-
-function getSupabase() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-}
+import { uploadImage } from "@/lib/storage"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -51,31 +44,19 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // 확장자는 파일명이 아니라 검증된 MIME 타입에서 결정 (파일명 조작 방지)
-    const ext = ALLOWED.get(file.type)!
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
     const folderMap: Record<string, string> = { receipt: "receipts", payment: "payment", qrcode: "qrcode" }
-    const filePath = `${folderMap[uploadType || ""] || "products"}/${fileName}`
+    const folder = folderMap[uploadType || ""] || "products"
 
-    const supabase = getSupabase()
-
-    const { error } = await supabase.storage
-      .from("images")
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      })
-
-    if (error) {
-      console.error("Supabase upload error:", error)
-      return NextResponse.json({ error: "업로드에 실패했습니다." }, { status: 500 })
+    try {
+      const url = await uploadImage(buffer, { folder })
+      return NextResponse.json({ url })
+    } catch (err: any) {
+      console.error("Cloudinary upload error:", err)
+      return NextResponse.json(
+        { error: `업로드에 실패했습니다. ${err?.message ?? ""}`.trim() },
+        { status: 500 },
+      )
     }
-
-    const { data: urlData } = supabase.storage
-      .from("images")
-      .getPublicUrl(filePath)
-
-    return NextResponse.json({ url: urlData.publicUrl })
   } catch (e: any) {
     console.error("Upload error:", e)
     return NextResponse.json(
