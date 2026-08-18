@@ -1,5 +1,7 @@
 {
   "buildCommand": "prisma generate && next build",
   "framework": "nextjs",
-  "regions": ["hnd1"]
+  "regions": [
+    "hkg1"
+  ]
 }
