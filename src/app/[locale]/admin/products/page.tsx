@@ -73,7 +73,7 @@ export default async function AdminProductsPage() {
                       <img
                         src={imgSrc}
                         alt={product.name}
-                        className="absolute inset-0 h-full w-full object-cover"
+                        className="absolute inset-0 h-full w-full object-contain"
                       />
                       <Badge
                         variant={product.isActive ? "default" : "secondary"}

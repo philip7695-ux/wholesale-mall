@@ -225,7 +225,7 @@ export function ProductDetail({ product }: { product: Product }) {
               <img
                 src={mainImage}
                 alt={product.name}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-gray-300 text-sm">
@@ -274,7 +274,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     mainImage === img ? "border-[#1A1A1A]" : "border-transparent hover:border-gray-300"
                   }`}
                 >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
+                  <img src={img} alt="" className="h-full w-full object-contain" />
                 </button>
               ))}
             </div>

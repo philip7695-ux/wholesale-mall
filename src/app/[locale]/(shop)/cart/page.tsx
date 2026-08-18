@@ -233,7 +233,7 @@ export default function CartPage() {
                           <img
                             src={group.thumbnail}
                             alt=""
-                            className="h-16 w-16 rounded object-cover"
+                            className="h-16 w-16 rounded object-contain bg-[#F0EEEB]"
                           />
                         </Link>
                       )}
