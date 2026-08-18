@@ -232,7 +232,8 @@ export function ProductBulkUpload() {
       // Vercel 요청 본문 한도(4.5MB)를 넘지 않도록 나눠 보낸다.
       // 한 상품의 이미지는 순서·썸네일 때문에 반드시 같은 요청에 담아야 하므로
       // 상품코드 단위로 묶은 뒤 용량 기준으로 청크를 만든다.
-      const MAX_CHUNK_BYTES = 3 * 1024 * 1024
+      // Vercel 요청 본문 한도에 여유를 크게 둔다. 3MB 로도 413 이 났다.
+      const MAX_CHUNK_BYTES = 1024 * 1024
 
       const byCode = new Map<string, File[]>()
       for (const f of imageFiles) {

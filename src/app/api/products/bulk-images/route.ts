@@ -79,9 +79,17 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Resolve product codes to products (case-insensitive)
+    //
+    // Prisma 의 `mode: "insensitive"` 는 `in` 과 함께 쓰면 조용히 0건을 반환한다
+    // (에러가 아니라 빈 결과라서 "상품이 없습니다" 로만 보인다).
+    // 대소문자 무시는 OR + equals 로 처리한다.
     const codes = [...codeGroups.keys()]
     const products = await prisma.product.findMany({
-      where: { code: { in: codes, mode: "insensitive" } },
+      where: {
+        OR: codes.map((code) => ({
+          code: { equals: code, mode: "insensitive" as const },
+        })),
+      },
       select: { id: true, code: true, images: true, thumbnail: true },
     })
     // Map by lowercase code for case-insensitive lookup
