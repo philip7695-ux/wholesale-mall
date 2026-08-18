@@ -116,7 +116,7 @@ export default async function ProductsPage({
                           <img
                             src={product.thumbnail}
                             alt={product.name}
-                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                            className="absolute inset-0 h-full w-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm">
