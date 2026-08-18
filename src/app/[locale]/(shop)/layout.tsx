@@ -12,7 +12,10 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const session = await auth().catch(() => null)
 
   // 미로그인 → 로그인 페이지
-  if (!session) {
+  // 세션 객체는 있는데 user 가 비어 있는 경우(토큰 만료·콜백 실패 등)가 있다.
+  // 이때 session.user.role 을 읽으면 페이지 전체가 500 으로 죽으므로
+  // 비로그인과 동일하게 로그인 화면으로 보낸다.
+  if (!session?.user) {
     const locale = await getLocale()
     return redirect({ href: "/auth/login", locale })
   }

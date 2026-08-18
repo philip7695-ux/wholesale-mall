@@ -35,7 +35,7 @@ function parseFileName(fileName: string): { code: string; order: number } | null
 
 export async function POST(request: NextRequest) {
   const session = await auth()
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
