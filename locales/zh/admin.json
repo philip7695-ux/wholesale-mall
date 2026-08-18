@@ -356,5 +356,9 @@
   "memberUpdated": "会员信息已更新。",
   "memberUpdateError": "会员信息更新失败。",
   "roleChanged": "角色已变更。",
-  "roleChangeFail": "角色变更失败。"
+  "roleChangeFail": "角色变更失败。",
+  "bulkReadingFile": "正在读取文件...",
+  "bulkNoData": "文件中没有数据。",
+  "bulkProgress": "已处理 {done} / {total}",
+  "bulkElapsed": "已用时 {seconds} 秒"
 }

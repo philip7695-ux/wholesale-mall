@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle, Package } from "lucide-react"
+import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle, Package, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 interface UploadResult {
@@ -27,6 +27,8 @@ export function ProductBulkUpload() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<UploadResult | null>(null)
+  const [progress, setProgress] = useState<{ done: number; total: number; label: string } | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDownloadTemplate = (type: "adult" | "kids") => {
@@ -50,33 +52,84 @@ export function ProductBulkUpload() {
 
     setUploading(true)
     setResult(null)
+    setElapsed(0)
+    const startedAt = Date.now()
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000)
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
+      // 엑셀을 브라우저에서 파싱해 상품 단위로 청크를 나눈다.
+      // 서버 한 번에 다 보내면 상품 수백 개에서 함수 실행시간을 넘긴다.
+      setProgress({ done: 0, total: 0, label: t("bulkReadingFile") })
+      const XLSX = await import("xlsx")
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" })
 
-      const res = await fetch("/api/products/bulk", {
-        method: "POST",
-        body: formData,
-      })
+      type Chunk = { sheetName: string; rows: Record<string, any>[] }
+      const chunks: Chunk[] = []
+      let totalProducts = 0
 
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || t("bulkUploadFail"))
+      const PRODUCTS_PER_CHUNK = 20
+      for (const sheetName of wb.SheetNames) {
+        const ws = wb.Sheets[sheetName]
+        if (!ws) continue
+        const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
+        if (rows.length === 0) continue
+
+        // 같은 상품(코드)의 행이 청크 경계로 쪼개지지 않도록 코드 단위로 자른다
+        let current: Record<string, any>[] = []
+        let seen = new Set<string>()
+        for (const row of rows) {
+          const key = String(row["상품코드"] ?? row["상품명*"] ?? "").trim()
+          if (!seen.has(key) && seen.size >= PRODUCTS_PER_CHUNK) {
+            chunks.push({ sheetName, rows: current })
+            current = []
+            seen = new Set<string>()
+          }
+          seen.add(key)
+          current.push(row)
+        }
+        if (current.length > 0) chunks.push({ sheetName, rows: current })
+
+        totalProducts += new Set(
+          rows.map((r) => String(r["상품코드"] ?? r["상품명*"] ?? "").trim()),
+        ).size
       }
 
-      const data: UploadResult = await res.json()
-      setResult(data)
+      if (chunks.length === 0) throw new Error(t("bulkNoData"))
 
-      if (data.success > 0) {
-        toast.success(t("bulkProductsRegistered", { count: data.success }))
+      const merged: UploadResult = { success: 0, failed: [] }
+      setProgress({ done: 0, total: totalProducts, label: "" })
+
+      for (let i = 0; i < chunks.length; i++) {
+        const res = await fetch("/api/products/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(chunks[i]),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || t("bulkUploadFail"))
+        }
+
+        const data: UploadResult = await res.json()
+        merged.success += data.success
+        merged.failed.push(...data.failed)
+        setProgress({ done: merged.success + merged.failed.length, total: totalProducts, label: "" })
       }
-      if (data.failed.length > 0) {
-        toast.error(t("bulkErrors", { count: data.failed.length }))
+
+      setResult(merged)
+
+      if (merged.success > 0) {
+        toast.success(t("bulkProductsRegistered", { count: merged.success }))
+      }
+      if (merged.failed.length > 0) {
+        toast.error(t("bulkErrors", { count: merged.failed.length }))
       }
     } catch (err: any) {
       toast.error(err.message || t("bulkUploadError"))
     } finally {
+      clearInterval(timer)
+      setProgress(null)
       setUploading(false)
     }
   }
@@ -84,6 +137,8 @@ export function ProductBulkUpload() {
   const handleReset = () => {
     setFile(null)
     setResult(null)
+    setProgress(null)
+    setElapsed(0)
     if (inputRef.current) inputRef.current.value = ""
   }
 
@@ -253,9 +308,40 @@ export function ProductBulkUpload() {
         </div>
 
         {file && !result && (
-          <Button size="sm" onClick={handleUpload} disabled={uploading} className="w-fit">
-            {uploading ? t("bulkUploading") : t("bulkStartUpload")}
-          </Button>
+          <div className="space-y-2">
+            <Button size="sm" onClick={handleUpload} disabled={uploading} className="w-fit">
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  {t("bulkUploading")}
+                </>
+              ) : (
+                t("bulkStartUpload")
+              )}
+            </Button>
+
+            {uploading && progress && (
+              <div className="space-y-1">
+                <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-green-600 transition-[width] duration-300"
+                    style={{
+                      width: progress.total > 0
+                        ? `${Math.min(100, Math.round((progress.done / progress.total) * 100))}%`
+                        : "10%",
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {progress.label
+                    ? progress.label
+                    : t("bulkProgress", { done: progress.done, total: progress.total })}
+                  {" · "}
+                  {t("bulkElapsed", { seconds: elapsed })}
+                </p>
+              </div>
+            )}
+          </div>
         )}
 
         {result && (
