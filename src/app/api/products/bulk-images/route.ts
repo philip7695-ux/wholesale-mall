@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { createClient } from "@supabase/supabase-js"
-
-function getSupabase() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-}
+import { uploadImage } from "@/lib/storage"
 
 // Vercel 요청 본문 한도(4.5MB) 때문에 클라이언트가 파일을 나눠 보낸다.
 export const maxDuration = 60
@@ -107,7 +100,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Upload images and update products
-    const supabase = getSupabase()
     let success = 0
 
     for (const [code, group] of codeGroups) {
@@ -122,27 +114,8 @@ export async function POST(request: NextRequest) {
           const bytes = await item.file.arrayBuffer()
           const buffer = Buffer.from(bytes)
 
-          const ext = item.file.name.split(".").pop() || "jpg"
-          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-          const filePath = `products/${fileName}`
-
-          const { error } = await supabase.storage
-            .from("images")
-            .upload(filePath, buffer, {
-              contentType: item.file.type,
-              upsert: false,
-            })
-
-          if (error) {
-            failed.push({ file: item.file.name, error: `업로드 실패: ${error.message}` })
-            continue
-          }
-
-          const { data: urlData } = supabase.storage
-            .from("images")
-            .getPublicUrl(filePath)
-
-          uploadedUrls.push(urlData.publicUrl)
+          const url = await uploadImage(buffer, { folder: "products" })
+          uploadedUrls.push(url)
           success++
         } catch (err: any) {
           failed.push({ file: item.file.name, error: `업로드 오류: ${err.message}` })
