@@ -45,4 +45,5 @@ next-env.d.ts
 
 # local scratch
 *.log
-*.mjs
+probe*.mjs
+tmp*.mjs
