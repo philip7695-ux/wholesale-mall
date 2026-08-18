@@ -7,17 +7,34 @@ export const ALL_SIZES: string[] = [...ADULT_SIZES, ...KIDS_SIZES]
 const BABY_NUM_SIZES = new Set(["80", "85", "90", "95", "100"])
 const KIDS_ONLY_NUM_SIZES = new Set(["110", "120", "130", "140"])
 
+export type AgeGroupValue = "NEWBORN" | "BABY" | "KIDS"
+
+/** 엑셀의 "연령대" 값을 enum 으로 정규화. 인식 못하면 null */
+export function normalizeAgeGroup(raw: string): AgeGroupValue | null {
+  const v = raw.trim().toUpperCase()
+  if (!v) return null
+  if (v.includes("NEWBORN") || v.includes("뉴본") || v.includes("신생아")) return "NEWBORN"
+  if (v.includes("BABY") || v.includes("베이비") || v.includes("유아")) return "BABY"
+  if (v.includes("KIDS") || v.includes("KID") || v.includes("키즈") || v.includes("아동")) return "KIDS"
+  return null
+}
+
 /**
- * 상품명과 사이즈 목록으로 연령대(BABY/KIDS) 자동 판별
+ * 상품명과 사이즈 목록으로 연령대(NEWBORN/BABY/KIDS) 자동 판별
+ * - 상품명에 "newborn" + 아동 전용 숫자 사이즈 없음 → NEWBORN
  * - 80~100만 있음 → BABY
  * - 110+만 있음 → KIDS
  * - 80~100 + 110+ 둘 다 → 상품명에 "baby" 있으면 BABY, 없으면 KIDS
  * - 문자 사이즈(F,S,M,L)만 → 상품명으로 판별
  * - 성인 사이즈(XS~3XL, FREE)만 → null
  */
-export function determineAgeGroup(productName: string, sizeNames: string[]): "BABY" | "KIDS" | null {
+export function determineAgeGroup(productName: string, sizeNames: string[]): AgeGroupValue | null {
   const nameLower = productName.toLowerCase()
   const hasBaby = nameLower.includes("baby")
+  const hasNewborn = nameLower.includes("newborn")
+
+  // 뉴본은 F/S/M/L 또는 소형 사이즈로만 나오므로, 아동 전용 사이즈가 없을 때만 인정
+  if (hasNewborn && !sizeNames.some((s) => KIDS_ONLY_NUM_SIZES.has(s))) return "NEWBORN"
 
   const hasBabyNumSize = sizeNames.some((s) => BABY_NUM_SIZES.has(s))
   const hasKidsNumSize = sizeNames.some((s) => KIDS_ONLY_NUM_SIZES.has(s))
