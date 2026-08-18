@@ -7,7 +7,7 @@ import { ALL_SIZES } from "@/lib/product-sizes"
 // GET: 재고 현황 엑셀 다운로드
 export async function GET() {
   const session = await auth()
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -82,7 +82,7 @@ export async function GET() {
 // POST: 재고 업데이트 엑셀 업로드
 export async function POST(request: NextRequest) {
   const session = await auth()
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
