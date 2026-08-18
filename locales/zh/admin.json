@@ -360,5 +360,6 @@
   "bulkReadingFile": "正在读取文件...",
   "bulkNoData": "文件中没有数据。",
   "bulkProgress": "已处理 {done} / {total}",
-  "bulkElapsed": "已用时 {seconds} 秒"
+  "bulkElapsed": "已用时 {seconds} 秒",
+  "bulkCreatedUpdated": "新增 {created} · 更新 {updated}"
 }

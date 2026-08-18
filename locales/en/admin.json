@@ -360,5 +360,6 @@
   "bulkReadingFile": "Reading file...",
   "bulkNoData": "No data found in the file.",
   "bulkProgress": "{done} / {total} processed",
-  "bulkElapsed": "{seconds}s elapsed"
+  "bulkElapsed": "{seconds}s elapsed",
+  "bulkCreatedUpdated": "{created} new · {updated} updated"
 }

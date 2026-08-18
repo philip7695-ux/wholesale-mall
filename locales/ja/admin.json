@@ -360,5 +360,6 @@
   "bulkReadingFile": "ファイルを読み込み中...",
   "bulkNoData": "ファイルにデータがありません。",
   "bulkProgress": "{done} / {total} 件処理",
-  "bulkElapsed": "{seconds}秒経過"
+  "bulkElapsed": "{seconds}秒経過",
+  "bulkCreatedUpdated": "新規 {created} · 更新 {updated}"
 }

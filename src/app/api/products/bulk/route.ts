@@ -227,8 +227,9 @@ export async function POST(request: NextRequest) {
       categoryMap.set(catName, category.id)
     }
 
-    // 상품 생성
-    let success = 0
+    // 상품 생성/갱신
+    let created = 0
+    let updated = 0
     const sizeOrder = ALL_SIZES
 
     for (const [groupKey, group] of productGroups) {
@@ -245,61 +246,124 @@ export async function POST(request: NextRequest) {
           sizesSet.add(v.sizeName)
         }
 
-        const colors = [...colorsMap.entries()].map(([name, { colorCode, hexColor }], i) => ({
-          name, colorCode: colorCode || undefined, hexColor: hexColor || undefined, images: [] as string[], sortOrder: i,
-        }))
-
-        const sizes = [...sizesSet]
-          .sort((a, b) => {
-            const ai = sizeOrder.indexOf(a)
-            const bi = sizeOrder.indexOf(b)
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-          })
-          .map((name, i) => ({ name, sortOrder: i }))
-
-        const allSizeNames = sizes.map((s) => s.name)
-        const ageGroup = group.ageGroup ?? determineAgeGroup(productName, allSizeNames)
-
-        const product = await prisma.product.create({
-          data: {
-            name: productName,
-            code: group.code || null,
-            description: group.description || null,
-            material: group.material || null,
-            categoryId,
-            images: [],
-            isActive: true,
-            priceCurrency: group.priceCurrency || "KRW",
-            ageGroup,
-            colors: { create: colors },
-            sizes: { create: sizes },
-          },
-          include: { colors: true, sizes: true },
+        const sortedSizes = [...sizesSet].sort((a, b) => {
+          const ai = sizeOrder.indexOf(a)
+          const bi = sizeOrder.indexOf(b)
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
         })
+        const ageGroup = group.ageGroup ?? determineAgeGroup(productName, sortedSizes)
 
-        const colorIdMap = new Map(product.colors.map((c: any) => [c.name, c.id]))
-        const sizeIdMap = new Map(product.sizes.map((s: any) => [s.name, s.id]))
+        // 같은 상품코드가 이미 있으면 덮어쓴다(재업로드 대비).
+        // 단, 변형을 지우면 장바구니가 Cascade 로 함께 삭제되므로 삭제 없이 갱신한다.
+        const existing = group.code
+          ? await prisma.product.findUnique({
+              where: { code: group.code },
+              include: { colors: true, sizes: true },
+            })
+          : null
 
-        const variantData = group.variants
-          .map((v) => {
+        if (!existing) {
+          const colors = [...colorsMap.entries()].map(([name, { colorCode, hexColor }], i) => ({
+            name, colorCode: colorCode || undefined, hexColor: hexColor || undefined, images: [] as string[], sortOrder: i,
+          }))
+          const sizes = sortedSizes.map((name, i) => ({ name, sortOrder: i }))
+
+          const product = await prisma.product.create({
+            data: {
+              name: productName,
+              code: group.code || null,
+              description: group.description || null,
+              material: group.material || null,
+              categoryId,
+              images: [],
+              isActive: true,
+              priceCurrency: group.priceCurrency || "KRW",
+              ageGroup,
+              colors: { create: colors },
+              sizes: { create: sizes },
+            },
+            include: { colors: true, sizes: true },
+          })
+
+          const colorIdMap = new Map(product.colors.map((c: any) => [c.name, c.id]))
+          const sizeIdMap = new Map(product.sizes.map((sz: any) => [sz.name, sz.id]))
+
+          const variantData = group.variants
+            .map((v) => {
+              const colorId = colorIdMap.get(v.colorName)
+              const sizeId = sizeIdMap.get(v.sizeName)
+              if (!colorId || !sizeId) return null
+              return { productId: product.id, colorId, sizeId, price: v.price, stock: v.stock }
+            })
+            .filter(Boolean) as { productId: string; colorId: string; sizeId: string; price: number; stock: number }[]
+
+          if (variantData.length > 0) await prisma.productVariant.createMany({ data: variantData })
+          created++
+        } else {
+          await prisma.product.update({
+            where: { id: existing.id },
+            data: {
+              name: productName,
+              description: group.description || null,
+              material: group.material || null,
+              categoryId,
+              priceCurrency: group.priceCurrency || "KRW",
+              ageGroup,
+            },
+          })
+
+          const colorIdMap = new Map(existing.colors.map((c: any) => [c.name, c.id]))
+          let colorOrder = existing.colors.length
+          for (const [name, { colorCode, hexColor }] of colorsMap) {
+            if (colorIdMap.has(name)) continue
+            const c = await prisma.productColor.create({
+              data: {
+                productId: existing.id, name,
+                colorCode: colorCode || undefined, hexColor: hexColor || undefined,
+                images: [], sortOrder: colorOrder++,
+              },
+            })
+            colorIdMap.set(name, c.id)
+          }
+
+          const sizeIdMap = new Map(existing.sizes.map((sz: any) => [sz.name, sz.id]))
+          let sizeOrderIdx = existing.sizes.length
+          for (const name of sortedSizes) {
+            if (sizeIdMap.has(name)) continue
+            const sz = await prisma.productSize.create({
+              data: { productId: existing.id, name, sortOrder: sizeOrderIdx++ },
+            })
+            sizeIdMap.set(name, sz.id)
+          }
+
+          for (const v of group.variants) {
             const colorId = colorIdMap.get(v.colorName)
             const sizeId = sizeIdMap.get(v.sizeName)
-            if (!colorId || !sizeId) return null
-            return { productId: product.id, colorId, sizeId, price: v.price, stock: v.stock }
-          })
-          .filter(Boolean) as { productId: string; colorId: string; sizeId: string; price: number; stock: number }[]
-
-        if (variantData.length > 0) await prisma.productVariant.createMany({ data: variantData })
-
-        success++
+            if (!colorId || !sizeId) continue
+            await prisma.productVariant.upsert({
+              where: { productId_colorId_sizeId: { productId: existing.id, colorId, sizeId } },
+              // 기존 변형의 재고는 건드리지 않는다. 재고는 별도로 관리되며
+              // 재업로드로 덮어쓰면 운영 중 입력한 수량이 사라진다.
+              update: { price: v.price },
+              create: { productId: existing.id, colorId, sizeId, price: v.price, stock: v.stock },
+            })
+          }
+          updated++
+        }
       } catch (err: any) {
-        failed.push({ row: 0, error: `상품 "${group.name}" (${groupKey}) 생성 실패: ${err.message}` })
+        failed.push({ row: 0, error: `상품 "${group.name}" (${groupKey}) 처리 실패: ${err.message}` })
       }
     }
 
-    return NextResponse.json({ success, failed })
+    return NextResponse.json({ success: created + updated, created, updated, failed })
   } catch (error: any) {
     console.error("Bulk upload error:", error)
-    return NextResponse.json({ error: "엑셀 업로드 처리 중 오류가 발생했습니다." }, { status: 500 })
+    // 관리자 전용 엔드포인트이므로 원인을 그대로 돌려준다.
+    // 메시지를 감추면 대량등록 실패를 화면만 보고 진단할 수 없다.
+    const detail = [error?.code, error?.message].filter(Boolean).join(" ")
+    return NextResponse.json(
+      { error: `엑셀 업로드 처리 중 오류가 발생했습니다. ${detail}`.trim() },
+      { status: 500 },
+    )
   }
 }
