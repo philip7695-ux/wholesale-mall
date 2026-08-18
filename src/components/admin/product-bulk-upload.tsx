@@ -9,6 +9,8 @@ import { toast } from "sonner"
 
 interface UploadResult {
   success: number
+  created: number
+  updated: number
   failed: { row: number; error: string }[]
 }
 
@@ -96,7 +98,7 @@ export function ProductBulkUpload() {
 
       if (chunks.length === 0) throw new Error(t("bulkNoData"))
 
-      const merged: UploadResult = { success: 0, failed: [] }
+      const merged: UploadResult = { success: 0, created: 0, updated: 0, failed: [] }
       setProgress({ done: 0, total: totalProducts, label: "" })
 
       for (let i = 0; i < chunks.length; i++) {
@@ -113,6 +115,8 @@ export function ProductBulkUpload() {
 
         const data: UploadResult = await res.json()
         merged.success += data.success
+        merged.created += data.created ?? 0
+        merged.updated += data.updated ?? 0
         merged.failed.push(...data.failed)
         setProgress({ done: merged.success + merged.failed.length, total: totalProducts, label: "" })
       }
@@ -349,7 +353,11 @@ export function ProductBulkUpload() {
             {result.success > 0 && (
               <div className="flex items-center gap-1 text-green-600">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>{t("bulkProductSuccess", { count: result.success })}</span>
+                <span>
+                  {t("bulkProductSuccess", { count: result.success })}
+                  {result.updated > 0 &&
+                    ` (${t("bulkCreatedUpdated", { created: result.created, updated: result.updated })})`}
+                </span>
               </div>
             )}
             {result.failed.length > 0 && (

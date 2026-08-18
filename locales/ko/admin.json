@@ -360,5 +360,6 @@
   "bulkReadingFile": "파일 읽는 중...",
   "bulkNoData": "엑셀에 데이터가 없습니다.",
   "bulkProgress": "{done} / {total}개 처리",
-  "bulkElapsed": "{seconds}초 경과"
+  "bulkElapsed": "{seconds}초 경과",
+  "bulkCreatedUpdated": "신규 {created} · 갱신 {updated}"
 }
