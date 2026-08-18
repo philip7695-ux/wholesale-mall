@@ -8,11 +8,16 @@
 export function translateCategory(
   slug: string,
   t: (key: string) => string,
+  fallback?: string,
 ): string {
-  // next-intl은 없는 키에 대해 키 자체를 반환하므로,
-  // "categories.{slug}" 형태로 반환되면 fallback 처리
-  const result = t(slug)
-  return result === `categories.${slug}` ? slug : result
+  // next-intl 은 사전에 없는 키에서 예외를 던진다. 카테고리는 관리자가
+  // 자유롭게 추가할 수 있으므로, 사전에 없다고 페이지 전체가 죽으면 안 된다.
+  try {
+    const result = t(slug)
+    return result === `categories.${slug}` ? (fallback ?? slug) : result
+  } catch {
+    return fallback ?? slug
+  }
 }
 
 /** 한국어 컬러명 → 번역된 컬러명 */

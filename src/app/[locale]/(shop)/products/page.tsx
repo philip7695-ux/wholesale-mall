@@ -111,7 +111,7 @@ export default async function ProductsPage({
                   return (
                     <Link key={product.id} href={`/products/${product.id}`} className="group block">
                       {/* Image */}
-                      <div className="relative w-full overflow-hidden bg-[#F0EEEB]" style={{ paddingBottom: "120%" }}>
+                      <div className="relative w-full overflow-hidden bg-white" style={{ paddingBottom: "120%" }}>
                         {product.thumbnail ? (
                           <img
                             src={product.thumbnail}
@@ -128,7 +128,7 @@ export default async function ProductsPage({
                       {/* Info */}
                       <div className="mt-3 space-y-1">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">
-                          {translateCategory(product.category.slug, tCat)}
+                          {translateCategory(product.category.slug, tCat, product.category.name)}
                         </p>
                         <h3 className="text-sm text-[#1A1A1A] leading-snug line-clamp-2">
                           {product.name}

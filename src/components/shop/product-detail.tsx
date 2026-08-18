@@ -217,7 +217,7 @@ export function ProductDetail({ product }: { product: Product }) {
         <div className="space-y-3">
           <div
             ref={imgContainerRef}
-            className="relative aspect-square overflow-hidden bg-[#F0EEEB] cursor-crosshair"
+            className="relative aspect-square overflow-hidden bg-white cursor-crosshair"
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
           >
@@ -287,7 +287,7 @@ export function ProductDetail({ product }: { product: Product }) {
           <div>
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">
-                {translateCategory(product.category.slug, tCat)}
+                {translateCategory(product.category.slug, tCat, product.category.name)}
               </span>
               {allSoldOut && (
                 <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-red-500">
