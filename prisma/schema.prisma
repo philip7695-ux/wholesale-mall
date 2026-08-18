@@ -271,6 +271,7 @@ model PaymentConfirmation {
 }
 
 enum AgeGroup {
+  NEWBORN
   BABY
   KIDS
 

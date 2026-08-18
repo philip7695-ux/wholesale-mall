@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup } from "@/lib/product-sizes"
+import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue } from "@/lib/product-sizes"
 
 interface FailedRow {
   row: number
@@ -11,6 +11,8 @@ interface FailedRow {
 
 type ProductGroups = Map<string, {
   code: string
+  name: string
+  ageGroup: AgeGroupValue | null
   category: string
   description: string
   material: string
@@ -63,13 +65,18 @@ function parseSheetNew(
     const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
     const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
 
-    if (!groups.has(name)) {
-      groups.set(name, { code, category, description, material, priceCurrency, variants: [] })
+    // 그룹 키는 상품코드 우선(동일 상품명의 다른 스타일이 합쳐지는 것 방지)
+    const groupKey = code || `name:${name}`
+    const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, { code, name, ageGroup, category, description, material, priceCurrency, variants: [] })
     }
 
-    const group = groups.get(name)!
+    const group = groups.get(groupKey)!
     if (description && !group.description) group.description = description
     if (material && !group.material) group.material = material
+    if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
     for (const sizeName of sizeNames) {
       group.variants.push({ colorName, colorCode, hexColor, sizeName, price, stock })
@@ -105,12 +112,13 @@ function parseSheetSizeColumns(
       const val = row[sizeName]
       if (val === undefined || val === null || val === "") continue
       const stock = Number(val)
-      if (isNaN(stock) || stock <= 0) continue
+      // 재고 0도 사이즈를 생성한다(품절로 노출). 빈 셀만 "사이즈 없음"으로 처리.
+      if (isNaN(stock) || stock < 0) continue
       sizeVariants.push({ sizeName, stock })
     }
 
     if (sizeVariants.length === 0) {
-      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈 재고가 입력되지 않았습니다.` })
+      failed.push({ row: rowNum, error: `[${sheetLabel}] 사이즈가 하나도 입력되지 않았습니다.` })
       continue
     }
 
@@ -121,13 +129,18 @@ function parseSheetSizeColumns(
     const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
     const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
 
-    if (!groups.has(name)) {
-      groups.set(name, { code, category, description, material, priceCurrency, variants: [] })
+    // 그룹 키는 상품코드 우선(동일 상품명의 다른 스타일이 합쳐지는 것 방지)
+    const groupKey = code || `name:${name}`
+    const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, { code, name, ageGroup, category, description, material, priceCurrency, variants: [] })
     }
 
-    const group = groups.get(name)!
+    const group = groups.get(groupKey)!
     if (description && !group.description) group.description = description
     if (material && !group.material) group.material = material
+    if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
     for (const { sizeName, stock } of sizeVariants) {
       group.variants.push({ colorName, colorCode, hexColor, sizeName, price, stock })
@@ -200,7 +213,8 @@ export async function POST(request: NextRequest) {
     let success = 0
     const sizeOrder = ALL_SIZES
 
-    for (const [productName, group] of productGroups) {
+    for (const [groupKey, group] of productGroups) {
+      const productName = group.name
       try {
         const categoryId = categoryMap.get(group.category)
         if (!categoryId) { failed.push({ row: 0, error: `카테고리 "${group.category}" 처리 실패` }); continue }
@@ -226,7 +240,7 @@ export async function POST(request: NextRequest) {
           .map((name, i) => ({ name, sortOrder: i }))
 
         const allSizeNames = sizes.map((s) => s.name)
-        const ageGroup = determineAgeGroup(productName, allSizeNames)
+        const ageGroup = group.ageGroup ?? determineAgeGroup(productName, allSizeNames)
 
         const product = await prisma.product.create({
           data: {
@@ -261,7 +275,7 @@ export async function POST(request: NextRequest) {
 
         success++
       } catch (err: any) {
-        failed.push({ row: 0, error: `상품 "${productName}" 생성 실패: ${err.message}` })
+        failed.push({ row: 0, error: `상품 "${group.name}" (${groupKey}) 생성 실패: ${err.message}` })
       }
     }
 
