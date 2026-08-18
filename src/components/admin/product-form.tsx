@@ -311,7 +311,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 <SelectContent>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
-                      {translateCategory(cat.slug, tCat)}
+                      {translateCategory(cat.slug, tCat, cat.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -333,7 +333,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             <div className="flex flex-wrap gap-3">
               {images.map((img, i) => (
                 <div key={i} className="relative">
-                  <img src={img} alt="" className="h-20 w-20 rounded-md object-contain border bg-[#F0EEEB]" />
+                  <img src={img} alt="" className="h-20 w-20 rounded-md object-contain border bg-white" />
                   {i === 0 && (
                     <span className="absolute -top-1.5 -left-1.5 rounded bg-primary px-1 text-[10px] text-primary-foreground">
                       {t("mainImage")}

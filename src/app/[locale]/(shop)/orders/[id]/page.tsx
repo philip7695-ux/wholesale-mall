@@ -426,7 +426,7 @@ export default function OrderDetailPage() {
                           <img
                             src={receiptImage}
                             alt="Receipt"
-                            className="h-32 w-32 rounded border object-contain bg-[#F0EEEB]"
+                            className="h-32 w-32 rounded border object-contain bg-white"
                           />
                           <button
                             type="button"

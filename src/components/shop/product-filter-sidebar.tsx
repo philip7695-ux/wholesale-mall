@@ -50,7 +50,7 @@ export function ProductFilterSidebar({
                     : "text-gray-500 hover:text-[#1A1A1A]"
                 }`}
               >
-                {translateCategory(cat.slug, tCat)}
+                {translateCategory(cat.slug, tCat, cat.name)}
               </button>
             </li>
           ))}

@@ -99,7 +99,7 @@ export default async function AdminProductsPage() {
                     )}
                     <CardTitle className="text-sm font-semibold line-clamp-1">{product.name}</CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      {translateCategory(product.category.slug, tCat)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
+                      {translateCategory(product.category.slug, tCat, product.category.name)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
                     </p>
                     <p className="text-sm font-medium mt-1">
                       {minPrice > 0 ? formatPriceCross(minPrice, product.priceCurrency, locale, rates) : "-"}~
