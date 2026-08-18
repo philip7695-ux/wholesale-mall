@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic"
 
 import { notFound } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 import { prisma } from "@/lib/prisma"
+import { withDbRetry } from "@/lib/db-retry"
 import { ProductDetail } from "@/components/shop/product-detail"
 
 export default async function ProductDetailPage({
@@ -12,18 +14,27 @@ export default async function ProductDetailPage({
   const { id } = await params
   let raw: any = null
   try {
-    raw = await prisma.product.findUnique({
-      where: { id, isActive: true },
-      include: {
-        category: true,
-        colors: { orderBy: { sortOrder: "asc" } },
-        sizes: { orderBy: { sortOrder: "asc" } },
-        variants: { include: { color: true, size: true } },
-      },
-    })
+    raw = await withDbRetry(() =>
+      prisma.product.findUnique({
+        where: { id, isActive: true },
+        include: {
+          category: true,
+          colors: { orderBy: { sortOrder: "asc" } },
+          sizes: { orderBy: { sortOrder: "asc" } },
+          variants: { include: { color: true, size: true } },
+        },
+      }),
+    )
   } catch (err) {
+    // DB 일시 장애로 페이지 전체를 500 으로 떨어뜨리지 않는다.
+    // 목록 페이지와 동일하게 안내 후 재시도를 유도한다.
     console.error("[ProductDetailPage] DB error:", err)
-    throw err
+    const t = await getTranslations("shop")
+    return (
+      <div className="py-20 text-center text-gray-400 font-light">
+        {t("loadError")}
+      </div>
+    )
   }
 
   if (!raw) notFound()

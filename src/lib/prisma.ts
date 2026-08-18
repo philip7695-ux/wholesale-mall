@@ -24,7 +24,11 @@ function createPool() {
     // 병렬 쿼리를 소화할 정도(max 10)로 두되, RDS는 clothing-erp와 공유하므로 과도하게 키우지 않는다.
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 15000,
+    // 국경 간 경로라 커넥션 수립이 간헐적으로 실패한다. 15초를 끝까지 기다리면
+    // 함수 실행시간만 소모하고 그대로 500 이 되므로, 빨리 포기하고
+    // withDbRetry 가 재시도하도록 한다.
+    connectionTimeoutMillis: 6000,
+    keepAlive: true,
   })
 
   // 커넥션 에러 시 죽은 커넥션을 정리하고 풀/클라이언트 재생성

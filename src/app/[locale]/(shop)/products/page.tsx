@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { Link } from "@/i18n/navigation"
 import { prisma } from "@/lib/prisma"
+import { withDbRetry } from "@/lib/db-retry"
 import { ProductSearch } from "@/components/shop/product-search"
 import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
@@ -40,7 +41,7 @@ export default async function ProductsPage({
   let products: any[] = [], categories: any[] = [], total = 0
   let loadError = false
   try {
-    ;[products, categories, total] = await Promise.all([
+    ;[products, categories, total] = await withDbRetry(() => Promise.all([
       prisma.product.findMany({
         where,
         include: {
@@ -54,7 +55,7 @@ export default async function ProductsPage({
       }),
       prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.product.count({ where }),
-    ])
+    ]))
   } catch (err) {
     // 일시적 DB 연결 오류 시 전체 페이지 500 대신 안내 메시지로 대체
     console.error("[ProductsPage] DB error:", err)
