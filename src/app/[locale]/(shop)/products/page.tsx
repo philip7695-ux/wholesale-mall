@@ -24,9 +24,11 @@ export default async function ProductsPage({
   const page = parseInt(params.page || "1")
   const limit = 20
 
+  // 홀세일 몰은 카탈로그 성격이므로 재고 0 도 노출한다.
+  // 주문 차단은 상세 화면(품절 표시 + 수량 입력 비활성)과
+  // 주문 API 의 재고 검증이 담당한다.
   const where: Record<string, unknown> = {
     isActive: true,
-    variants: { some: { stock: { gt: 0 } } },
   }
   if (category) where.category = { slug: category }
   if (ageGroup === "BABY" || ageGroup === "KIDS") where.ageGroup = ageGroup
