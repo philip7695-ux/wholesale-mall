@@ -76,6 +76,18 @@ export function ProductFilterSidebar({
       <div>
         <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("category")}</h3>
         <ul className="space-y-2">
+          <li>
+            <button
+              onClick={() => router.push(buildUrl({ category: null }))}
+              className={`text-sm transition-colors ${
+                !currentCategory
+                  ? "text-[#1A1A1A] font-medium"
+                  : "text-gray-500 hover:text-[#1A1A1A]"
+              }`}
+            >
+              {tc("all")}
+            </button>
+          </li>
           {categories.map((cat) => (
             <li key={cat.id}>
               <button
