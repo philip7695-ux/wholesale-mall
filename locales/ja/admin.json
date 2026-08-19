@@ -364,5 +364,12 @@
   "bulkCreatedUpdated": "新規 {created} · 更新 {updated}",
   "allImages": "全画像",
   "imageCount": "枚",
-  "noImage": "画像なし"
+  "noImage": "画像なし",
+  "seasonSpring": "春 (SS)",
+  "seasonSummer": "夏 (SU)",
+  "seasonFall": "秋 (FW)",
+  "seasonWinter": "冬 (WI)",
+  "filterAll": "すべて",
+  "filterReset": "リセット",
+  "filterCount": "{count}件"
 }

@@ -364,5 +364,12 @@
   "bulkCreatedUpdated": "{created} new · {updated} updated",
   "allImages": "All images",
   "imageCount": "",
-  "noImage": "No image"
+  "noImage": "No image",
+  "seasonSpring": "Spring (SS)",
+  "seasonSummer": "Summer (SU)",
+  "seasonFall": "Fall (FW)",
+  "seasonWinter": "Winter (WI)",
+  "filterAll": "All",
+  "filterReset": "Reset",
+  "filterCount": "{count} items"
 }

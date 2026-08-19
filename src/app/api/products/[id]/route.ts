@@ -126,6 +126,37 @@ export async function PUT(
   }
 }
 
+/**
+ * 노출 여부만 바꾼다.
+ *
+ * PUT 은 색상·사이즈·변형을 지우고 다시 만들며 장바구니 항목까지 비우므로
+ * 목록에서 켜고 끄는 용도로는 쓸 수 없다.
+ */
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await params
+  const { isActive } = await request.json()
+
+  if (typeof isActive !== "boolean") {
+    return NextResponse.json({ error: "isActive 는 true/false 여야 합니다." }, { status: 400 })
+  }
+
+  const updated = await prisma.product.update({
+    where: { id },
+    data: { isActive },
+    select: { id: true, isActive: true },
+  })
+
+  return NextResponse.json(updated)
+}
+
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
