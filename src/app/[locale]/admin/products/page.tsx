@@ -4,7 +4,6 @@ import { Link } from "@/i18n/navigation"
 import { prisma } from "@/lib/prisma"
 import { getTranslations, getLocale } from "next-intl/server"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Download } from "lucide-react"
 import { formatPriceCross } from "@/lib/utils"
@@ -13,6 +12,7 @@ import { DeleteProductButton } from "@/components/admin/delete-product-button"
 import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
 import { getAllExchangeRates } from "@/lib/currency.server"
 import { ProductGrid } from "@/components/admin/product-grid"
+import { ProductImageStrip } from "@/components/admin/product-image-strip"
 
 export default async function AdminProductsPage() {
   const t = await getTranslations("admin")
@@ -59,44 +59,34 @@ export default async function AdminProductsPage() {
           </CardContent>
         </Card>
       ) : (
-        <ProductGrid>
+        <ProductGrid allImagesLabel={t("allImages")} mainImageLabel={t("mainImage")}>
           {products.map((product: any) => {
             const minPrice = product.variants.length > 0
               ? Math.min(...product.variants.map((v: any) => v.price))
               : 0
-            const imgSrc = product.thumbnail || product.images?.[0]
+            const images: string[] = product.images ?? []
             return (
               <Link key={product.id} href={`/admin/products/${product.id}/edit`}>
                 <Card className="flex flex-col overflow-hidden transition-shadow hover:shadow-md cursor-pointer">
-                  {imgSrc ? (
-                    <div className="relative w-full overflow-hidden rounded-t-lg" style={{ paddingBottom: "100%" }}>
-                      <img
-                        src={imgSrc}
-                        alt={product.name}
-                        className="absolute inset-0 h-full w-full object-contain"
-                      />
-                      <Badge
-                        variant={product.isActive ? "default" : "secondary"}
-                        className="absolute top-2 right-2"
-                      >
-                        {product.isActive ? t("active") : t("inactive")}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="relative w-full rounded-t-lg bg-muted" style={{ paddingBottom: "100%" }}>
-                      <span className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">{t("noImage") || "No Image"}</span>
-                      <Badge
-                        variant={product.isActive ? "default" : "secondary"}
-                        className="absolute top-2 right-2"
-                      >
-                        {product.isActive ? t("active") : t("inactive")}
-                      </Badge>
-                    </div>
-                  )}
+                  <ProductImageStrip
+                    images={images}
+                    thumbnail={product.thumbnail}
+                    name={product.name}
+                    isActive={product.isActive}
+                    activeLabel={t("active")}
+                    inactiveLabel={t("inactive")}
+                    noImageLabel={t("noImage")}
+                  />
                   <CardHeader className="pb-2 pt-3">
-                    {product.code && (
-                      <p className="text-xs font-mono text-muted-foreground">{product.code}</p>
-                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      {product.code && (
+                        <p className="text-xs font-mono text-muted-foreground">{product.code}</p>
+                      )}
+                      {/* 사진 장수를 함께 보여 3장이 아닌 상품을 바로 걸러낼 수 있게 한다 */}
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {images.length}{t("imageCount")}
+                      </span>
+                    </div>
                     <CardTitle className="text-sm font-semibold line-clamp-1">{product.name}</CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {translateCategory(product.category.slug, tCat, product.category.name)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}

@@ -37,7 +37,7 @@
   "categoryPlaceholder": "カテゴリ選択",
   "productDesc": "商品説明",
   "productImages": "商品画像（最初の写真がメイン画像）",
-  "mainImage": "メイン",
+  "mainImage": "代表画像のみ",
   "uploading": "アップロード中",
   "add": "追加",
   "imagesUploaded": "{count}枚アップロード済み",
@@ -361,5 +361,8 @@
   "bulkNoData": "ファイルにデータがありません。",
   "bulkProgress": "{done} / {total} 件処理",
   "bulkElapsed": "{seconds}秒経過",
-  "bulkCreatedUpdated": "新規 {created} · 更新 {updated}"
+  "bulkCreatedUpdated": "新規 {created} · 更新 {updated}",
+  "allImages": "全画像",
+  "imageCount": "枚",
+  "noImage": "画像なし"
 }

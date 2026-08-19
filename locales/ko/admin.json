@@ -37,7 +37,7 @@
   "categoryPlaceholder": "카테고리 선택",
   "productDesc": "상품 설명",
   "productImages": "상품 이미지 (첫번째 사진이 대표 이미지)",
-  "mainImage": "대표",
+  "mainImage": "대표 사진만",
   "uploading": "업로드중",
   "add": "추가",
   "imagesUploaded": "{count}장 업로드됨",
@@ -361,5 +361,8 @@
   "bulkNoData": "엑셀에 데이터가 없습니다.",
   "bulkProgress": "{done} / {total}개 처리",
   "bulkElapsed": "{seconds}초 경과",
-  "bulkCreatedUpdated": "신규 {created} · 갱신 {updated}"
+  "bulkCreatedUpdated": "신규 {created} · 갱신 {updated}",
+  "allImages": "전체 사진",
+  "imageCount": "장",
+  "noImage": "사진 없음"
 }

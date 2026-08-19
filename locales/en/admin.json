@@ -37,7 +37,7 @@
   "categoryPlaceholder": "Select category",
   "productDesc": "Description",
   "productImages": "Product Images (first image is the main image)",
-  "mainImage": "Main",
+  "mainImage": "Main only",
   "uploading": "Uploading",
   "add": "Add",
   "imagesUploaded": "{count} uploaded",
@@ -361,5 +361,8 @@
   "bulkNoData": "No data found in the file.",
   "bulkProgress": "{done} / {total} processed",
   "bulkElapsed": "{seconds}s elapsed",
-  "bulkCreatedUpdated": "{created} new · {updated} updated"
+  "bulkCreatedUpdated": "{created} new · {updated} updated",
+  "allImages": "All images",
+  "imageCount": "",
+  "noImage": "No image"
 }
