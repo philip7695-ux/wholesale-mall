@@ -33,5 +33,7 @@
   "categories": "Categories",
   "oneSize": "One Size",
   "loadError": "일시적으로 상품을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
-  "goToAdmin": "관리자 페이지"
+  "goToAdmin": "관리자 페이지",
+  "newborn": "뉴본",
+  "ageGroup": "연령대"
 }

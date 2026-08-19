@@ -19,5 +19,7 @@
   "myAccount": "My Account",
   "curatedSelection": "Curated Selection",
   "loadError": "Unable to load products right now. Please try again shortly.",
-  "goToAdmin": "Admin"
+  "goToAdmin": "Admin",
+  "newborn": "Newborn",
+  "ageGroup": "Age"
 }

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { Search } from "lucide-react"
 import { useState } from "react"
 import { translateCategory } from "@/lib/translate"
+import { AGE_GROUPS, AGE_GROUP_KEYS } from "@/lib/age-group"
 
 interface Category {
   id: string
@@ -69,24 +70,19 @@ export function ProductSearch({
         >
           {tc("all")}
         </button>
-        <span className="text-gray-200">|</span>
-        <button
-          onClick={() => router.push(buildUrl({ ageGroup: "BABY" }))}
-          className={`text-xs uppercase tracking-[0.15em] transition-colors ${
-            currentAgeGroup === "BABY" ? "text-[#1A1A1A] font-medium" : "text-gray-400 hover:text-[#1A1A1A]"
-          }`}
-        >
-          {t("baby")}
-        </button>
-        <span className="text-gray-200">|</span>
-        <button
-          onClick={() => router.push(buildUrl({ ageGroup: "KIDS" }))}
-          className={`text-xs uppercase tracking-[0.15em] transition-colors ${
-            currentAgeGroup === "KIDS" ? "text-[#1A1A1A] font-medium" : "text-gray-400 hover:text-[#1A1A1A]"
-          }`}
-        >
-          {t("kids")}
-        </button>
+        {AGE_GROUPS.map((age) => (
+          <span key={age} className="contents">
+            <span className="text-gray-200">|</span>
+            <button
+              onClick={() => router.push(buildUrl({ ageGroup: age }))}
+              className={`text-xs uppercase tracking-[0.15em] transition-colors ${
+                currentAgeGroup === age ? "text-[#1A1A1A] font-medium" : "text-gray-400 hover:text-[#1A1A1A]"
+              }`}
+            >
+              {t(AGE_GROUP_KEYS[age])}
+            </button>
+          </span>
+        ))}
       </div>
 
       {/* Category filter */}
