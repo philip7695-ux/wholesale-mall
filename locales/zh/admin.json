@@ -364,5 +364,12 @@
   "bulkCreatedUpdated": "新增 {created} · 更新 {updated}",
   "allImages": "全部图片",
   "imageCount": "张",
-  "noImage": "无图片"
+  "noImage": "无图片",
+  "seasonSpring": "春季 (SS)",
+  "seasonSummer": "夏季 (SU)",
+  "seasonFall": "秋季 (FW)",
+  "seasonWinter": "冬季 (WI)",
+  "filterAll": "全部",
+  "filterReset": "重置",
+  "filterCount": "{count}个"
 }

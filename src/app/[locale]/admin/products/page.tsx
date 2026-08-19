@@ -13,15 +13,34 @@ import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
 import { getAllExchangeRates } from "@/lib/currency.server"
 import { ProductGrid } from "@/components/admin/product-grid"
 import { ProductImageStrip } from "@/components/admin/product-image-strip"
+import { ProductActiveToggle } from "@/components/admin/product-active-toggle"
+import { ProductFilters } from "@/components/admin/product-filters"
+import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel, codePrefixes } from "@/lib/season"
 
-export default async function AdminProductsPage() {
+export default async function AdminProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; season?: string; category?: string }>
+}) {
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
   const tCat = await getTranslations("categories")
   const locale = await getLocale()
   const rates = await getAllExchangeRates()
+  const { year, season, category } = await searchParams
+
+  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } })
+
+  // 연도·시즌은 상품 코드 접두어로만 알 수 있다(BP + 연도 + 시즌).
+  // 둘 다 비어 있으면 코드 조건 자체를 걸지 않아 코드 없는 상품도 남긴다.
+  const where: Record<string, unknown> = {}
+  if (year || season) {
+    where.OR = codePrefixes(year, season).map((p) => ({ code: { startsWith: p } }))
+  }
+  if (category) where.categoryId = category
 
   const products = await prisma.product.findMany({
+    where,
     include: {
       category: true,
       colors: true,
@@ -51,6 +70,18 @@ export default async function AdminProductsPage() {
       </div>
 
       <ProductBulkUpload />
+
+      <ProductFilters
+        years={YEAR_DIGITS.map((d) => ({ value: d, label: yearLabel(d) }))}
+        seasons={SEASON_DIGITS.map((d) => ({ value: d, label: t(SEASON_KEYS[d]) }))}
+        categories={categories.map((c: any) => ({
+          value: c.id,
+          label: translateCategory(c.slug, tCat, c.name),
+        }))}
+        allLabel={t("filterAll")}
+        resetLabel={t("filterReset")}
+        countLabel={t("filterCount", { count: products.length })}
+      />
 
       {products.length === 0 ? (
         <Card>
@@ -96,6 +127,12 @@ export default async function AdminProductsPage() {
                     </p>
                   </CardHeader>
                   <CardContent className="mt-auto flex gap-2 pt-0">
+                    <ProductActiveToggle
+                      productId={product.id}
+                      isActive={product.isActive}
+                      activeLabel={t("active")}
+                      inactiveLabel={t("inactive")}
+                    />
                     <DeleteProductButton productId={product.id} productName={product.name} />
                   </CardContent>
                 </Card>

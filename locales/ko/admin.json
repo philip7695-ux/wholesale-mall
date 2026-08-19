@@ -364,5 +364,12 @@
   "bulkCreatedUpdated": "신규 {created} · 갱신 {updated}",
   "allImages": "전체 사진",
   "imageCount": "장",
-  "noImage": "사진 없음"
+  "noImage": "사진 없음",
+  "seasonSpring": "봄 (SS)",
+  "seasonSummer": "여름 (SU)",
+  "seasonFall": "가을 (FW)",
+  "seasonWinter": "겨울 (WI)",
+  "filterAll": "전체",
+  "filterReset": "초기화",
+  "filterCount": "{count}개"
 }
