@@ -4,6 +4,7 @@ import { useRouter } from "@/i18n/navigation"
 import { useTranslations } from "next-intl"
 import { translateCategory } from "@/lib/translate"
 import { AGE_GROUPS, AGE_GROUP_KEYS } from "@/lib/age-group"
+import { seasonsNewestFirst } from "@/lib/season"
 
 interface Category {
   id: string
@@ -15,28 +16,77 @@ export function ProductFilterSidebar({
   categories,
   currentCategory,
   currentAgeGroup,
+  currentSeason,
+  availableSeasons,
 }: {
   categories: Category[]
   currentCategory?: string
   currentAgeGroup?: string
+  currentSeason?: string
+  availableSeasons: string[]
 }) {
   const router = useRouter()
   const t = useTranslations("shop")
   const tc = useTranslations("common")
   const tCat = useTranslations("categories")
 
-  function buildUrl(overrides: { category?: string | null; ageGroup?: string | null }) {
+  function buildUrl(overrides: {
+    category?: string | null
+    ageGroup?: string | null
+    season?: string | null
+  }) {
     const params = new URLSearchParams()
     const cat = overrides.category !== undefined ? overrides.category : currentCategory
     const age = overrides.ageGroup !== undefined ? overrides.ageGroup : currentAgeGroup
+    const sea = overrides.season !== undefined ? overrides.season : currentSeason
     if (cat) params.set("category", cat)
     if (age) params.set("ageGroup", age)
+    if (sea) params.set("season", sea)
     const qs = params.toString()
     return `/products${qs ? `?${qs}` : ""}`
   }
 
   return (
     <aside className="w-52 flex-shrink-0 space-y-8">
+      {/* Season */}
+      {availableSeasons.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("season")}</h3>
+          <ul className="space-y-2">
+            <li>
+              <button
+                onClick={() => router.push(buildUrl({ season: null }))}
+                className={`text-sm transition-colors ${
+                  !currentSeason
+                    ? "text-[#1A1A1A] font-medium"
+                    : "text-gray-500 hover:text-[#1A1A1A]"
+                }`}
+              >
+                {tc("all")}
+              </button>
+            </li>
+            {seasonsNewestFirst()
+              .filter((s) => availableSeasons.includes(s.key))
+              .map((s) => (
+                <li key={s.key}>
+                  <button
+                    onClick={() =>
+                      router.push(buildUrl({ season: currentSeason === s.key ? null : s.key }))
+                    }
+                    className={`text-sm transition-colors ${
+                      currentSeason === s.key
+                        ? "text-[#1A1A1A] font-medium"
+                        : "text-gray-500 hover:text-[#1A1A1A]"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+
       {/* Age group */}
       <div>
         <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("ageGroup")}</h3>

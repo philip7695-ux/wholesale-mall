@@ -1,40 +1,30 @@
 "use client"
 
-import { useSession } from "next-auth/react"
-import { GRADE_DISCOUNT } from "@/lib/grade"
 import { formatPriceCross } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
 import { useLocale } from "next-intl"
 
-interface ProductPriceProps {
-  minPrice: number
+/**
+ * 바이어에게 보이는 가격.
+ *
+ * 도매 사이트이므로 정상가(택가)는 보여주지 않는다. 이미 할인이 적용된
+ * 도매가만 받는다.
+ *
+ * 할인 계산은 서버에서 한다. 예전에는 여기서 등급 할인을 다시 계산했는데,
+ * 화면은 코드에 박힌 상수를, 주문은 DB 설정을 보고 있어서 관리자가 값을
+ * 바꾸면 보이는 가격과 청구 금액이 갈라질 수 있었다.
+ */
+export function ProductPrice({
+  price,
+  priceCurrency,
+}: {
+  price: number
   priceCurrency: string
-}
-
-export function ProductPrice({ minPrice, priceCurrency }: ProductPriceProps) {
-  const { data: session } = useSession()
+}) {
   const locale = useLocale()
   const { rates } = useCurrency()
 
-  const buyerGrade = session?.user?.buyerGrade || "BRONZE"
-  const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
+  if (price <= 0) return <>-</>
 
-  if (minPrice <= 0) return <>-</>
-
-  const fp = (amount: number) => formatPriceCross(amount, priceCurrency, locale, rates)
-
-  if (discountRate > 0) {
-    return (
-      <>
-        <span className="text-muted-foreground font-normal line-through text-xs">
-          {fp(minPrice)}
-        </span>{" "}
-        <span className="text-primary">
-          {fp(Math.round(minPrice * (1 - discountRate) * 100) / 100)}
-        </span>
-      </>
-    )
-  }
-
-  return <>{fp(minPrice)}</>
+  return <>{formatPriceCross(price, priceCurrency, locale, rates)}</>
 }

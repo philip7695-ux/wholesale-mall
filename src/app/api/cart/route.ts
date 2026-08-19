@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { withDbRetry } from "@/lib/db-retry"
 import { apiRoute } from "@/lib/api-route"
+import { getSeasonRates } from "@/lib/pricing.server"
+import { getGradeDiscount } from "@/lib/grade.server"
+import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 
 export async function GET() {
   const session = await auth()
@@ -26,7 +29,25 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
       }),
     )
-    return NextResponse.json(items)
+    // 상품에 저장된 값은 정상가다. 화면이 다시 계산하면 주문 금액과
+    // 어긋나므로, 여기서 도매가로 바꿔 내려준다.
+    const [seasonRates, gradeRate] = await Promise.all([
+      getSeasonRates(),
+      getGradeDiscount(session.user.buyerGrade || "BRONZE").catch(() => 0),
+    ])
+    const priced = items.map((item: any) => ({
+      ...item,
+      variant: {
+        ...item.variant,
+        retailPrice: item.variant.price,
+        price: buyerPrice(
+          item.variant.price,
+          seasonRateFor(item.variant.product.code, seasonRates),
+          gradeRate,
+        ),
+      },
+    }))
+    return NextResponse.json(priced)
   } catch (err: any) {
     // 예외를 그대로 두면 본문 없는 500 이 나가고 클라이언트의 res.json() 이
     // "Unexpected end of JSON input" 으로 터진다. 항상 JSON 으로 응답한다.

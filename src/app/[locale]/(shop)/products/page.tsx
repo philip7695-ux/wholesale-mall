@@ -8,14 +8,19 @@ import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { isAgeGroup } from "@/lib/age-group"
+import { codePrefixes, seasonsNewestFirst } from "@/lib/season"
 import { ProductPrice } from "@/components/shop/product-price"
 import { ShopProductGrid } from "@/components/shop/product-grid"
 import { paginationRange, ELLIPSIS } from "@/lib/pagination"
+import { auth } from "@/lib/auth"
+import { getSeasonRates } from "@/lib/pricing.server"
+import { getGradeDiscount } from "@/lib/grade.server"
+import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string }>
+  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string; season?: string }>
 }) {
   const t = await getTranslations("shop")
   const tCat = await getTranslations("categories")
@@ -24,6 +29,7 @@ export default async function ProductsPage({
   const category = params.category
   const search = params.search
   const ageGroup = params.ageGroup
+  const season = params.season   // 'YS' 두 자리 (예: 63 = 26 FW)
   const page = parseInt(params.page || "1")
   const limit = 20
 
@@ -36,10 +42,41 @@ export default async function ProductsPage({
   if (category) where.category = { slug: category }
   // 뉴본이 빠져 있어 84개 상품이 필터로 걸러지지 않았다
   if (isAgeGroup(ageGroup)) where.ageGroup = ageGroup
-  if (search) where.OR = [
-    { name: { contains: search, mode: "insensitive" } },
-    { code: { contains: search, mode: "insensitive" } },
-  ]
+  // 시즌과 검색은 둘 다 OR 묶음이라 where.OR 에 각각 넣으면 뒤엣것이
+  // 앞엣것을 덮는다. AND 로 묶어 둘 다 걸리게 한다.
+  const and: Record<string, unknown>[] = []
+  // 시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌)
+  if (season && /^[3-6][1-4]$/.test(season)) {
+    and.push({ OR: codePrefixes(season[0], season[1]).map((p) => ({ code: { startsWith: p } })) })
+  }
+  if (search) {
+    and.push({
+      OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { code: { contains: search, mode: "insensitive" } },
+      ],
+    })
+  }
+  if (and.length) where.AND = and
+
+  // 상품이 없는 시즌은 필터에 띄우지 않는다.
+  // 코드를 전부 끌어오면 4,000행이 넘으므로 DB 에서 접두어만 집계한다.
+  const seasonRows = await prisma
+    .$queryRaw<{ key: string }[]>`
+      select distinct substring(code from 3 for 2) as key
+      from mall."Product"
+      where "isActive" = true and code is not null`
+    .catch(() => [] as { key: string }[])
+  const availableSeasons = seasonRows
+    .map((r) => r.key)
+    .filter((k) => /^[3-6][1-4]$/.test(k))
+
+  // 가격은 서버에서 계산한다. 화면과 주문이 서로 다른 값을 쓰지 않게 하려는 것이다.
+  const session = await auth().catch(() => null)
+  const [seasonRates, gradeRate] = await Promise.all([
+    getSeasonRates(),
+    getGradeDiscount(session?.user?.buyerGrade || "BRONZE").catch(() => 0),
+  ])
 
   let products: any[] = [], categories: any[] = [], total = 0
   let loadError = false
@@ -52,7 +89,9 @@ export default async function ProductsPage({
           colors: { orderBy: { sortOrder: "asc" } },
           variants: true,
         },
-        orderBy: { createdAt: "desc" },
+        // 품절을 뒤로 보낸다. 카탈로그라 품절도 보여주지만,
+        // 4,554개 중 2,139개가 품절이라 앞에 섞이면 목록이 쓸모없어진다.
+        orderBy: [{ inStock: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -88,6 +127,8 @@ export default async function ProductsPage({
             categories={categories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
             currentCategory={category}
             currentAgeGroup={ageGroup}
+            currentSeason={season}
+            availableSeasons={availableSeasons}
           />
         </div>
 
@@ -109,8 +150,11 @@ export default async function ProductsPage({
             <>
               <ShopProductGrid>
                 {products.map((product: any) => {
-                  const minPrice = product.variants.length > 0
+                  const minRetail = product.variants.length > 0
                     ? Math.min(...product.variants.map((v: any) => v.price))
+                    : 0
+                  const price = minRetail > 0
+                    ? buyerPrice(minRetail, seasonRateFor(product.code, seasonRates), gradeRate)
                     : 0
                   return (
                     <Link key={product.id} href={`/products/${product.id}`} className="group block">
@@ -138,7 +182,7 @@ export default async function ProductsPage({
                           {product.name}
                         </h3>
                         <p className="text-sm text-[#1A1A1A] pt-1">
-                          <ProductPrice minPrice={minPrice} priceCurrency={product.priceCurrency} />
+                          <ProductPrice price={price} priceCurrency={product.priceCurrency} />
                         </p>
                       </div>
                     </Link>
@@ -148,10 +192,13 @@ export default async function ProductsPage({
 
               {/* Pagination */}
               {totalPages > 1 && (() => {
+                // 페이지를 넘길 때 걸어둔 필터가 풀리면 안 된다
                 const pageHref = (p: number) =>
                   `/products?${new URLSearchParams({
                     ...(category ? { category } : {}),
                     ...(search ? { search } : {}),
+                    ...(ageGroup ? { ageGroup } : {}),
+                    ...(season ? { season } : {}),
                     page: p.toString(),
                   })}`
                 const arrow =

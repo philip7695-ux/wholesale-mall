@@ -94,7 +94,7 @@
   "downloadSelected": "選択{count}件Excelダウンロード",
   "downloadAll": "全件Excelダウンロード",
   "selectAll": "全選択",
-  "productCount": "個商品",
+  "productCount": "商品",
   "downloadFail": "ダウンロード失敗",
   "orderListFilename": "注文一覧.xlsx",
   "excelDownloaded": "Excelファイルがダウンロードされました。",
@@ -385,5 +385,12 @@
   "uploadFailed": "アップロードできませんでした。",
   "tradeDomestic": "国内",
   "tradeExport": "輸出",
-  "currencyAuto": "言語に従う"
+  "currencyAuto": "言語に従う",
+  "pricingSettings": "価格設定",
+  "pricingDesc": "シーズンごとの卸割引率を設定します。商品には定価が入っており、バイヤーには割引後の卸価格のみ表示されます。",
+  "seasonRate": "シーズン割引",
+  "seasonRateRange": "割引率は0~95%の範囲で入力してください。",
+  "seasonRateHint": "定価{sample}を基準とした等級別の最終単価です。等級割引は定価基準で加算されます。",
+  "apply": "適用",
+  "season": "シーズン"
 }
