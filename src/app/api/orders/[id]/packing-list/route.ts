@@ -2,8 +2,9 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET(
+async function GET_impl(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -159,3 +160,5 @@ export async function GET(
     },
   })
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })

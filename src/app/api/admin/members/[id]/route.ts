@@ -2,8 +2,9 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET(
+async function GET_impl(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -35,7 +36,7 @@ export async function GET(
   return NextResponse.json(user)
 }
 
-export async function PUT(
+async function PUT_impl(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -79,7 +80,7 @@ export async function PUT(
   return NextResponse.json(user)
 }
 
-export async function DELETE(
+async function DELETE_impl(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -123,3 +124,7 @@ export async function DELETE(
 
   return NextResponse.json({ message: "회원이 삭제되었습니다." })
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })
+export const PUT = apiRoute(PUT_impl, { retry: false })
+export const DELETE = apiRoute(DELETE_impl, { retry: false })
