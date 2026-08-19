@@ -10,6 +10,7 @@ import {
   ClipboardList,
   User,
   LogOut,
+  LayoutDashboard,
 } from "lucide-react"
 import { LanguageSelector } from "@/components/language-selector"
 
@@ -55,6 +56,16 @@ export function ShopSidebar() {
         })}
       </nav>
       <div className="border-t border-gray-100 px-3 py-4 space-y-2">
+        {/* 관리자만 보이는 진입점. 어드민 사이드바의 '쇼핑몰로 이동'과 짝을 이룬다 */}
+        {session?.user?.role === "ADMIN" && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 px-3 py-2 text-sm font-light tracking-wide text-gray-400 transition-colors hover:bg-gray-50/50 hover:text-[#1A1A1A]"
+          >
+            <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+            {t("goToAdmin")}
+          </Link>
+        )}
         {session?.user?.name && (
           <span className="block px-3 text-xs text-gray-400 font-light">
             {t("welcome", { name: session.user.name })}

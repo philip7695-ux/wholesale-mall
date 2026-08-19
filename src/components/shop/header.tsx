@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { LanguageSelector } from "@/components/language-selector"
 import { useState } from "react"
-import { ShoppingCart, Package, ClipboardList, User } from "lucide-react"
+import { ShoppingCart, Package, ClipboardList, User, LayoutDashboard } from "lucide-react"
 
 export function ShopHeader() {
   const { data: session } = useSession()
@@ -53,6 +53,17 @@ export function ShopHeader() {
                   )
                 })}
               </nav>
+              {/* 관리자만 보이는 진입점. 데스크톱 사이드바와 동일하게 노출한다 */}
+              {session?.user?.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="mt-4 flex items-center gap-3 rounded-none border-b border-gray-100 px-2 py-3.5 text-sm font-light tracking-wide hover:bg-gray-50"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-gray-400" />
+                  {t("goToAdmin")}
+                </Link>
+              )}
               {session && (
                 <div className="mt-6">
                   <button
