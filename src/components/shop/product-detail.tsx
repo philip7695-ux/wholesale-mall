@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "@/i18n/navigation"
 import { useTranslations, useLocale } from "next-intl"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle } from "lucide-react"
+import { ShoppingCart, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, Plus, Minus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -72,28 +72,92 @@ export function ProductDetail({ product }: { product: Product }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
   const [showCartDialog, setShowCartDialog] = useState(false)
-  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({ display: "none" })
+  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({ opacity: 0 })
+  const [zoomActive, setZoomActive] = useState(false)
+  const [hint, setHint] = useState<{ x: number; y: number } | null>(null)
   const imgContainerRef = useRef<HTMLDivElement>(null)
 
-  const ZOOM_SCALE = 2.5
+  const ZOOM_SCALE = 2.2
+
+  // 이미지는 object-contain 이라 컨테이너를 꽉 채우지 않는다.
+  // 실제로 그려진 영역을 기준으로 해야 확대 위치가 커서와 맞는다.
+  const paintedRect = useCallback((rect: DOMRect) => {
+    const img = imgContainerRef.current?.querySelector("img")
+    const nw = img?.naturalWidth ?? 0
+    const nh = img?.naturalHeight ?? 0
+    if (!nw || !nh) return { left: 0, top: 0, width: rect.width, height: rect.height }
+    const scale = Math.min(rect.width / nw, rect.height / nh)
+    const width = nw * scale
+    const height = nh * scale
+    return { left: (rect.width - width) / 2, top: (rect.height - height) / 2, width, height }
+  }, [])
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const container = imgContainerRef.current
     if (!container || !mainImage) return
     const rect = container.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
+    const p = paintedRect(rect)
+    const px = e.clientX - rect.left - p.left
+    const py = e.clientY - rect.top - p.top
+    const inside = px >= 0 && py >= 0 && px <= p.width && py <= p.height
+
+    // 이미지 바깥(여백)에서는 아무것도 하지 않는다
+    if (!inside) {
+      setHint(null)
+      if (zoomActive) setZoomStyle((prev) => ({ ...prev, opacity: 0 }))
+      return
+    }
+
+    setHint({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+
+    if (!zoomActive) return
     setZoomStyle({
-      display: "block",
+      opacity: 1,
       backgroundImage: `url(${mainImage})`,
-      backgroundSize: `${rect.width * ZOOM_SCALE}px ${rect.height * ZOOM_SCALE}px`,
-      backgroundPosition: `${x}% ${y}%`,
+      backgroundSize: `${p.width * ZOOM_SCALE}px ${p.height * ZOOM_SCALE}px`,
+      backgroundPosition: `${(px / p.width) * 100}% ${(py / p.height) * 100}%`,
+      backgroundRepeat: "no-repeat",
+      backgroundColor: "#fff",
     })
-  }, [mainImage])
+  }, [mainImage, zoomActive, paintedRect])
 
   const handleMouseLeave = useCallback(() => {
-    setZoomStyle({ display: "none" })
+    setHint(null)
+    setZoomActive(false)
+    setZoomStyle({ opacity: 0 })
   }, [])
+
+  // 클릭할 때만 확대한다. 커서가 지나가기만 해도 확대되면 산만하다.
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const container = imgContainerRef.current
+    if (!container || !mainImage) return
+    const rect = container.getBoundingClientRect()
+    const p = paintedRect(rect)
+    const px = e.clientX - rect.left - p.left
+    const py = e.clientY - rect.top - p.top
+    if (px < 0 || py < 0 || px > p.width || py > p.height) return
+
+    if (zoomActive) {
+      setZoomActive(false)
+      setZoomStyle({ opacity: 0 })
+      return
+    }
+    setZoomActive(true)
+    setZoomStyle({
+      opacity: 1,
+      backgroundImage: `url(${mainImage})`,
+      backgroundSize: `${p.width * ZOOM_SCALE}px ${p.height * ZOOM_SCALE}px`,
+      backgroundPosition: `${(px / p.width) * 100}% ${(py / p.height) * 100}%`,
+      backgroundRepeat: "no-repeat",
+      backgroundColor: "#fff",
+    })
+  }, [mainImage, zoomActive, paintedRect])
+
+  // 다른 이미지로 바꾸면 확대를 해제한다
+  useEffect(() => {
+    setZoomActive(false)
+    setZoomStyle({ opacity: 0 })
+  }, [mainImage])
 
   const minPrice = product.variants.length > 0
     ? Math.round(Math.min(...product.variants.map((v) => v.price)) * (1 - discountRate) * 100) / 100
@@ -217,9 +281,12 @@ export function ProductDetail({ product }: { product: Product }) {
         <div className="space-y-3">
           <div
             ref={imgContainerRef}
-            className="relative aspect-square overflow-hidden bg-white cursor-crosshair"
+            className={`relative aspect-square overflow-hidden bg-white ${
+              zoomActive ? "cursor-zoom-out" : "cursor-zoom-in"
+            }`}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
+            onClick={handleImageClick}
           >
             {mainImage ? (
               <img
@@ -234,9 +301,22 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
             {/* hover zoom overlay */}
             <div
-              className="absolute inset-0 pointer-events-none cursor-crosshair"
+              className="absolute inset-0 pointer-events-none transition-opacity duration-200 ease-out"
               style={zoomStyle}
             />
+            {/* 커서를 따라다니는 확대 안내. 클릭해야 확대된다 */}
+            {hint && (
+              <div
+                className="pointer-events-none absolute z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 shadow-md ring-1 ring-black/5 backdrop-blur-sm transition-opacity duration-150"
+                style={{ left: hint.x, top: hint.y, transform: "translate(-50%, -50%)" }}
+              >
+                {zoomActive ? (
+                  <Minus className="h-4 w-4 text-[#1A1A1A]" strokeWidth={1.5} />
+                ) : (
+                  <Plus className="h-4 w-4 text-[#1A1A1A]" strokeWidth={1.5} />
+                )}
+              </div>
+            )}
             {allImages.length > 1 && (
               <>
                 <button
