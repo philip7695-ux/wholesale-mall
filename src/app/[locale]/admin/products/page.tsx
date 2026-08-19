@@ -20,24 +20,33 @@ import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel, codePrefixes } from
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; season?: string; category?: string }>
+  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string }>
 }) {
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
   const tCat = await getTranslations("categories")
   const locale = await getLocale()
   const rates = await getAllExchangeRates()
-  const { year, season, category } = await searchParams
+  const { year, season, category, brand } = await searchParams
 
-  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } })
+  const [categories, brandRows] = await Promise.all([
+    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.product.findMany({
+      where: { brand: { not: null } },
+      distinct: ["brand"],
+      select: { brand: true },
+      orderBy: { brand: "asc" },
+    }),
+  ])
 
-  // 연도·시즌은 상품 코드 접두어로만 알 수 있다(BP + 연도 + 시즌).
+  // 연도·시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌).
   // 둘 다 비어 있으면 코드 조건 자체를 걸지 않아 코드 없는 상품도 남긴다.
   const where: Record<string, unknown> = {}
   if (year || season) {
     where.OR = codePrefixes(year, season).map((p) => ({ code: { startsWith: p } }))
   }
   if (category) where.categoryId = category
+  if (brand) where.brand = brand
 
   const products = await prisma.product.findMany({
     where,
@@ -72,6 +81,7 @@ export default async function AdminProductsPage({
       <ProductBulkUpload />
 
       <ProductFilters
+        brands={brandRows.map((b: any) => ({ value: b.brand, label: b.brand }))}
         years={YEAR_DIGITS.map((d) => ({ value: d, label: yearLabel(d) }))}
         seasons={SEASON_DIGITS.map((d) => ({ value: d, label: t(SEASON_KEYS[d]) }))}
         categories={categories.map((c: any) => ({
