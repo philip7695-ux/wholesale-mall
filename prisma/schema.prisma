@@ -53,6 +53,10 @@ model Product {
   images        String[]
   code          String?          @unique
   material      String?
+  // 원본 상품자료에서 함께 들어오는 정보. 코드만으로는 알 수 없다.
+  brand         String?          // BEBEDEPINO / Bumkins 등 라인 구분
+  origin        String?          // 원산지
+  majorCategory String?          // 대분류 (INNER/OUTER/BOTTOM ...)
   moq           Int              @default(0)
   colorMoq      Int              @default(0)
   priceCurrency String           @default("KRW")

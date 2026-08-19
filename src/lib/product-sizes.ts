@@ -1,11 +1,12 @@
 export const ADULT_SIZES: string[] = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "FREE"]
-export const KIDS_NUM_SIZES: string[] = ["80", "85", "90", "95", "100", "110", "120", "130", "140"]
-export const KIDS_LETTER_SIZES: string[] = ["F", "S", "M", "L"]
+export const KIDS_NUM_SIZES: string[] = ["80", "85", "90", "95", "100", "110", "120", "130", "140", "150"]
+// XL/XXL 은 BU(Bumkins) 이너웨어에서 실제로 쓰인다. 빼면 해당 사이즈를 주문할 수 없다.
+export const KIDS_LETTER_SIZES: string[] = ["F", "S", "M", "L", "XL", "XXL"]
 export const KIDS_SIZES: string[] = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
 export const ALL_SIZES: string[] = [...ADULT_SIZES, ...KIDS_SIZES]
 
 const BABY_NUM_SIZES = new Set(["80", "85", "90", "95", "100"])
-const KIDS_ONLY_NUM_SIZES = new Set(["110", "120", "130", "140"])
+const KIDS_ONLY_NUM_SIZES = new Set(["110", "120", "130", "140", "150"])
 
 export type AgeGroupValue = "NEWBORN" | "BABY" | "KIDS"
 

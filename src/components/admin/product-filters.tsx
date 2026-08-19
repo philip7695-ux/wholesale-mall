@@ -12,6 +12,7 @@ type Option = { value: string; label: string }
  * 서버에서 걸러낸다. 상품이 수천 개로 늘어도 목록을 다 내려받지 않는다.
  */
 export function ProductFilters({
+  brands,
   years,
   seasons,
   categories,
@@ -19,6 +20,7 @@ export function ProductFilters({
   resetLabel,
   countLabel,
 }: {
+  brands: Option[]
   years: Option[]
   seasons: Option[]
   categories: Option[]
@@ -39,6 +41,7 @@ export function ProductFilters({
   }
 
   const groups: { key: string; options: Option[] }[] = [
+    { key: "brand", options: brands },
     { key: "year", options: years },
     { key: "season", options: seasons },
     { key: "category", options: categories },
