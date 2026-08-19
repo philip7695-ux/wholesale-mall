@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { MemberApprovalButton } from "@/components/admin/member-approval-button"
 import { MemberGradeSelect } from "@/components/admin/member-grade-select"
 import { MemberRoleSelect } from "@/components/admin/member-role-select"
+import { MemberTradeSelect } from "@/components/admin/member-trade-select"
 import { formatDate, formatPrice } from "@/lib/utils"
 import { getExchangeRate } from "@/lib/currency.server"
 import { auth } from "@/lib/auth"
@@ -57,6 +58,8 @@ export default async function AdminMembersPage() {
       businessNumber: true,
       approvalStatus: true,
       buyerGrade: true,
+      tradeType: true,
+      currency: true,
       createdAt: true,
       _count: { select: { orders: true } },
       orders: {
@@ -133,6 +136,11 @@ export default async function AdminMembersPage() {
                           <MemberGradeSelect
                             memberId={member.id}
                             currentGrade={member.buyerGrade}
+                          />
+                          <MemberTradeSelect
+                            memberId={member.id}
+                            tradeType={member.tradeType}
+                            currency={member.currency}
                           />
                           <MemberApprovalButton
                             memberId={member.id}

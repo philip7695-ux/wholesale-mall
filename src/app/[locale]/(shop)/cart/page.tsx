@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trash2, Pencil, AlertTriangle } from "lucide-react"
 import { formatPriceCross } from "@/lib/utils"
-import { convertCurrency, getCurrencyForLocale } from "@/lib/currency"
+import { convertCurrency } from "@/lib/currency"
+import { resolveTradeTerms, applyVat } from "@/lib/trade"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSession } from "next-auth/react"
@@ -177,13 +178,19 @@ export default function CartPage() {
   }
 
   const groups = groupByProduct(items)
-  const customerCurrency = getCurrencyForLocale(locale)
+  // 통화·부가세는 회원의 거래 유형이 정한다(언어와 무관)
+  const { currency: customerCurrency, vatRate } = resolveTradeTerms(
+    { tradeType: session?.user?.tradeType as any, currency: session?.user?.currency },
+    locale,
+  )
   const fp = (amount: number, fromCurrency: string) => formatPriceCross(amount, fromCurrency, locale, rates)
   // 총액은 고객 통화 기준으로 환산 합산
-  const totalAmount = items.reduce(
+  const itemsTotal = items.reduce(
     (sum, item) => sum + convertCurrency(item.variant.price * item.quantity, item.variant.product.priceCurrency, customerCurrency, rates),
     0,
   )
+  // 도매가는 부가세 별도다. 국내 거래는 여기에 10% 가 더해져 청구된다.
+  const { supplyAmount, vatAmount, totalAmount } = applyVat(itemsTotal, vatRate)
   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0)
 
   // MOQ 검증 (상품 그룹별)
@@ -399,8 +406,15 @@ export default function CartPage() {
             <CardContent className="space-y-3 py-4">
               <div className="flex justify-between text-sm">
                 <span>{t("productSummary", { count: groups.length, qty: totalQty })}</span>
-                <span>{fp(totalAmount, customerCurrency)}</span>
+                <span>{fp(supplyAmount, customerCurrency)}</span>
               </div>
+              {/* 도매가가 부가세 별도이므로 국내 거래는 세액을 따로 보여준다 */}
+              {vatRate > 0 && (
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>{t("vat", { rate: Math.round(vatRate * 100) })}</span>
+                  <span>{fp(vatAmount, customerCurrency)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t pt-3 text-lg font-bold">
                 <span>{t("totalPayment")}</span>
                 <span className="text-primary">{fp(totalAmount, customerCurrency)}</span>

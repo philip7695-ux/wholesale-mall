@@ -17,5 +17,6 @@
   "moqWarning": "有商品未达到最低订购量",
   "moqProductWarning": "{productName}: 最少需要{required}件 (当前{actual}件)",
   "moqColorWarning": "{productName} - {colorName}: 最少需要{required}件 (当前{actual}件)",
-  "approvalRequired": "会员审核通过后方可下单。"
+  "approvalRequired": "会员审核通过后方可下单。",
+  "vat": "增值税 ({rate}%)"
 }

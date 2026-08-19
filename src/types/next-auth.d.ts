@@ -5,6 +5,8 @@ declare module "next-auth" {
     role?: string
     approvalStatus?: string
     buyerGrade?: string
+    tradeType?: string
+    currency?: string | null
   }
 
   interface Session {
@@ -15,6 +17,8 @@ declare module "next-auth" {
       role: string
       approvalStatus: string
       buyerGrade: string
+      tradeType: string
+      currency: string | null
     }
   }
 }
@@ -24,5 +28,7 @@ declare module "next-auth/jwt" {
     role?: string
     approvalStatus?: string
     buyerGrade?: string
+    tradeType?: string
+    currency?: string | null
   }
 }

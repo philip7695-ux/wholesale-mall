@@ -17,5 +17,6 @@
   "moqWarning": "Some products do not meet MOQ",
   "moqProductWarning": "{productName}: min. {required} pcs required (current {actual} pcs)",
   "moqColorWarning": "{productName} - {colorName}: min. {required} pcs required (current {actual} pcs)",
-  "approvalRequired": "Orders are available after membership approval."
+  "approvalRequired": "Orders are available after membership approval.",
+  "vat": "VAT ({rate}%)"
 }

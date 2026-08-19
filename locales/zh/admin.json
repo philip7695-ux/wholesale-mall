@@ -382,5 +382,8 @@
   "useDefaultImage": "使用默认图片",
   "saved": "已保存。",
   "saveFailed": "保存失败。",
-  "uploadFailed": "上传失败。"
+  "uploadFailed": "上传失败。",
+  "tradeDomestic": "国内",
+  "tradeExport": "出口",
+  "currencyAuto": "按语言"
 }

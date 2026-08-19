@@ -382,5 +382,8 @@
   "useDefaultImage": "기본 이미지로",
   "saved": "저장했습니다.",
   "saveFailed": "저장하지 못했습니다.",
-  "uploadFailed": "업로드하지 못했습니다."
+  "uploadFailed": "업로드하지 못했습니다.",
+  "tradeDomestic": "국내",
+  "tradeExport": "수출",
+  "currencyAuto": "언어 기본"
 }

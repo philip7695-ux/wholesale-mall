@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateOrderNumber } from "@/lib/utils"
 import { getExchangeRate, getAllExchangeRates } from "@/lib/currency.server"
-import { convertCurrency, getCurrencyForLocale } from "@/lib/currency"
+import { convertCurrency } from "@/lib/currency"
+import { resolveTradeTerms, applyVat } from "@/lib/trade"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { checkMoq } from "@/lib/moq"
 import { notifyAdminNewOrder } from "@/lib/email"
@@ -50,9 +51,17 @@ export async function POST(request: Request) {
       await request.json()
 
     // 통화/환율 스냅샷
-    const { currency, rate: exchangeRateValue } = await getExchangeRate(locale || "ko")
     const allRates = await getAllExchangeRates()
-    const customerCurrency = getCurrencyForLocale(locale || "ko")
+
+    // 통화와 부가세는 접속 언어가 아니라 회원의 거래 유형이 정한다.
+    // 국내 거래(예: 한국 물류회사가 대리 결제)는 영어로 봐도 원화·부가세 포함이다.
+    const tradeUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tradeType: true, currency: true },
+    })
+    const { currency: customerCurrency, vatRate } = resolveTradeTerms(tradeUser, locale || "ko")
+    const currency = customerCurrency
+    const exchangeRateValue = customerCurrency === "KRW" ? 1 : (allRates[customerCurrency] || 1)
 
     // 환율 가드: 고객 통화가 KRW가 아닌데 유효한 환율이 없으면 가격이 붕괴되므로 주문 거부
     if (customerCurrency !== "KRW" && !(allRates[customerCurrency] > 0)) {
@@ -156,9 +165,9 @@ export async function POST(request: Request) {
       },
       0,
     )
-    const totalAmount = gradeDiscount > 0
-      ? Math.round(itemsTotal * (1 - gradeDiscount) * 100) / 100
-      : Math.round(itemsTotal * 100) / 100
+    // 도매가는 부가세 별도다. 국내 거래면 공급가액에 10% 를 더해 청구한다.
+    const discounted = gradeDiscount > 0 ? itemsTotal * (1 - gradeDiscount) : itemsTotal
+    const { supplyAmount, vatAmount, totalAmount } = applyVat(discounted, vatRate)
 
     const orderItemsData = cartItems.map((item: any) => {
       const priceCurrency = item.variant.product.priceCurrency || "KRW"
@@ -202,6 +211,9 @@ export async function POST(request: Request) {
                 userId: session.user.id,
                 status: "ORDER_PLACED",
                 totalAmount,
+                supplyAmount,
+                vatAmount,
+                vatRate,
                 gradeDiscount,
                 currency,
                 exchangeRate: exchangeRateValue,
