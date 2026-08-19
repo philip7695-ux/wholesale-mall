@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { ALL_SIZES } from "@/lib/product-sizes"
+import { apiRoute } from "@/lib/api-route"
 
 // GET: 재고 현황 엑셀 다운로드
-export async function GET() {
+async function GET_impl() {
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -220,3 +221,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "재고 업데이트 처리 중 오류가 발생했습니다." }, { status: 500 })
   }
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })

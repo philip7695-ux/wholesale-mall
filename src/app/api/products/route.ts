@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { determineAgeGroup } from "@/lib/product-sizes"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET(request: NextRequest) {
+async function GET_impl(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const category = searchParams.get("category")
   const search = searchParams.get("search")
@@ -128,3 +129,5 @@ export async function POST(request: Request) {
     )
   }
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })
