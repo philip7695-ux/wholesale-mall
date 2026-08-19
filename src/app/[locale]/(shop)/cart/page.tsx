@@ -107,6 +107,7 @@ export default function CartPage() {
   const router = useRouter()
   const t = useTranslations("cart")
   const tc = useTranslations("common")
+  const tsh = useTranslations("shop")
   const locale = useLocale()
   const { rates } = useCurrency()
   const { data: session } = useSession()
@@ -115,10 +116,21 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
 
+  const [loadError, setLoadError] = useState(false)
+
   useEffect(() => {
+    // 서버가 500 등으로 본문 없이 응답하면 res.json() 이 예외를 던진다.
+    // 상태를 먼저 확인하고, 파싱 실패도 조용히 처리한다.
     fetch("/api/cart")
-      .then((res) => res.json())
-      .then(setItems)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`cart ${res.status}`)
+        return res.json()
+      })
+      .then((data) => setItems(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("[cart] load failed:", err)
+        setLoadError(true)
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -203,6 +215,19 @@ export default function CartPage() {
 
   if (loading) {
     return <div className="py-10 text-center text-muted-foreground">{tc("loading")}</div>
+  }
+
+  // 빈 장바구니와 불러오기 실패는 다르다. 실패를 "비었음"으로 보여주면
+  // 담아둔 상품이 사라진 것처럼 오해하게 된다.
+  if (loadError) {
+    return (
+      <div className="py-16 text-center space-y-4">
+        <p className="text-muted-foreground">{tsh("loadError")}</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          {tc("retry")}
+        </Button>
+      </div>
+    )
   }
 
   return (

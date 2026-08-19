@@ -4,7 +4,7 @@ import { uploadImage } from "@/lib/storage"
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
