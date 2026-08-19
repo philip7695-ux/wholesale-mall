@@ -3,8 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notifyAdminPaymentSubmitted, notifyCustomerPaymentConfirmed } from "@/lib/email"
 import { getAdminNotificationEmail } from "@/lib/payment-setting.server"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET(
+async function GET_impl(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -120,7 +121,7 @@ export async function POST(
   return NextResponse.json(confirmation)
 }
 
-export async function PUT(
+async function PUT_impl(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -189,3 +190,6 @@ export async function PUT(
 
   return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })
+export const PUT = apiRoute(PUT_impl, { retry: false })

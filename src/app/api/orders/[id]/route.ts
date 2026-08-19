@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
 import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition } from "@/lib/order-status"
 import { notifyCustomerShipped } from "@/lib/email"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET(
+async function GET_impl(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -41,7 +42,7 @@ export async function GET(
   return NextResponse.json(order)
 }
 
-export async function DELETE(
+async function DELETE_impl(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -146,7 +147,7 @@ export async function PATCH(
 }
 
 // 관리자용: 상태/결제상태 변경
-export async function PUT(
+async function PUT_impl(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -234,3 +235,7 @@ export async function PUT(
 
   return NextResponse.json({ ...order, promotedGrade })
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })
+export const DELETE = apiRoute(DELETE_impl, { retry: false })
+export const PUT = apiRoute(PUT_impl, { retry: false })

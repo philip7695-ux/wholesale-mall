@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { apiRoute } from "@/lib/api-route"
 
 // 주문 상품을 장바구니로 복원하고, 주문을 취소
-export async function POST(
+async function POST_impl(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -72,3 +73,5 @@ export async function POST(
 
   return NextResponse.json({ message: "주문이 장바구니로 복원되었습니다." })
 }
+
+export const POST = apiRoute(POST_impl, { retry: false })
