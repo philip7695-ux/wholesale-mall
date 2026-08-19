@@ -15,6 +15,7 @@ import {
   Crown,
   ExternalLink,
   LogOut,
+  ImageIcon,
 } from "lucide-react"
 
 export function AdminSidebar() {
@@ -31,6 +32,7 @@ export function AdminSidebar() {
     { href: "/admin/settings/exchange-rates", label: t("exchangeRates"), icon: ArrowLeftRight },
     { href: "/admin/settings/grades", label: t("gradeSettings"), icon: Crown },
     { href: "/admin/settings/payment", label: t("paymentSettings"), icon: CreditCard },
+    { href: "/admin/settings/appearance", label: t("appearanceSettings"), icon: ImageIcon },
   ]
 
   return (

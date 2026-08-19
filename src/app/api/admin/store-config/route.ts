@@ -30,27 +30,31 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const { companyName, address, phone, email, footerMessage, footerTerms } = await request.json()
+    const body = await request.json()
+
+    // 설정이 여러 화면으로 나뉘어 있어 각 화면은 자기 필드만 보낸다.
+    // 받지 않은 필드를 빈 값으로 덮으면 다른 화면의 설정이 지워진다.
+    const FIELDS = [
+      "companyName",
+      "address",
+      "phone",
+      "email",
+      "footerMessage",
+      "footerTerms",
+      "loginHeroUrl",
+      "loginTagline",
+      "loginTitle",
+    ] as const
+
+    const patch: Record<string, string> = {}
+    for (const f of FIELDS) {
+      if (body[f] !== undefined) patch[f] = String(body[f] ?? "")
+    }
 
     const config = await prisma.storeConfig.upsert({
       where: { id: "default" },
-      update: {
-        companyName: companyName || "",
-        address: address || "",
-        phone: phone || "",
-        email: email || "",
-        footerMessage: footerMessage || "",
-        footerTerms: footerTerms || "",
-      },
-      create: {
-        id: "default",
-        companyName: companyName || "",
-        address: address || "",
-        phone: phone || "",
-        email: email || "",
-        footerMessage: footerMessage || "",
-        footerTerms: footerTerms || "",
-      },
+      update: patch,
+      create: { id: "default", ...patch },
     })
 
     return NextResponse.json(config)
