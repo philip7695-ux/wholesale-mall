@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import { translateCategory } from "@/lib/translate"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES } from "@/lib/product-sizes"
+import { downscaleForUpload } from "@/lib/downscale"
 
 const KIDS_SIZES_ALL = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
 const ALL_SIZE_ORDER = ALL_SIZES
@@ -129,8 +130,10 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [uploading, setUploading] = useState(false)
 
   async function uploadFile(file: File): Promise<string> {
+    // 촬영 원본은 대개 4.5MB(Vercel 요청 한도)를 넘으므로 먼저 줄인다
+    const prepared = await downscaleForUpload(file)
     const formData = new FormData()
-    formData.append("file", file)
+    formData.append("file", prepared)
     const res = await fetch("/api/upload", { method: "POST", body: formData })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
