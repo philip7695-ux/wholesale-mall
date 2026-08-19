@@ -1,33 +1,45 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { withDbRetry } from "@/lib/db-retry"
 
 export async function GET() {
   const session = await auth()
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const items = await prisma.cartItem.findMany({
-    where: { userId: session.user.id },
-    include: {
-      variant: {
+  try {
+    const items = await withDbRetry(() =>
+      prisma.cartItem.findMany({
+        where: { userId: session.user.id },
         include: {
-          product: { include: { colors: true } },
-          color: true,
-          size: true,
+          variant: {
+            include: {
+              product: { include: { colors: true } },
+              color: true,
+              size: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  })
-
-  return NextResponse.json(items)
+        orderBy: { createdAt: "desc" },
+      }),
+    )
+    return NextResponse.json(items)
+  } catch (err: any) {
+    // 예외를 그대로 두면 본문 없는 500 이 나가고 클라이언트의 res.json() 이
+    // "Unexpected end of JSON input" 으로 터진다. 항상 JSON 으로 응답한다.
+    console.error("[GET /api/cart] DB error:", err)
+    return NextResponse.json(
+      { error: "장바구니를 불러오지 못했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 503 },
+    )
+  }
 }
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -84,7 +96,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const session = await auth()
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -117,7 +129,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth()
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
