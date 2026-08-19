@@ -33,12 +33,15 @@ export async function POST(request: Request) {
       ["image/webp", "webp"],
       ["image/gif", "gif"],
     ])
-    const MAX_BYTES = 10 * 1024 * 1024
+    // Vercel 이 요청 본문을 4.5MB 로 제한하므로 그 이상은 여기 닿지도 못한다.
+    // 안내와 실제가 어긋나지 않도록 상한을 실제 한도에 맞춘다.
+    // (브라우저에서 lib/downscale.ts 가 먼저 줄이므로 보통은 걸리지 않는다)
+    const MAX_BYTES = 4 * 1024 * 1024
     if (!ALLOWED.has(file.type)) {
       return NextResponse.json({ error: "이미지 파일(JPG/PNG/WEBP/GIF)만 업로드할 수 있습니다." }, { status: 400 })
     }
     if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: "파일 용량은 10MB 이하여야 합니다." }, { status: 400 })
+      return NextResponse.json({ error: "파일 용량은 4MB 이하여야 합니다." }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
