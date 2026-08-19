@@ -7,6 +7,7 @@ import { ProductSearch } from "@/components/shop/product-search"
 import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
+import { isAgeGroup } from "@/lib/age-group"
 import { ProductPrice } from "@/components/shop/product-price"
 import { ShopProductGrid } from "@/components/shop/product-grid"
 import { paginationRange, ELLIPSIS } from "@/lib/pagination"
@@ -33,7 +34,8 @@ export default async function ProductsPage({
     isActive: true,
   }
   if (category) where.category = { slug: category }
-  if (ageGroup === "BABY" || ageGroup === "KIDS") where.ageGroup = ageGroup
+  // 뉴본이 빠져 있어 84개 상품이 필터로 걸러지지 않았다
+  if (isAgeGroup(ageGroup)) where.ageGroup = ageGroup
   if (search) where.OR = [
     { name: { contains: search, mode: "insensitive" } },
     { code: { contains: search, mode: "insensitive" } },

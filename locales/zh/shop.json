@@ -19,5 +19,7 @@
   "myAccount": "我的账户",
   "curatedSelection": "精选好物",
   "loadError": "暂时无法加载商品，请稍后重试。",
-  "goToAdmin": "管理后台"
+  "goToAdmin": "管理后台",
+  "newborn": "新生儿",
+  "ageGroup": "年龄"
 }
