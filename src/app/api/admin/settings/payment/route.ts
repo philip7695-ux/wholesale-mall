@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET() {
+async function GET_impl() {
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -46,3 +47,5 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 })
   }
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })

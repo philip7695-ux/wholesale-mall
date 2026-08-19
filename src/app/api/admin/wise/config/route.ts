@@ -2,8 +2,9 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isWiseConfigured } from "@/lib/wise"
+import { apiRoute } from "@/lib/api-route"
 
-export async function GET() {
+async function GET_impl() {
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -17,7 +18,7 @@ export async function GET() {
   })
 }
 
-export async function PUT(request: Request) {
+async function PUT_impl(request: Request) {
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -48,3 +49,6 @@ export async function PUT(request: Request) {
 
   return NextResponse.json({ ok: true })
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })
+export const PUT = apiRoute(PUT_impl, { retry: false })

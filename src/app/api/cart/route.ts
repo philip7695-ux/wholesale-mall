@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { withDbRetry } from "@/lib/db-retry"
+import { apiRoute } from "@/lib/api-route"
 
 export async function GET() {
   const session = await auth()
@@ -37,7 +38,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+async function POST_impl(request: Request) {
   const session = await auth()
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ message: "장바구니에 추가되었습니다." })
 }
 
-export async function PUT(request: Request) {
+async function PUT_impl(request: Request) {
   const session = await auth()
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -127,7 +128,7 @@ export async function PUT(request: Request) {
   return NextResponse.json({ message: "수량이 변경되었습니다." })
 }
 
-export async function DELETE(request: Request) {
+async function DELETE_impl(request: Request) {
   const session = await auth()
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -148,3 +149,7 @@ export async function DELETE(request: Request) {
 
   return NextResponse.json({ message: "삭제되었습니다." })
 }
+
+export const POST = apiRoute(POST_impl, { retry: false })
+export const PUT = apiRoute(PUT_impl, { retry: false })
+export const DELETE = apiRoute(DELETE_impl, { retry: false })

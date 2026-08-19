@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
+import { apiRoute } from "@/lib/api-route"
 
 const statusLabels: Record<string, string> = {
   ORDER_PLACED: "주문접수",
@@ -24,7 +25,7 @@ const paymentMethodLabels: Record<string, string> = {
   VIRTUAL_ACCOUNT: "가상계좌",
 }
 
-export async function GET(request: NextRequest) {
+async function GET_impl(request: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -114,3 +115,5 @@ export async function GET(request: NextRequest) {
     },
   })
 }
+
+export const GET = apiRoute(GET_impl, { retry: true })
