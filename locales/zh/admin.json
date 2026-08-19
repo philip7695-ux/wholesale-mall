@@ -37,7 +37,7 @@
   "categoryPlaceholder": "选择分类",
   "productDesc": "商品描述",
   "productImages": "商品图片（第一张为主图）",
-  "mainImage": "主图",
+  "mainImage": "仅主图",
   "uploading": "上传中",
   "add": "添加",
   "imagesUploaded": "已上传{count}张",
@@ -361,5 +361,8 @@
   "bulkNoData": "文件中没有数据。",
   "bulkProgress": "已处理 {done} / {total}",
   "bulkElapsed": "已用时 {seconds} 秒",
-  "bulkCreatedUpdated": "新增 {created} · 更新 {updated}"
+  "bulkCreatedUpdated": "新增 {created} · 更新 {updated}",
+  "allImages": "全部图片",
+  "imageCount": "张",
+  "noImage": "无图片"
 }
