@@ -9,6 +9,7 @@ import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { ProductPrice } from "@/components/shop/product-price"
 import { ShopProductGrid } from "@/components/shop/product-grid"
+import { paginationRange, ELLIPSIS } from "@/lib/pagination"
 
 export default async function ProductsPage({
   searchParams,
@@ -144,27 +145,52 @@ export default async function ProductsPage({
               </ShopProductGrid>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-2 pt-10">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <Link
-                      key={p}
-                      href={`/products?${new URLSearchParams({
-                        ...(category ? { category } : {}),
-                        ...(search ? { search } : {}),
-                        page: p.toString(),
-                      })}`}
-                      className={`flex h-9 w-9 items-center justify-center text-sm transition-colors ${
-                        p === page
-                          ? "bg-[#1A1A1A] text-white"
-                          : "text-gray-400 hover:text-[#1A1A1A]"
-                      }`}
-                    >
-                      {p}
-                    </Link>
-                  ))}
-                </div>
-              )}
+              {totalPages > 1 && (() => {
+                const pageHref = (p: number) =>
+                  `/products?${new URLSearchParams({
+                    ...(category ? { category } : {}),
+                    ...(search ? { search } : {}),
+                    page: p.toString(),
+                  })}`
+                const arrow =
+                  "flex h-9 w-9 items-center justify-center text-sm text-gray-400 transition-colors hover:text-[#1A1A1A]"
+                return (
+                  <div className="flex items-center justify-center gap-1 pt-10">
+                    {page > 1 && (
+                      <Link href={pageHref(page - 1)} aria-label="이전" className={arrow}>
+                        ‹
+                      </Link>
+                    )}
+                    {paginationRange(page, totalPages).map((p, i) =>
+                      p === ELLIPSIS ? (
+                        <span
+                          key={`gap-${i}`}
+                          className="flex h-9 w-9 items-center justify-center text-sm text-gray-300"
+                        >
+                          {ELLIPSIS}
+                        </span>
+                      ) : (
+                        <Link
+                          key={p}
+                          href={pageHref(p as number)}
+                          className={`flex h-9 w-9 items-center justify-center text-sm transition-colors ${
+                            p === page
+                              ? "bg-[#1A1A1A] text-white"
+                              : "text-gray-400 hover:text-[#1A1A1A]"
+                          }`}
+                        >
+                          {p}
+                        </Link>
+                      ),
+                    )}
+                    {page < totalPages && (
+                      <Link href={pageHref(page + 1)} aria-label="다음" className={arrow}>
+                        ›
+                      </Link>
+                    )}
+                  </div>
+                )
+              })()}
             </>
           )}
         </div>
