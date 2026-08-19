@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { apiRoute } from "@/lib/api-route"
+import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 async function GET_impl(
   _request: Request,
@@ -51,6 +52,7 @@ async function PUT_impl(
   const allowedFields = [
     "approvalStatus", "buyerGrade", "role",
     "name", "phone", "businessName", "businessNumber", "businessAddress",
+    "tradeType", "currency",
   ] as const
 
   // 자기 자신의 역할은 변경 불가
@@ -63,12 +65,25 @@ async function PUT_impl(
     return NextResponse.json({ error: "유효하지 않은 역할입니다." }, { status: 400 })
   }
 
-  const data: Record<string, string> = {}
+  if (body.tradeType !== undefined && !["DOMESTIC", "EXPORT"].includes(body.tradeType)) {
+    return NextResponse.json({ error: "유효하지 않은 거래 유형입니다." }, { status: 400 })
+  }
+
+  // 통화는 지정하지 않으면(null) 접속 언어를 따라간다
+  if (body.currency !== undefined && body.currency !== null &&
+      !SUPPORTED_CURRENCIES.includes(body.currency)) {
+    return NextResponse.json({ error: "지원하지 않는 통화입니다." }, { status: 400 })
+  }
+
+  const data: Record<string, unknown> = {}
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
       data[field] = body[field]
     }
   }
+
+  // 국내 거래는 통화가 KRW 로 고정되므로 지정값을 남겨두지 않는다
+  if (data.tradeType === "DOMESTIC") data.currency = null
 
   const user = await prisma.user.update({
     where: { id },

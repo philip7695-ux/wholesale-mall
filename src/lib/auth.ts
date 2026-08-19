@@ -53,6 +53,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: user.role,
             approvalStatus: user.approvalStatus,
             buyerGrade: user.buyerGrade,
+            tradeType: user.tradeType,
+            currency: user.currency,
           }
         } catch (error) {
           console.error("[Auth] DB error:", error)

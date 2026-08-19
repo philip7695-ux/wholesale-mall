@@ -21,6 +21,12 @@ model User {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   buyerGrade      BuyerGrade     @default(BRONZE)
+  // 거래 유형이 통화와 부가세를 함께 결정한다.
+  // 국내 = KRW + 부가세 10%, 수출 = 지정 통화 + 영세율.
+  // 기본을 국내로 둔 것은 과소청구(세무 문제)보다 과다청구가 바로잡기 쉽기 때문이다.
+  tradeType       TradeType      @default(DOMESTIC)
+  // 수출 회원의 결제 통화. 비어 있으면 접속 언어의 기본 통화를 쓴다.
+  currency        String?
   cartItems       CartItem[]
   orders          Order[]
 
@@ -165,6 +171,10 @@ model Order {
   updatedAt            DateTime       @updatedAt
   currency        String         @default("KRW")
   exchangeRate    Float          @default(1)
+  // 주문 시점 스냅샷. 세율이 바뀌어도 과거 주문은 그대로 남아야 한다.
+  supplyAmount    Float          @default(0)
+  vatAmount       Float          @default(0)
+  vatRate         Float          @default(0)
   gradeDiscount   Float          @default(0)
   deletedUserName String?
   deletedUserEmail String?
@@ -271,6 +281,13 @@ model PaymentConfirmation {
   order           Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@schema("mall")
+}
+
+enum TradeType {
+  DOMESTIC
+  EXPORT
+
   @@schema("mall")
 }
 

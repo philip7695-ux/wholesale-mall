@@ -28,6 +28,8 @@ export const authConfig: NextAuthConfig = {
         token.role = (user as any).role
         token.approvalStatus = (user as any).approvalStatus
         token.buyerGrade = (user as any).buyerGrade
+        token.tradeType = (user as any).tradeType
+        token.currency = (user as any).currency
       }
       return token
     },
@@ -37,6 +39,8 @@ export const authConfig: NextAuthConfig = {
         session.user.role = token.role as string
         session.user.approvalStatus = token.approvalStatus as string
         session.user.buyerGrade = (token.buyerGrade as string) || "BRONZE"
+        session.user.tradeType = (token.tradeType as string) || "DOMESTIC"
+        session.user.currency = (token.currency as string | null) ?? null
       }
       return session
     },

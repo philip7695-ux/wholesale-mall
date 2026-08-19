@@ -382,5 +382,8 @@
   "useDefaultImage": "既定の画像に戻す",
   "saved": "保存しました。",
   "saveFailed": "保存できませんでした。",
-  "uploadFailed": "アップロードできませんでした。"
+  "uploadFailed": "アップロードできませんでした。",
+  "tradeDomestic": "国内",
+  "tradeExport": "輸出",
+  "currencyAuto": "言語に従う"
 }

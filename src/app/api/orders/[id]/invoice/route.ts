@@ -144,6 +144,8 @@ export async function GET(
     subtotalKRW,
     gradeDiscount: order.gradeDiscount,
     discountAmountKRW,
+    vatRate: order.vatRate,
+    vatAmount: order.vatAmount,
     totalAmountKRW: order.totalAmount,
     formatAmount,
     paymentInfo,

@@ -67,6 +67,9 @@ export interface InvoiceData {
   subtotalKRW: number
   gradeDiscount: number
   discountAmountKRW: number
+  // 국내 거래는 도매가가 부가세 별도이므로 세액을 따로 표기한다
+  vatRate: number
+  vatAmount: number
   totalAmountKRW: number
   formatAmount: (amountKRW: number) => string
   paymentInfo?: InvoicePaymentInfo | null
@@ -316,6 +319,14 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
               <Text style={styles.totalValue}>
                 -{formatAmount(data.discountAmountKRW)}
               </Text>
+            </View>
+          )}
+          {data.vatRate > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>
+                VAT ({Math.round(data.vatRate * 100)}%)
+              </Text>
+              <Text style={styles.totalValue}>{formatAmount(data.vatAmount)}</Text>
             </View>
           )}
           <View style={styles.totalFinal}>

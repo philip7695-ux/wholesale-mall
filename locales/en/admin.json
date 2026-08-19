@@ -382,5 +382,8 @@
   "useDefaultImage": "Use default",
   "saved": "Saved.",
   "saveFailed": "Could not save.",
-  "uploadFailed": "Upload failed."
+  "uploadFailed": "Upload failed.",
+  "tradeDomestic": "Domestic",
+  "tradeExport": "Export",
+  "currencyAuto": "By language"
 }
