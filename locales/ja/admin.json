@@ -371,5 +371,16 @@
   "seasonWinter": "冬 (WI)",
   "filterAll": "すべて",
   "filterReset": "リセット",
-  "filterCount": "{count}件"
+  "filterCount": "{count}件",
+  "appearanceSettings": "画面設定",
+  "appearanceDesc": "ログイン画面の画像と文言を変更します。",
+  "loginHero": "ログイン画面のメイン",
+  "loginTagline": "上段テキスト",
+  "loginTitle": "見出し",
+  "loginTitleHint": "改行するには Enter を押します。",
+  "changeImage": "画像を変更",
+  "useDefaultImage": "既定の画像に戻す",
+  "saved": "保存しました。",
+  "saveFailed": "保存できませんでした。",
+  "uploadFailed": "アップロードできませんでした。"
 }

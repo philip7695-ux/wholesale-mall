@@ -371,5 +371,16 @@
   "seasonWinter": "겨울 (WI)",
   "filterAll": "전체",
   "filterReset": "초기화",
-  "filterCount": "{count}개"
+  "filterCount": "{count}개",
+  "appearanceSettings": "화면 설정",
+  "appearanceDesc": "로그인 화면에 보이는 이미지와 문구를 바꿉니다.",
+  "loginHero": "로그인 화면 대문",
+  "loginTagline": "윗줄 문구",
+  "loginTitle": "제목",
+  "loginTitleHint": "줄바꿈하려면 Enter 를 누르세요.",
+  "changeImage": "이미지 변경",
+  "useDefaultImage": "기본 이미지로",
+  "saved": "저장했습니다.",
+  "saveFailed": "저장하지 못했습니다.",
+  "uploadFailed": "업로드하지 못했습니다."
 }

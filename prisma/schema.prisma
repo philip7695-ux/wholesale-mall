@@ -335,6 +335,10 @@ model StoreConfig {
   email          String   @default("")
   footerMessage  String   @default("Thank you for your business!")
   footerTerms    String   @default("Payment is due within 7 days of invoice date.")
+  // 로그인 화면 좌측 대문. 비어 있으면 기본 이미지를 쓴다.
+  loginHeroUrl   String   @default("")
+  loginTagline   String   @default("Members Only")
+  loginTitle     String   @default("Wholesale Fashion Platform")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

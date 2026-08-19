@@ -371,5 +371,16 @@
   "seasonWinter": "Winter (WI)",
   "filterAll": "All",
   "filterReset": "Reset",
-  "filterCount": "{count} items"
+  "filterCount": "{count} items",
+  "appearanceSettings": "Appearance",
+  "appearanceDesc": "Change the image and text shown on the login screen.",
+  "loginHero": "Login screen hero",
+  "loginTagline": "Top line",
+  "loginTitle": "Headline",
+  "loginTitleHint": "Press Enter for a line break.",
+  "changeImage": "Change image",
+  "useDefaultImage": "Use default",
+  "saved": "Saved.",
+  "saveFailed": "Could not save.",
+  "uploadFailed": "Upload failed."
 }

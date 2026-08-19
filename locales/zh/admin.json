@@ -371,5 +371,16 @@
   "seasonWinter": "冬季 (WI)",
   "filterAll": "全部",
   "filterReset": "重置",
-  "filterCount": "{count}个"
+  "filterCount": "{count}个",
+  "appearanceSettings": "外观设置",
+  "appearanceDesc": "更改登录页面显示的图片和文字。",
+  "loginHero": "登录页主图",
+  "loginTagline": "上方文字",
+  "loginTitle": "标题",
+  "loginTitleHint": "按 Enter 换行。",
+  "changeImage": "更换图片",
+  "useDefaultImage": "使用默认图片",
+  "saved": "已保存。",
+  "saveFailed": "保存失败。",
+  "uploadFailed": "上传失败。"
 }
