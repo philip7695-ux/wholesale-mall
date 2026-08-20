@@ -161,9 +161,11 @@ export function ProductDetail({ product }: { product: Product }) {
     setZoomStyle({ opacity: 0 })
   }, [mainImage])
 
-  const minPrice = product.variants.length > 0
-    ? Math.min(...product.variants.map((v) => v.price))
-    : 0
+  const prices = product.variants.map((v) => v.price)
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+  // 사이즈·컬러에 따라 가격이 갈릴 때만 "~" 를 붙인다.
+  // 지금은 전 상품이 단일 가격이라 항상 붙으면 뜻 없는 기호가 된다.
+  const hasPriceRange = prices.length > 0 && Math.max(...prices) !== minPrice
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
   const allSoldOut = totalStock <= 0
   const currentColor = product.colors.find((c) => c.id === selectedColor)
@@ -387,7 +389,7 @@ export function ProductDetail({ product }: { product: Product }) {
               <p className="mt-1.5 text-xs font-light tracking-wider text-gray-400">{product.code}</p>
             )}
             <p className="mt-3 text-lg text-[#1A1A1A]">
-              {fp(minPrice)}~
+              {fp(minPrice)}{hasPriceRange && "~"}
             </p>
           </div>
 

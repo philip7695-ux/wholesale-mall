@@ -102,9 +102,9 @@ export default async function AdminProductsPage({
       ) : (
         <ProductGrid allImagesLabel={t("allImages")} mainImageLabel={t("mainImage")}>
           {products.map((product: any) => {
-            const minPrice = product.variants.length > 0
-              ? Math.min(...product.variants.map((v: any) => v.price))
-              : 0
+            const prices = product.variants.map((v: any) => v.price)
+            const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+            const hasPriceRange = prices.length > 0 && Math.max(...prices) !== minPrice
             const images: string[] = product.images ?? []
             return (
               <Link key={product.id} href={`/admin/products/${product.id}/edit`}>
@@ -133,7 +133,8 @@ export default async function AdminProductsPage({
                       {translateCategory(product.category.slug, tCat, product.category.name)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
                     </p>
                     <p className="text-sm font-medium mt-1">
-                      {minPrice > 0 ? formatPriceCross(minPrice, product.priceCurrency, locale, rates) : "-"}~
+                      {minPrice > 0 ? formatPriceCross(minPrice, product.priceCurrency, locale, rates) : "-"}
+                      {hasPriceRange && "~"}
                     </p>
                   </CardHeader>
                   <CardContent className="mt-auto flex gap-2 pt-0">
