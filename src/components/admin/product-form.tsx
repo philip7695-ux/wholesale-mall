@@ -15,6 +15,7 @@ import { translateCategory } from "@/lib/translate"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES } from "@/lib/product-sizes"
 import { downscaleForUpload } from "@/lib/downscale"
+import { useLeaveGuard } from "@/hooks/use-leave-guard"
 
 const KIDS_SIZES_ALL = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
 const ALL_SIZE_ORDER = ALL_SIZES
@@ -129,6 +130,9 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+
+  // 사진을 올리는 중에 화면을 벗어나면 올리던 것이 끊긴다
+  useLeaveGuard(uploading, t("uploadLeaveWarning"))
 
   async function uploadFile(file: File): Promise<string> {
     // 촬영 원본은 대개 4.5MB(Vercel 요청 한도)를 넘으므로 먼저 줄인다
