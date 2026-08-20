@@ -21,5 +21,6 @@
   "loadError": "Unable to load products right now. Please try again shortly.",
   "goToAdmin": "Admin",
   "newborn": "Newborn",
-  "ageGroup": "Age"
+  "ageGroup": "Age",
+  "season": "Season"
 }

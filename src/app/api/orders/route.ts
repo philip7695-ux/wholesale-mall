@@ -5,6 +5,8 @@ import { generateOrderNumber } from "@/lib/utils"
 import { getExchangeRate, getAllExchangeRates } from "@/lib/currency.server"
 import { convertCurrency } from "@/lib/currency"
 import { resolveTradeTerms, applyVat } from "@/lib/trade"
+import { getSeasonRates } from "@/lib/pricing.server"
+import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { checkMoq } from "@/lib/moq"
 import { notifyAdminNewOrder } from "@/lib/email"
@@ -157,21 +159,23 @@ export async function POST(request: Request) {
     }
 
     // 가격을 고객 통화로 변환하여 주문 저장
-    const itemsTotal = cartItems.reduce(
-      (sum: any, item: any) => {
-        const priceCurrency = item.variant.product.priceCurrency || "KRW"
-        const converted = convertCurrency(item.variant.price * item.quantity, priceCurrency, customerCurrency, allRates)
-        return sum + converted
-      },
-      0,
-    )
+    // 저장된 값은 정상가다. 시즌·등급 할인을 적용한 도매가로 계산한다.
+    // 할인을 총액에 한 번 더 곱하면 이중 할인이 되므로 단가에서만 적용한다.
+    const seasonRates = await getSeasonRates()
+    const unitPrice = (item: any) =>
+      buyerPrice(item.variant.price, seasonRateFor(item.variant.product.code, seasonRates), gradeDiscount)
+
+    const itemsTotal = cartItems.reduce((sum: any, item: any) => {
+      const priceCurrency = item.variant.product.priceCurrency || "KRW"
+      return sum + convertCurrency(unitPrice(item) * item.quantity, priceCurrency, customerCurrency, allRates)
+    }, 0)
+
     // 도매가는 부가세 별도다. 국내 거래면 공급가액에 10% 를 더해 청구한다.
-    const discounted = gradeDiscount > 0 ? itemsTotal * (1 - gradeDiscount) : itemsTotal
-    const { supplyAmount, vatAmount, totalAmount } = applyVat(discounted, vatRate)
+    const { supplyAmount, vatAmount, totalAmount } = applyVat(itemsTotal, vatRate)
 
     const orderItemsData = cartItems.map((item: any) => {
       const priceCurrency = item.variant.product.priceCurrency || "KRW"
-      const convertedPrice = Math.round(convertCurrency(item.variant.price, priceCurrency, customerCurrency, allRates) * 100) / 100
+      const convertedPrice = Math.round(convertCurrency(unitPrice(item), priceCurrency, customerCurrency, allRates) * 100) / 100
       return {
         variantId: item.variant.id,
         quantity: item.quantity,
@@ -200,6 +204,14 @@ export async function POST(request: Request) {
             )
           }
         }
+
+        // 이번 주문으로 다 팔린 상품은 목록에서 뒤로 가야 한다.
+        // 관련 상품만 다시 계산한다(전체를 훑을 이유가 없다).
+        const touched = [...new Set((cartItems as any[]).map((i) => i.variant.productId))]
+        await tx.$executeRaw`
+          update mall."Product" p set "inStock" = exists (
+            select 1 from mall."ProductVariant" v where v."productId" = p.id and v.stock > 0
+          ) where p.id = any(${touched})`
 
         // 주문번호 충돌 시 최대 5회 재시도
         let created

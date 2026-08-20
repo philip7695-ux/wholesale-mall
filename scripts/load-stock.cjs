@@ -79,6 +79,12 @@ async function main() {
         [ids, qs],
       )
     }
+    // 목록 정렬용 플래그를 재계산한다. 이 값이 어긋나면 품절 상품이
+    // 앞에 오거나 판매 가능한 상품이 뒤로 밀린다.
+    await client.query(`
+      update mall."Product" p set "inStock" = exists (
+        select 1 from mall."ProductVariant" v where v."productId" = p.id and v.stock > 0
+      )`)
     await client.query("commit")
     console.log("\n커밋했습니다.")
   } catch (e) {

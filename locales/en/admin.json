@@ -94,7 +94,7 @@
   "downloadSelected": "Download {count} Selected (Excel)",
   "downloadAll": "Download All (Excel)",
   "selectAll": "Select All",
-  "productCount": " products",
+  "productCount": "Products",
   "downloadFail": "Download failed",
   "orderListFilename": "orders.xlsx",
   "excelDownloaded": "Excel file downloaded.",
@@ -385,5 +385,12 @@
   "uploadFailed": "Upload failed.",
   "tradeDomestic": "Domestic",
   "tradeExport": "Export",
-  "currencyAuto": "By language"
+  "currencyAuto": "By language",
+  "pricingSettings": "Pricing",
+  "pricingDesc": "Set the wholesale discount per season. Products store the retail price; buyers only see the discounted wholesale price.",
+  "seasonRate": "Season discount",
+  "seasonRateRange": "Discount must be between 0 and 95%.",
+  "seasonRateHint": "Final unit price by grade, based on a {sample} retail price. Grade discounts are added on the retail price.",
+  "apply": "Apply",
+  "season": "Season"
 }

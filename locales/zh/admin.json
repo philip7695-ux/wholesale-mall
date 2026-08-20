@@ -94,7 +94,7 @@
   "downloadSelected": "下载选中{count}项（Excel）",
   "downloadAll": "下载全部（Excel）",
   "selectAll": "全选",
-  "productCount": "个商品",
+  "productCount": "商品",
   "downloadFail": "下载失败",
   "orderListFilename": "订单列表.xlsx",
   "excelDownloaded": "Excel文件已下载。",
@@ -385,5 +385,12 @@
   "uploadFailed": "上传失败。",
   "tradeDomestic": "国内",
   "tradeExport": "出口",
-  "currencyAuto": "按语言"
+  "currencyAuto": "按语言",
+  "pricingSettings": "价格设置",
+  "pricingDesc": "设置各季节的批发折扣率。商品保存吊牌价，买家只看到折后批发价。",
+  "seasonRate": "季节折扣",
+  "seasonRateRange": "折扣率须在0~95%之间。",
+  "seasonRateHint": "以吊牌价{sample}为基准的各等级最终单价。等级折扣按吊牌价累加。",
+  "apply": "应用",
+  "season": "季节"
 }

@@ -21,5 +21,6 @@
   "loadError": "商品を読み込めませんでした。しばらくしてから再度お試しください。",
   "goToAdmin": "管理者ページ",
   "newborn": "ニューボーン",
-  "ageGroup": "年齢"
+  "ageGroup": "年齢",
+  "season": "シーズン"
 }

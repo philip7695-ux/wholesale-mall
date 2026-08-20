@@ -21,5 +21,6 @@
   "loadError": "暂时无法加载商品，请稍后重试。",
   "goToAdmin": "管理后台",
   "newborn": "新生儿",
-  "ageGroup": "年龄"
+  "ageGroup": "年龄",
+  "season": "季节"
 }

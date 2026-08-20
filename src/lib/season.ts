@@ -38,3 +38,27 @@ export function codePrefixes(year?: string, season?: string): string[] {
   const seasons = season && SEASON_DIGITS.includes(season as never) ? [season] : [...SEASON_DIGITS]
   return LINE_CODES.flatMap((line) => years.flatMap((y) => seasons.map((s) => `${line}${y}${s}`)))
 }
+
+/** 업계 표기. "2023년 봄" 대신 "23 SS" 로 적어야 이월처럼 보이지 않는다. */
+export const SEASON_SHORT: Record<string, string> = {
+  "1": "SS",
+  "2": "SU",
+  "3": "FW",
+  "4": "WI",
+}
+
+/** 예) ("6","3") -> "26 FW" */
+export function seasonLabel(year: string, season: string): string {
+  return `${20 + Number(year)} ${SEASON_SHORT[season] ?? season}`
+}
+
+/** 최신 시즌이 앞에 오도록 정렬된 (연도, 시즌) 목록 */
+export function seasonsNewestFirst(): { year: string; season: string; key: string; label: string }[] {
+  const out: { year: string; season: string; key: string; label: string }[] = []
+  for (const y of [...YEAR_DIGITS].reverse()) {
+    for (const s of [...SEASON_DIGITS].reverse()) {
+      out.push({ year: y, season: s, key: `${y}${s}`, label: seasonLabel(y, s) })
+    }
+  }
+  return out
+}

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./node_modules/.bin/tsc *)",
+      "Bash(./node_modules/.bin/next build *)",
+      "Bash(./node_modules/.bin/next build)",
+      "Bash(./node_modules/.bin/eslint *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git pull *)",
+      "Bash(git pull)",
+      "Bash(git push *)",
+      "Bash(git push)",
+      "Bash(git fetch *)",
+      "Bash(git fetch)",
+      "Bash(git stash *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr merge *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel ls)",
+      "Bash(vercel logs *)",
+      "Bash(vercel env ls *)",
+      "Bash(vercel env pull *)",
+      "Bash(npx prisma generate)",
+      "Bash(npx prisma generate *)",
+      "Bash(npx prisma validate)",
+      "Bash(npx prisma format)"
+    ]
+  }
+}
