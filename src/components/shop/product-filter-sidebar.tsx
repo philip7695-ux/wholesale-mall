@@ -4,7 +4,7 @@ import { useRouter } from "@/i18n/navigation"
 import { useTranslations } from "next-intl"
 import { translateCategory } from "@/lib/translate"
 import { AGE_GROUPS, AGE_GROUP_KEYS } from "@/lib/age-group"
-import { seasonsNewestFirst } from "@/lib/season"
+import { seasonsNewestFirst, SEASON_KEYS } from "@/lib/season"
 
 interface Category {
   id: string
@@ -46,6 +46,15 @@ export function ProductFilterSidebar({
     return `/products${qs ? `?${qs}` : ""}`
   }
 
+  // 상품이 있는 시즌만 남겨 연도별로 묶는다(최신순)
+  const years: { year: string; seasons: { key: string; season: string }[] }[] = []
+  for (const s of seasonsNewestFirst()) {
+    if (!availableSeasons.includes(s.key)) continue
+    const found = years.find((y) => y.year === s.year)
+    if (found) found.seasons.push({ key: s.key, season: s.season })
+    else years.push({ year: s.year, seasons: [{ key: s.key, season: s.season }] })
+  }
+
   return (
     <aside className="w-52 flex-shrink-0 space-y-8">
       {/* Season */}
@@ -65,24 +74,47 @@ export function ProductFilterSidebar({
                 {tc("all")}
               </button>
             </li>
-            {seasonsNewestFirst()
-              .filter((s) => availableSeasons.includes(s.key))
-              .map((s) => (
-                <li key={s.key}>
+            {/* 시즌이 16개라 전부 펼치면 목록이 화면을 넘긴다.
+                연도만 두고, 고른 해의 계절만 아래에 펼친다. */}
+            {years.map((y) => {
+              const open = currentSeason?.startsWith(y.year)
+              return (
+                <li key={y.year}>
                   <button
                     onClick={() =>
-                      router.push(buildUrl({ season: currentSeason === s.key ? null : s.key }))
+                      router.push(buildUrl({ season: currentSeason === y.year ? null : y.year }))
                     }
                     className={`text-sm transition-colors ${
-                      currentSeason === s.key
-                        ? "text-[#1A1A1A] font-medium"
-                        : "text-gray-500 hover:text-[#1A1A1A]"
+                      open ? "text-[#1A1A1A] font-medium" : "text-gray-500 hover:text-[#1A1A1A]"
                     }`}
                   >
-                    {s.label}
+                    {2020 + Number(y.year)}
                   </button>
+                  {open && (
+                    <ul className="mt-1.5 space-y-1.5 pl-3">
+                      {y.seasons.map((sn) => (
+                        <li key={sn.key}>
+                          <button
+                            onClick={() =>
+                              router.push(
+                                buildUrl({ season: currentSeason === sn.key ? y.year : sn.key }),
+                              )
+                            }
+                            className={`text-sm transition-colors ${
+                              currentSeason === sn.key
+                                ? "text-[#1A1A1A] font-medium"
+                                : "text-gray-400 hover:text-[#1A1A1A]"
+                            }`}
+                          >
+                            {t(SEASON_KEYS[sn.season])}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
-              ))}
+              )
+            })}
           </ul>
         </div>
       )}

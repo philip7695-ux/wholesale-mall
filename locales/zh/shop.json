@@ -22,5 +22,9 @@
   "goToAdmin": "管理后台",
   "newborn": "新生儿",
   "ageGroup": "年龄",
-  "season": "季节"
+  "season": "季节",
+  "seasonSpring": "春季",
+  "seasonSummer": "夏季",
+  "seasonFall": "秋季",
+  "seasonWinter": "冬季"
 }

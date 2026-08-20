@@ -36,5 +36,9 @@
   "goToAdmin": "관리자 페이지",
   "newborn": "뉴본",
   "ageGroup": "연령대",
-  "season": "시즌"
+  "season": "시즌",
+  "seasonSpring": "봄",
+  "seasonSummer": "여름",
+  "seasonFall": "가을",
+  "seasonWinter": "겨울"
 }
