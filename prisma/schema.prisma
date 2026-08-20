@@ -64,6 +64,14 @@ model Product {
   // 목록 정렬 때마다 집계하면 4,000개 넘는 카탈로그에서 비싸다.
   // 재고 적재 스크립트와 주문 트랜잭션이 함께 갱신한다.
   inStock       Boolean          @default(false)
+  // 변형 재고의 합. 재고 많은 순 정렬에 쓴다. 매번 집계하면
+  // 4,000개 넘는 목록에서 비싸므로 inStock 과 함께 갱신한다.
+  totalStock    Int              @default(0)
+  // 스페셜 오퍼 여부. 카테고리로 만들면 상의에 있던 상품이 상의에서
+  // 빠지므로, 카테고리는 그대로 두고 딱지만 붙인다.
+  specialOffer  Boolean          @default(false)
+  // 스페셜 오퍼 전용 할인율. 비어 있으면 시즌 할인율을 그대로 쓴다.
+  specialRate   Float?
   // 코드 3~4번째 두 자리("63" = 2026 가을). 정렬·필터에 쓴다.
   // 코드로 직접 정렬하면 BU 가 BP 보다 뒤라 브랜드 순이 되어 버리고,
   // LIKE 32개를 OR 로 묶는 것보다 인덱스 조회가 싸다.
@@ -82,6 +90,8 @@ model Product {
 
   @@index([categoryId])
   @@index([seasonKey])
+  @@index([totalStock])
+  @@index([specialOffer])
   @@schema("mall")
 }
 

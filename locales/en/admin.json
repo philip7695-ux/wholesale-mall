@@ -403,5 +403,9 @@
   "bulkDeleteConfirm": "Delete the selected products? This cannot be undone.",
   "bulkOrderedWarning": "{count} of the selected products have been ordered. Order history is kept but the link to the product is lost. Continue?",
   "bulkDone": "{count} products updated.",
-  "imageCountTitle": "Photos"
+  "imageCountTitle": "Photos",
+  "sortSeason": "Newest season",
+  "sortStock": "Most stock",
+  "stockTotal": "Stock {count}",
+  "outOfStock": "Out of stock"
 }

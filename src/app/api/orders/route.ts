@@ -209,9 +209,14 @@ export async function POST(request: Request) {
         // 관련 상품만 다시 계산한다(전체를 훑을 이유가 없다).
         const touched = [...new Set((cartItems as any[]).map((i) => i.variant.productId))]
         await tx.$executeRaw`
-          update mall."Product" p set "inStock" = exists (
-            select 1 from mall."ProductVariant" v where v."productId" = p.id and v.stock > 0
-          ) where p.id = any(${touched})`
+          update mall."Product" p set
+            "inStock" = exists (
+              select 1 from mall."ProductVariant" v where v."productId" = p.id and v.stock > 0
+            ),
+            "totalStock" = coalesce((
+              select sum(v.stock)::int from mall."ProductVariant" v where v."productId" = p.id
+            ), 0)
+          where p.id = any(${touched})`
 
         // 주문번호 충돌 시 최대 5회 재시도
         let created

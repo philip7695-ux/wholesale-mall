@@ -25,6 +25,7 @@ export function ProductFilters({
   countLabel,
   searchLabel,
   searchPlaceholder,
+  sorts,
 }: {
   brands: Option[]
   years: Option[]
@@ -35,6 +36,7 @@ export function ProductFilters({
   countLabel: string
   searchLabel: string
   searchPlaceholder: string
+  sorts: Option[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -52,6 +54,7 @@ export function ProductFilters({
     Object.fromEntries([
       ...groups.map((g) => [g.key, params.get(g.key) ?? ""]),
       ["code", params.get("code") ?? ""],
+      ["sort", params.get("sort") ?? ""],
     ]),
   )
 
@@ -100,6 +103,26 @@ export function ProductFilters({
         placeholder={searchPlaceholder}
         className="h-9 w-40"
       />
+
+      {/* 정렬은 고르는 즉시 적용한다. 다른 조건과 달리 하나뿐이라 기다릴 이유가 없다 */}
+      <select
+        value={draft.sort ?? ""}
+        onChange={(e) => {
+          const next = { ...draft, sort: e.target.value }
+          setDraft(next)
+          const qs = new URLSearchParams()
+          for (const [k, v] of Object.entries(next)) if (v.trim()) qs.set(k, v.trim())
+          const q = qs.toString()
+          router.push(q ? `${pathname}?${q}` : pathname)
+        }}
+        className="h-9 rounded-md border bg-background px-2 text-sm"
+      >
+        {sorts.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
 
       <Button size="sm" onClick={submit} className="h-9">
         <Search className="mr-1 h-3.5 w-3.5" />
