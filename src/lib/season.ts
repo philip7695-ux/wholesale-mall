@@ -52,11 +52,16 @@ export function seasonLabel(year: string, season: string): string {
   return `${20 + Number(year)} ${SEASON_SHORT[season] ?? season}`
 }
 
-/** 최신 시즌이 앞에 오도록 정렬된 (연도, 시즌) 목록 */
+/**
+ * 연도는 최신순, 계절은 봄→겨울 순으로 정렬된 목록.
+ *
+ * 계절까지 뒤집으면 "겨울 가을 여름 봄" 이 되어 읽기 어색하다.
+ * 최신 연도를 위에 올리는 것과, 한 해 안에서 순서대로 읽는 것은 다른 문제다.
+ */
 export function seasonsNewestFirst(): { year: string; season: string; key: string; label: string }[] {
   const out: { year: string; season: string; key: string; label: string }[] = []
   for (const y of [...YEAR_DIGITS].reverse()) {
-    for (const s of [...SEASON_DIGITS].reverse()) {
+    for (const s of SEASON_DIGITS) {
       out.push({ year: y, season: s, key: `${y}${s}`, label: seasonLabel(y, s) })
     }
   }
