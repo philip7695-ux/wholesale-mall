@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle, Package, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useLeaveGuard } from "@/hooks/use-leave-guard"
 
 interface UploadResult {
   success: number
@@ -206,6 +207,9 @@ export function ProductBulkUpload() {
   const [imageProgress, setImageProgress] = useState("")
   const [imgDone, setImgDone] = useState(0)
   const [imgElapsed, setImgElapsed] = useState(0)
+
+  // 업로드는 브라우저에서 돈다. 페이지를 벗어나면 그대로 끊긴다.
+  useLeaveGuard(uploading || stockUploading || imageUploading, t("uploadLeaveWarning"))
   const [imageResult, setImageResult] = useState<ImageUploadResult | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
