@@ -15,19 +15,19 @@ import { ProductGrid } from "@/components/admin/product-grid"
 import { ProductImageStrip } from "@/components/admin/product-image-strip"
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle"
 import { ProductFilters } from "@/components/admin/product-filters"
-import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel, codePrefixes } from "@/lib/season"
+import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel } from "@/lib/season"
 
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string }>
+  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string; code?: string }>
 }) {
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
   const tCat = await getTranslations("categories")
   const locale = await getLocale()
   const rates = await getAllExchangeRates()
-  const { year, season, category, brand } = await searchParams
+  const { year, season, category, brand, code } = await searchParams
 
   const [categories, brandRows] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -39,14 +39,16 @@ export default async function AdminProductsPage({
     }),
   ])
 
-  // 연도·시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌).
-  // 둘 다 비어 있으면 코드 조건 자체를 걸지 않아 코드 없는 상품도 남긴다.
+  // 연도·시즌은 seasonKey(코드 3~4번째 두 자리)로 거른다.
+  // 둘 다 비면 조건을 걸지 않아 코드 없는 상품도 남는다.
   const where: Record<string, unknown> = {}
-  if (year || season) {
-    where.OR = codePrefixes(year, season).map((p) => ({ code: { startsWith: p } }))
-  }
+  if (year && season) where.seasonKey = `${year}${season}`
+  else if (year) where.seasonKey = { startsWith: year }
+  else if (season) where.seasonKey = { endsWith: season }
   if (category) where.categoryId = category
   if (brand) where.brand = brand
+  // 스타일 넘버는 일부만 넣어도 찾는다
+  if (code) where.code = { contains: code, mode: "insensitive" }
 
   const products = await prisma.product.findMany({
     where,
@@ -91,6 +93,8 @@ export default async function AdminProductsPage({
         allLabel={t("filterAll")}
         resetLabel={t("filterReset")}
         countLabel={t("filterCount", { count: products.length })}
+        searchLabel={t("search")}
+        searchPlaceholder={t("codeSearchPlaceholder")}
       />
 
       {products.length === 0 ? (

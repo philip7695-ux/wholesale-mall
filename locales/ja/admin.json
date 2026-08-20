@@ -393,5 +393,7 @@
   "seasonRateHint": "定価{sample}を基準とした等級別の最終単価です。等級割引は定価基準で加算されます。",
   "apply": "適用",
   "season": "シーズン",
-  "seasonRateUnset": "未設定"
+  "seasonRateUnset": "未設定",
+  "search": "検索",
+  "codeSearchPlaceholder": "品番"
 }

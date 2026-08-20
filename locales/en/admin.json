@@ -393,5 +393,7 @@
   "seasonRateHint": "Final unit price by grade, based on a {sample} retail price. Grade discounts are added on the retail price.",
   "apply": "Apply",
   "season": "Season",
-  "seasonRateUnset": "Not set"
+  "seasonRateUnset": "Not set",
+  "search": "Search",
+  "codeSearchPlaceholder": "Style no."
 }

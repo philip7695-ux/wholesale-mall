@@ -393,5 +393,7 @@
   "seasonRateHint": "정상가 {sample}원 기준 등급별 최종 단가입니다. 등급 할인은 정상가 기준으로 더해집니다.",
   "apply": "적용",
   "season": "시즌",
-  "seasonRateUnset": "미설정"
+  "seasonRateUnset": "미설정",
+  "search": "검색",
+  "codeSearchPlaceholder": "스타일 넘버"
 }
