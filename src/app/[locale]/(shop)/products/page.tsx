@@ -13,14 +13,14 @@ import { ProductPrice } from "@/components/shop/product-price"
 import { ShopProductGrid } from "@/components/shop/product-grid"
 import { paginationRange, ELLIPSIS } from "@/lib/pagination"
 import { auth } from "@/lib/auth"
-import { getSeasonRates } from "@/lib/pricing.server"
+import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string; season?: string }>
+  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string; season?: string; special?: string }>
 }) {
   const t = await getTranslations("shop")
   const tCat = await getTranslations("categories")
@@ -31,6 +31,7 @@ export default async function ProductsPage({
   const ageGroup = params.ageGroup
   // 연도만("6") 고르거나 연도+계절("63")까지 좁힐 수 있다
   const season = params.season
+  const specialOnly = params.special === "1"
   const page = parseInt(params.page || "1")
   const limit = 20
 
@@ -41,6 +42,9 @@ export default async function ProductsPage({
     isActive: true,
   }
   if (category) where.category = { slug: category }
+  // 스페셜 오퍼는 카테고리가 아니라 딱지다. 켜면 그것만 보고,
+  // 꺼도 해당 상품은 원래 카테고리에 그대로 남는다.
+  if (specialOnly) where.specialOffer = true
   // 뉴본이 빠져 있어 84개 상품이 필터로 걸러지지 않았다
   if (isAgeGroup(ageGroup)) where.ageGroup = ageGroup
   // 시즌과 검색은 둘 다 OR 묶음이라 where.OR 에 각각 넣으면 뒤엣것이
@@ -76,10 +80,15 @@ export default async function ProductsPage({
 
   // 가격은 서버에서 계산한다. 화면과 주문이 서로 다른 값을 쓰지 않게 하려는 것이다.
   const session = await auth().catch(() => null)
-  const [seasonRates, gradeRate] = await Promise.all([
+  const [seasonRates, gradeRate, specialRate] = await Promise.all([
     getSeasonRates(),
     getGradeDiscount(session?.user?.buyerGrade || "BRONZE").catch(() => 0),
+    getSpecialOfferRate(),
   ])
+
+  // 스페셜 오퍼가 하나도 없으면 필터에 띄우지 않는다
+  const hasSpecialOffers =
+    (await prisma.product.count({ where: { isActive: true, specialOffer: true } }).catch(() => 0)) > 0
 
   let products: any[] = [], categories: any[] = [], total = 0
   let loadError = false
@@ -133,6 +142,8 @@ export default async function ProductsPage({
             currentAgeGroup={ageGroup}
             currentSeason={season}
             availableSeasons={availableSeasons}
+            specialOnly={specialOnly}
+            hasSpecialOffers={hasSpecialOffers}
           />
         </div>
 
@@ -158,7 +169,12 @@ export default async function ProductsPage({
                     ? Math.min(...product.variants.map((v: any) => v.price))
                     : 0
                   const price = minRetail > 0
-                    ? buyerPrice(minRetail, seasonRateFor(product.code, seasonRates), gradeRate)
+                    ? buyerPrice(
+                        minRetail,
+                        seasonRateFor(product.code, seasonRates),
+                        gradeRate,
+                        product.specialOffer ? specialRate : 0,
+                      )
                     : 0
                   return (
                     <Link key={product.id} href={`/products/${product.id}`} className="group block">
@@ -203,6 +219,7 @@ export default async function ProductsPage({
                     ...(search ? { search } : {}),
                     ...(ageGroup ? { ageGroup } : {}),
                     ...(season ? { season } : {}),
+                    ...(specialOnly ? { special: "1" } : {}),
                     page: p.toString(),
                   })}`
                 const arrow =

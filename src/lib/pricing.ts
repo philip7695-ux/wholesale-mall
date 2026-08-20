@@ -22,10 +22,22 @@ export function totalDiscountRate(seasonRate: number, gradeRate: number): number
   return Math.min(Math.max(sum, 0), 0.95)
 }
 
-/** 정상가에 시즌·등급 할인을 적용한 최종 단가 */
-export function buyerPrice(retailPrice: number, seasonRate: number, gradeRate: number): number {
-  const rate = totalDiscountRate(seasonRate, gradeRate)
-  return Math.round(retailPrice * (1 - rate) * 100) / 100
+/**
+ * 정상가에 시즌·등급 할인을 적용한 최종 단가.
+ *
+ * 스페셜 오퍼는 성격이 다르다. 시즌·등급은 택가를 기준으로 더하지만,
+ * 스페셜 오퍼는 이미 할인된 가격에서 한 번 더 깎는다.
+ * "50% 하던 걸 스페셜에 넣으면 거기서 30% 더" 라는 뜻이다.
+ */
+export function buyerPrice(
+  retailPrice: number,
+  seasonRate: number,
+  gradeRate: number,
+  specialRate = 0,
+): number {
+  const base = retailPrice * (1 - totalDiscountRate(seasonRate, gradeRate))
+  const special = Math.min(Math.max(specialRate || 0, 0), 0.95)
+  return Math.round(base * (1 - special) * 100) / 100
 }
 
 /** 상품 코드로 해당 시즌의 할인율을 찾는다. 설정이 없으면 0(정상가). */

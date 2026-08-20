@@ -15,6 +15,8 @@ import {
   Trash2,
   Loader2,
   X,
+  Tag,
+  Ban,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -65,6 +67,8 @@ export function ProductGrid({
     deactivate: string
     delete: string
     clear: string
+    special: string
+    unspecial: string
     deleteConfirm: string
     orderedWarning: string
     done: string
@@ -109,7 +113,10 @@ export function ProductGrid({
     })
   }
 
-  async function run(action: "activate" | "deactivate" | "delete", confirmOrdered = false) {
+  async function run(
+    action: "activate" | "deactivate" | "delete" | "special" | "unspecial",
+    confirmOrdered = false,
+  ) {
     const ids = [...selected]
     if (!ids.length) return
     if (action === "delete" && !confirmOrdered && !confirm(labels.deleteConfirm)) return
@@ -181,6 +188,14 @@ export function ProductGrid({
             <Button size="sm" variant="outline" onClick={() => run("deactivate")} disabled={busy}>
               <EyeOff className="mr-1 h-3 w-3" />
               {labels.deactivate}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => run("special")} disabled={busy}>
+              <Tag className="mr-1 h-3 w-3" />
+              {labels.special}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => run("unspecial")} disabled={busy}>
+              <Ban className="mr-1 h-3 w-3" />
+              {labels.unspecial}
             </Button>
             <Button size="sm" variant="destructive" onClick={() => run("delete")} disabled={busy}>
               {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}

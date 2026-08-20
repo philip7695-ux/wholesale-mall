@@ -407,5 +407,13 @@
   "sortSeason": "最新季节",
   "sortStock": "库存最多",
   "stockTotal": "库存 {count}",
-  "outOfStock": "缺货"
+  "outOfStock": "缺货",
+  "bulkSpecial": "设为特惠",
+  "bulkUnspecial": "取消特惠",
+  "specialOffer": "特惠",
+  "specialOfferRate": "特惠追加折扣",
+  "specialOfferDesc": "在季节折扣后的价格上再打折。季节5折的商品设为特惠并填30%，即为吊牌价的35%。",
+  "specialOfferCount": "已指定 {count} 个商品",
+  "normalPrice": "普通价",
+  "specialPrice": "特惠价"
 }

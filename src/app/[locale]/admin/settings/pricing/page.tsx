@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { getTranslations } from "next-intl/server"
 import { SeasonDiscountForm } from "@/components/admin/season-discount-form"
-import { getSeasonRates } from "@/lib/pricing.server"
+import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
+import { SpecialOfferRateForm } from "@/components/admin/special-offer-rate-form"
 import { getGradeConfig } from "@/lib/grade.server"
 import { seasonsNewestFirst, SEASON_KEYS } from "@/lib/season"
 
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic"
 export default async function PricingSettingsPage() {
   const t = await getTranslations("admin")
 
-  const [rates, grades, counts] = await Promise.all([
+  const [rates, grades, counts, specialRate, specialCount] = await Promise.all([
     getSeasonRates(),
     getGradeConfig().catch(() => []),
     // 상품이 없는 시즌은 굳이 줄을 만들지 않는다
@@ -21,6 +22,8 @@ export default async function PricingSettingsPage() {
         where code is not null
         group by 1`
       .catch(() => [] as { key: string; n: bigint }[]),
+    getSpecialOfferRate(),
+    prisma.product.count({ where: { specialOffer: true } }).catch(() => 0),
   ])
 
   const countMap = Object.fromEntries(counts.map((c: { key: string; n: bigint }) => [c.key, Number(c.n)]))
@@ -42,6 +45,8 @@ export default async function PricingSettingsPage() {
         <h1 className="text-2xl font-bold">{t("pricingSettings")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("pricingDesc")}</p>
       </div>
+
+      <SpecialOfferRateForm rate={specialRate} count={specialCount} />
 
       <SeasonDiscountForm
         rows={rows}
