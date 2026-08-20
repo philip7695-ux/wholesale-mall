@@ -61,6 +61,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const fp = (amount: number) => formatPriceCross(amount, product.priceCurrency, locale, rates)
   const tProd = useTranslations("product")
   const buyerGrade = session?.user?.buyerGrade || "BRONZE"
+  // 가격은 서버에서 시즌·등급 할인을 이미 적용해 넘겨준다.
+  // 여기서 다시 곱하면 이중 할인이 된다. 배지 표시에만 쓴다.
   const discountRate = GRADE_DISCOUNT[buyerGrade] || 0
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.id || "")
   const allImages = product.images.length > 0
@@ -160,7 +162,7 @@ export function ProductDetail({ product }: { product: Product }) {
   }, [mainImage])
 
   const minPrice = product.variants.length > 0
-    ? Math.round(Math.min(...product.variants.map((v) => v.price)) * (1 - discountRate) * 100) / 100
+    ? Math.min(...product.variants.map((v) => v.price))
     : 0
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
   const allSoldOut = totalStock <= 0
@@ -190,8 +192,8 @@ export function ProductDetail({ product }: { product: Product }) {
   }
 
   function totalAmount() {
-    const original = totalAmountOriginal()
-    return discountRate > 0 ? Math.round(original * (1 - discountRate)) : original
+    // 단가에 이미 할인이 반영돼 있으므로 합계에 다시 곱하지 않는다
+    return Math.round(totalAmountOriginal())
   }
 
   function colorQuantity(colorId: string) {
@@ -507,17 +509,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     <div key={size.id} className={`flex items-center gap-2 sm:gap-3 py-1.5 ${outOfStock ? "opacity-40" : ""}`}>
                       <span className="w-10 sm:w-14 text-xs sm:text-sm font-medium text-[#1A1A1A] shrink-0">{size.name}</span>
                       <span className="hidden sm:inline w-24 text-xs text-[#1A1A1A] shrink-0">
-                        {discountRate > 0 ? (
-                          <>
-                            <span className="line-through text-gray-400">{fp(variant.price)}</span>
-                            {" "}
-                            <span className="text-[#1A1A1A] font-medium">
-                              {fp(Math.round(variant.price * (1 - discountRate) * 100) / 100)}
-                            </span>
-                          </>
-                        ) : (
-                          fp(variant.price)
-                        )}
+                        {fp(variant.price)}
                       </span>
                       <span className={`w-12 sm:w-16 text-xs text-center shrink-0 ${outOfStock ? "text-red-500 font-medium" : "text-gray-500"}`}>
                         {outOfStock ? t("soldOut") : t("stockCount", { count: variant.stock })}
@@ -538,9 +530,7 @@ export function ProductDetail({ product }: { product: Product }) {
                       />
                       {(quantities[key] || 0) > 0 && (
                         <span className="text-xs sm:text-sm text-[#1A1A1A] shrink-0">
-                          {fp(
-                            Math.round(variant.price * (1 - discountRate) * 100) / 100 * (quantities[key] || 0),
-                          )}
+                          {fp(variant.price * (quantities[key] || 0))}
                         </span>
                       )}
                     </div>

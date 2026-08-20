@@ -5,6 +5,10 @@ import { getTranslations } from "next-intl/server"
 import { prisma } from "@/lib/prisma"
 import { withDbRetry } from "@/lib/db-retry"
 import { ProductDetail } from "@/components/shop/product-detail"
+import { auth } from "@/lib/auth"
+import { getSeasonRates } from "@/lib/pricing.server"
+import { getGradeDiscount } from "@/lib/grade.server"
+import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 
 export default async function ProductDetailPage({
   params,
@@ -39,6 +43,15 @@ export default async function ProductDetailPage({
 
   if (!raw) notFound()
 
+  // 목록·장바구니와 같은 도매가를 보여준다. 여기만 정상가가 나가면
+  // 목록에서 본 값과 달라 신뢰를 잃는다.
+  const session = await auth().catch(() => null)
+  const [seasonRates, gradeRate] = await Promise.all([
+    getSeasonRates(),
+    getGradeDiscount(session?.user?.buyerGrade || "BRONZE").catch(() => 0),
+  ])
+  const seasonRate = seasonRateFor(raw.code, seasonRates)
+
   // Serialize to plain object to avoid Date/Prisma type serialization issues
   const product = {
     id: raw.id,
@@ -68,7 +81,7 @@ export default async function ProductDetailPage({
       id: v.id,
       colorId: v.colorId,
       sizeId: v.sizeId,
-      price: v.price,
+      price: buyerPrice(v.price, seasonRate, gradeRate),
       stock: v.stock,
       color: { id: v.color.id, name: v.color.name },
       size: { id: v.size.id, name: v.size.name },
