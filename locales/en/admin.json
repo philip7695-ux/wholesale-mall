@@ -392,5 +392,6 @@
   "seasonRateRange": "Discount must be between 0 and 95%.",
   "seasonRateHint": "Final unit price by grade, based on a {sample} retail price. Grade discounts are added on the retail price.",
   "apply": "Apply",
-  "season": "Season"
+  "season": "Season",
+  "seasonRateUnset": "Not set"
 }

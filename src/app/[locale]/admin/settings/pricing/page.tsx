@@ -30,6 +30,7 @@ export default async function PricingSettingsPage() {
     .map((s) => ({
       key: s.key,
       label: s.label,
+      year: s.year,
       rate: rates[s.key] ?? 0,
       productCount: countMap[s.key],
     }))

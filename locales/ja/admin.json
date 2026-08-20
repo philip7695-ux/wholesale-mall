@@ -392,5 +392,6 @@
   "seasonRateRange": "割引率は0~95%の範囲で入力してください。",
   "seasonRateHint": "定価{sample}を基準とした等級別の最終単価です。等級割引は定価基準で加算されます。",
   "apply": "適用",
-  "season": "シーズン"
+  "season": "シーズン",
+  "seasonRateUnset": "未設定"
 }
