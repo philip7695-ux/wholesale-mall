@@ -395,5 +395,12 @@
   "season": "シーズン",
   "seasonRateUnset": "未設定",
   "search": "検索",
-  "codeSearchPlaceholder": "品番"
+  "codeSearchPlaceholder": "品番",
+  "bulkSelected": "{count}件選択",
+  "bulkActivate": "販売中にする",
+  "bulkDeactivate": "非公開にする",
+  "bulkClear": "選択解除",
+  "bulkDeleteConfirm": "選択した商品を削除します。元に戻せません。続けますか？",
+  "bulkOrderedWarning": "選択した商品のうち{count}件は注文履歴があります。履歴は残りますが商品との紐付けは切れます。続けますか？",
+  "bulkDone": "{count}件を処理しました。"
 }

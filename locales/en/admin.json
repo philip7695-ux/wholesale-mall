@@ -395,5 +395,12 @@
   "season": "Season",
   "seasonRateUnset": "Not set",
   "search": "Search",
-  "codeSearchPlaceholder": "Style no."
+  "codeSearchPlaceholder": "Style no.",
+  "bulkSelected": "{count} selected",
+  "bulkActivate": "Set active",
+  "bulkDeactivate": "Set inactive",
+  "bulkClear": "Clear",
+  "bulkDeleteConfirm": "Delete the selected products? This cannot be undone.",
+  "bulkOrderedWarning": "{count} of the selected products have been ordered. Order history is kept but the link to the product is lost. Continue?",
+  "bulkDone": "{count} products updated."
 }

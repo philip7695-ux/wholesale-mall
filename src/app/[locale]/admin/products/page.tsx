@@ -13,6 +13,7 @@ import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
 import { getAllExchangeRates } from "@/lib/currency.server"
 import { ProductGrid } from "@/components/admin/product-grid"
 import { ProductImageStrip } from "@/components/admin/product-image-strip"
+import { ProductSelectCheckbox } from "@/components/admin/product-select-checkbox"
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle"
 import { ProductFilters } from "@/components/admin/product-filters"
 import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel } from "@/lib/season"
@@ -107,7 +108,21 @@ export default async function AdminProductsPage({
           </CardContent>
         </Card>
       ) : (
-        <ProductGrid allImagesLabel={t("allImages")} mainImageLabel={t("mainImage")}>
+        <ProductGrid
+          allImagesLabel={t("allImages")}
+          mainImageLabel={t("mainImage")}
+          labels={{
+            selected: t("bulkSelected"),
+            activate: t("bulkActivate"),
+            deactivate: t("bulkDeactivate"),
+            delete: tc("delete"),
+            clear: t("bulkClear"),
+            deleteConfirm: t("bulkDeleteConfirm"),
+            orderedWarning: t("bulkOrderedWarning"),
+            done: t("bulkDone"),
+            failed: t("saveFailed"),
+          }}
+        >
           {products.map((product: any) => {
             const prices = product.variants.map((v: any) => v.price)
             const minPrice = prices.length > 0 ? Math.min(...prices) : 0
@@ -120,7 +135,8 @@ export default async function AdminProductsPage({
             const images: string[] = product.images ?? []
             return (
               <Link key={product.id} href={`/admin/products/${product.id}/edit`}>
-                <Card className="flex flex-col overflow-hidden transition-shadow hover:shadow-md cursor-pointer">
+                <Card className="relative flex flex-col overflow-hidden transition-shadow hover:shadow-md cursor-pointer">
+                  <ProductSelectCheckbox id={product.id} label={product.name} />
                   <ProductImageStrip
                     images={images}
                     thumbnail={product.thumbnail}
