@@ -125,5 +125,9 @@
   "revisionSent": "已发送。",
   "revisionFailed": "处理失败。",
   "adminRevisionHint": "改为仓库实际数量后发送给买家，或直接确认。",
-  "buyerRevisionHint": "可在订购数量内减少。如需增加，请另行下单。"
+  "buyerRevisionHint": "可在订购数量内减少。如需增加，请另行下单。",
+  "cancelledBySeller": "卖家已取消",
+  "cancelReason": "取消原因",
+  "cancelNoReason": "未记录取消原因。",
+  "cancelStockReleased": "此订单占用的库存已全部释放。如有疑问请联系我们。"
 }

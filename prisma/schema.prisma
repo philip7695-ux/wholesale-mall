@@ -192,6 +192,10 @@ model Order {
   shippedAt            DateTime?
   deliveredAt          DateTime?
   cancelledAt          DateTime?
+  // 취소 사유는 바이어에게 그대로 보인다. 주문이 말없이 사라지면
+  // 바이어는 왜인지 알 길이 없다.
+  cancelReason         String?
+  cancelledByAdmin     Boolean        @default(false)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   currency        String         @default("KRW")

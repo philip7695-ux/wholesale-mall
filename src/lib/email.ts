@@ -149,3 +149,34 @@ export async function notifyCustomerShipped(customerEmail: string, order: {
       </table>
     </div>`)
 }
+
+/** HTML 메일에 사람이 쓴 문장을 넣기 전에 태그로 읽히지 않게 막는다 */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
+// 6. 주문 취소 → 고객 알림
+// 관리자가 주문을 지우면 바이어는 이유를 알 길이 없다. 사유를 그대로 전한다.
+export async function notifyCustomerOrderCancelled(customerEmail: string, order: {
+  orderNumber: string
+  customerName: string
+  reason: string
+  byAdmin: boolean
+}) {
+  const who = order.byAdmin ? "by the seller" : "at your request"
+  await send(customerEmail, `[Cancelled] ${order.orderNumber}`,
+    `<div style="font-family:sans-serif;max-width:600px">
+      <h2>Order Cancelled</h2>
+      <p>Dear ${escapeHtml(order.customerName)},</p>
+      <p>Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been cancelled ${who}.</p>
+      <div style="margin:16px 0;padding:12px 16px;background:#fff5f5;border-left:3px solid #e24b4a">
+        <p style="margin:0 0 4px;color:#666;font-size:13px">Reason</p>
+        <p style="margin:0;white-space:pre-wrap">${escapeHtml(order.reason)}</p>
+      </div>
+      <p>Any stock held for this order has been released. Please contact us if you have questions.</p>
+    </div>`)
+}

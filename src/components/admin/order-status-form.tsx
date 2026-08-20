@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { toast } from "sonner"
 import { FileDown, Package, Truck } from "lucide-react"
+import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
 
@@ -118,22 +119,30 @@ export function OrderStatusForm({
     { value: "REFUNDED", label: t("paymentStatusRefunded") },
   ]
 
+  // 취소되지 않은 주문은 먼저 사유와 함께 취소한다. 바이어가 사유를 봐야
+  // 주문이 말없이 사라지지 않는다. 이미 취소된 주문만 영구 삭제한다.
   async function handleDelete() {
-    if (!confirm(t("orderPermanentDeleteConfirm"))) return
-
+    const alreadyCancelled = currentStatus === "CANCELLED"
     setLoading(true)
     try {
-      const res = await fetch(`/api/orders/${orderId}?permanent=true`, {
-        method: "DELETE",
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || t("orderDeleteFail"))
+      if (alreadyCancelled) {
+        if (!confirm(t("orderPermanentDeleteConfirm"))) {
+          setLoading(false)
+          return
+        }
+        await purgeOrder(orderId)
+        toast.success(t("orderDeleted"))
+        router.push("/admin/orders")
+      } else {
+        const done = await cancelOrderWithReason(orderId, {
+          ask: t("orderCancelReasonAsk"),
+          required: t("orderCancelReasonRequired"),
+        })
+        if (done) {
+          toast.success(t("orderCancelledNotified"))
+          router.refresh()
+        }
       }
-
-      toast.success(t("orderDeleted"))
-      router.push("/admin/orders")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("orderDeleteError"))
     }

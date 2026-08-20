@@ -425,5 +425,9 @@
   "statusConfirmed": "已确认",
   "orderStatusStockChecking": "确认库存中",
   "orderStatusBuyerReview": "买家确认中",
-  "orderStatusConfirmed": "已确认"
+  "orderStatusConfirmed": "已确认",
+  "orderCancelReasonAsk": "请输入取消原因。买家会看到，并会收到邮件通知。",
+  "orderCancelReasonAskBulk": "将取消 {count} 个订单。请输入原因，买家会看到。",
+  "orderCancelReasonRequired": "必须填写取消原因。",
+  "orderCancelledNotified": "订单已取消，并已通知买家。"
 }

@@ -425,5 +425,9 @@
   "statusConfirmed": "확정",
   "orderStatusStockChecking": "재고확인중",
   "orderStatusBuyerReview": "바이어확인중",
-  "orderStatusConfirmed": "확정"
+  "orderStatusConfirmed": "확정",
+  "orderCancelReasonAsk": "취소 사유를 입력해주세요. 바이어에게 그대로 전달되고 메일로도 발송됩니다.",
+  "orderCancelReasonAskBulk": "선택한 {count}건을 취소합니다. 사유를 입력해주세요. 바이어에게 그대로 전달됩니다.",
+  "orderCancelReasonRequired": "취소 사유를 입력해야 합니다.",
+  "orderCancelledNotified": "주문을 취소하고 바이어에게 사유를 전달했습니다."
 }
