@@ -8,7 +8,7 @@ import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { isAgeGroup } from "@/lib/age-group"
-import { codePrefixes, seasonsNewestFirst } from "@/lib/season"
+import { seasonsNewestFirst } from "@/lib/season"
 import { ProductPrice } from "@/components/shop/product-price"
 import { ShopProductGrid } from "@/components/shop/product-grid"
 import { paginationRange, ELLIPSIS } from "@/lib/pagination"
@@ -48,9 +48,8 @@ export default async function ProductsPage({
   const and: Record<string, unknown>[] = []
   // 시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌)
   if (season && /^[3-6][1-4]?$/.test(season)) {
-    and.push({
-      OR: codePrefixes(season[0], season[1]).map((p) => ({ code: { startsWith: p } })),
-    })
+    // 연도만("6") 고르면 그 해 전체가 걸린다
+    where.seasonKey = season.length === 2 ? season : { startsWith: season }
   }
   if (search) {
     and.push({
@@ -64,15 +63,16 @@ export default async function ProductsPage({
 
   // 상품이 없는 시즌은 필터에 띄우지 않는다.
   // 코드를 전부 끌어오면 4,000행이 넘으므로 DB 에서 접두어만 집계한다.
-  const seasonRows = await prisma
-    .$queryRaw<{ key: string }[]>`
-      select distinct substring(code from 3 for 2) as key
-      from mall."Product"
-      where "isActive" = true and code is not null`
-    .catch(() => [] as { key: string }[])
+  const seasonRows = await prisma.product
+    .findMany({
+      where: { isActive: true, seasonKey: { not: null } },
+      distinct: ["seasonKey"],
+      select: { seasonKey: true },
+    })
+    .catch(() => [] as { seasonKey: string | null }[])
   const availableSeasons = seasonRows
-    .map((r) => r.key)
-    .filter((k) => /^[3-6][1-4]$/.test(k))
+    .map((r: { seasonKey: string | null }) => r.seasonKey ?? "")
+    .filter((k: string) => /^[3-6][1-4]$/.test(k))
 
   // 가격은 서버에서 계산한다. 화면과 주문이 서로 다른 값을 쓰지 않게 하려는 것이다.
   const session = await auth().catch(() => null)
@@ -92,9 +92,10 @@ export default async function ProductsPage({
           colors: { orderBy: { sortOrder: "asc" } },
           variants: true,
         },
-        // 품절을 뒤로 보낸다. 카탈로그라 품절도 보여주지만,
-        // 4,554개 중 2,139개가 품절이라 앞에 섞이면 목록이 쓸모없어진다.
-        orderBy: [{ inStock: "desc" }, { createdAt: "desc" }],
+        // 품절을 뒤로 보내고 최신 시즌부터 보여준다.
+        // createdAt 은 DB 에 넣은 시각이라 시즌 순서와 무관하다.
+        // 2023년을 나중에 넣었더니 목록 앞머리가 2023년이 됐다.
+        orderBy: [{ inStock: "desc" }, { seasonKey: "desc" }, { code: "asc" }],
         skip: (page - 1) * limit,
         take: limit,
       }),

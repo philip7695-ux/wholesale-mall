@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { determineAgeGroup } from "@/lib/product-sizes"
 import { apiRoute } from "@/lib/api-route"
+import { seasonKeyFromCode } from "@/lib/season"
 
 async function GET_impl(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
       data: {
         name,
         code: code || null,
+        seasonKey: seasonKeyFromCode(code),
         description,
         categoryId,
         thumbnail,

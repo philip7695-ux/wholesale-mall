@@ -8,6 +8,15 @@
  * Product 에는 연도·시즌 필드가 없어 코드가 유일한 근거다.
  */
 
+/**
+ * 코드 3~4번째 두 자리를 시즌 키로 뽑는다. BP63AC317 -> "63"
+ * Product.seasonKey 에 저장해 정렬·필터에 쓴다. 형식이 아니면 null.
+ */
+export function seasonKeyFromCode(code: string | null | undefined): string | null {
+  const k = (code ?? "").slice(2, 4)
+  return /^[3-9][1-4]$/.test(k) ? k : null
+}
+
 /** 코드 앞 두 자리 = 라인. 브랜드가 늘면 여기에 추가한다. */
 export const LINE_CODES = ["BP", "BU"] as const
 

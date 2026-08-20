@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { determineAgeGroup } from "@/lib/product-sizes"
 import { apiRoute } from "@/lib/api-route"
+import { seasonKeyFromCode } from "@/lib/season"
 
 async function GET_impl(
   _request: Request,
@@ -48,7 +49,8 @@ export async function PUT(
 
     await prisma.product.update({
       where: { id },
-      data: { name, code: code !== undefined ? (code || null) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined, priceCurrency: priceCurrency || undefined, ageGroup },
+      data: { name, code: code !== undefined ? (code || null) : undefined,
+        seasonKey: code !== undefined ? seasonKeyFromCode(code) : undefined, description, categoryId, thumbnail, images: images || [], material: material !== undefined ? (material || null) : undefined, sizeSpec: sizeSpec || null, isActive, moq: moq ?? undefined, colorMoq: colorMoq ?? undefined, priceCurrency: priceCurrency || undefined, ageGroup },
     })
 
     // Delete cart items referencing this product's variants (to avoid FK constraint)

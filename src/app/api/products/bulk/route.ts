@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue } from "@/lib/product-sizes"
+import { seasonKeyFromCode } from "@/lib/season"
 
 // 대량 생성은 DB 왕복이 많아 오래 걸린다. 청크로 나눠 보내더라도 여유를 둔다.
 export const maxDuration = 60
@@ -272,6 +273,7 @@ export async function POST(request: NextRequest) {
             data: {
               name: productName,
               code: group.code || null,
+              seasonKey: seasonKeyFromCode(group.code),
               description: group.description || null,
               material: group.material || null,
               categoryId,

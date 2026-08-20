@@ -11,12 +11,9 @@
  * 말하는 방식에 맞춘 것이다(= 택가의 45%).
  */
 
-/** 상품 코드에서 시즌 키를 뽑는다. BP63AC317 -> "63" */
-export function seasonKeyFromCode(code: string | null | undefined): string | null {
-  if (!code || code.length < 4) return null
-  const key = code.slice(2, 4)
-  return /^[0-9][1-9]$/.test(key) ? key : null
-}
+// 시즌 키 판정은 lib/season.ts 한 곳에서만 한다
+export { seasonKeyFromCode } from "@/lib/season"
+import { seasonKeyFromCode } from "@/lib/season"
 
 /** 두 할인율을 합친 값. 100% 를 넘지 않게 막는다. */
 export function totalDiscountRate(seasonRate: number, gradeRate: number): number {
