@@ -170,10 +170,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 4,
   },
-  colNo: { width: "6%" },
-  colProduct: { width: "30%" },
-  colSpec: { width: "22%" },
-  colQty: { width: "10%", textAlign: "right" },
+  // 사이즈를 빼면서 컬러 칸이 남아돌고 상품명이 좁아 두 줄로 접혔다.
+  // 상품명에 폭을 더 주고, 왼쪽 정렬 칸에는 오른쪽 여백을 둬서
+  // 긴 이름이 옆 칸에 닿지 않게 한다.
+  colNo: { width: "5%" },
+  colProduct: { width: "41%", paddingRight: 12 },
+  colSpec: { width: "14%", paddingRight: 8 },
+  colQty: { width: "8%", textAlign: "right" },
   colPrice: { width: "16%", textAlign: "right" },
   colSubtotal: { width: "16%", textAlign: "right" },
   thText: {
