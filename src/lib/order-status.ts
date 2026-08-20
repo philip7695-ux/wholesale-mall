@@ -88,6 +88,26 @@ export function isPrePayment(status: string): boolean {
   return (PRE_PAYMENT_STATUSES as readonly string[]).includes(status)
 }
 
+/**
+ * 바이어가 스스로 취소할 수 있는 상태.
+ *
+ * 확정은 창고 확인과 바이어 확인이 끝나 양쪽이 합의한 지점이다.
+ * 그 뒤로는 한쪽이 혼자 되돌릴 일이 아니라 담당자와 이야기할 일이다.
+ * 게다가 확정 시 예약이 실재고 차감으로 바뀌므로, 그냥 취소하면
+ * 빠진 재고가 돌아오지 않고 조용히 사라진다.
+ *
+ * 관리자는 이 제한을 받지 않는다. 사유를 남기고 언제든 취소할 수 있다.
+ */
+export const BUYER_CANCELABLE_STATUSES = [
+  "ORDER_PLACED",
+  "STOCK_CHECKING",
+  "BUYER_REVIEW",
+] as const
+
+export function canBuyerCancel(status: string): boolean {
+  return (BUYER_CANCELABLE_STATUSES as readonly string[]).includes(status)
+}
+
 /** 상태 → 타임스탬프 필드 매핑 */
 export const STATUS_TIMESTAMP_FIELD: Record<string, string> = {
   ORDER_PLACED: "createdAt",

@@ -11,7 +11,7 @@ import { formatPrice, formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
-import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD, isPrePayment } from "@/lib/order-status"
+import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD, canBuyerCancel } from "@/lib/order-status"
 import { OrderRevisionTable } from "@/components/order-revision-table"
 import { Textarea } from "@/components/ui/textarea"
 import { FileDown, Upload, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react"
@@ -314,8 +314,8 @@ export default function OrderDetailPage() {
               {t("editOrder")}
             </Button>
           )}
-          {/* 취소는 입금 전까지 언제든 된다 */}
-          {isPrePayment(order.status) && (
+          {/* 취소는 확정 전까지만. 확정은 양쪽이 합의한 지점이다 */}
+          {canBuyerCancel(order.status) && (
             <Button
               variant="destructive"
               size="sm"
