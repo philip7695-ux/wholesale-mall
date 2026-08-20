@@ -61,7 +61,9 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
   if (next && !["STOCK_CHECKING", "BUYER_REVIEW"].includes(next)) {
     return NextResponse.json({ error: "알 수 없는 단계입니다." }, { status: 400 })
   }
-  if (next === "STOCK_CHECKING" && !isAdmin) {
+  // 넘기는 방향은 정해져 있다. 관리자는 바이어에게, 바이어는 관리자에게.
+  // 바이어가 STOCK_CHECKING 으로 되돌리는 것이 "확인 요청" 그 자체다.
+  if (next === "BUYER_REVIEW" && !isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
