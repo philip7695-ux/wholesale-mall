@@ -22,5 +22,9 @@
   "goToAdmin": "管理者ページ",
   "newborn": "ニューボーン",
   "ageGroup": "年齢",
-  "season": "シーズン"
+  "season": "シーズン",
+  "seasonSpring": "春",
+  "seasonSummer": "夏",
+  "seasonFall": "秋",
+  "seasonWinter": "冬"
 }

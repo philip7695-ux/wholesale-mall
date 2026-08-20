@@ -29,7 +29,8 @@ export default async function ProductsPage({
   const category = params.category
   const search = params.search
   const ageGroup = params.ageGroup
-  const season = params.season   // 'YS' 두 자리 (예: 63 = 26 FW)
+  // 연도만("6") 고르거나 연도+계절("63")까지 좁힐 수 있다
+  const season = params.season
   const page = parseInt(params.page || "1")
   const limit = 20
 
@@ -46,8 +47,10 @@ export default async function ProductsPage({
   // 앞엣것을 덮는다. AND 로 묶어 둘 다 걸리게 한다.
   const and: Record<string, unknown>[] = []
   // 시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌)
-  if (season && /^[3-6][1-4]$/.test(season)) {
-    and.push({ OR: codePrefixes(season[0], season[1]).map((p) => ({ code: { startsWith: p } })) })
+  if (season && /^[3-6][1-4]?$/.test(season)) {
+    and.push({
+      OR: codePrefixes(season[0], season[1]).map((p) => ({ code: { startsWith: p } })),
+    })
   }
   if (search) {
     and.push({

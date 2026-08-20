@@ -22,5 +22,9 @@
   "goToAdmin": "Admin",
   "newborn": "Newborn",
   "ageGroup": "Age",
-  "season": "Season"
+  "season": "Season",
+  "seasonSpring": "Spring",
+  "seasonSummer": "Summer",
+  "seasonFall": "Fall",
+  "seasonWinter": "Winter"
 }
