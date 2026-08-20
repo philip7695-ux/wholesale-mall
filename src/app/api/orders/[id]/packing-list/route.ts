@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { apiRoute } from "@/lib/api-route"
+import { sortSizeNames } from "@/lib/product-sizes"
 
 async function GET_impl(
   _request: Request,
@@ -49,12 +50,13 @@ async function GET_impl(
   })
   const productCodeMap = new Map(products.map((p) => [p.name, p.code]))
 
-  // 모든 사이즈 수집 (출현 순서 유지)
+  // 모든 사이즈 수집. 인보이스에서 사이즈를 뺐으므로 사이즈 배분을
+  // 확인할 곳은 여기뿐이다. 출현 순서가 아니라 치수 순서로 늘어놓는다.
   const sizeSet = new Set<string>()
   for (const item of order.items) {
     sizeSet.add(item.sizeName)
   }
-  const allSizes = Array.from(sizeSet)
+  const allSizes = sortSizeNames(Array.from(sizeSet))
 
   // 상품코드 + 컬러 기준으로 그룹핑
   const groupMap = new Map<string, {

@@ -42,6 +42,31 @@ export interface InvoiceItem {
   subtotal: number
 }
 
+/**
+ * 사이즈별로 흩어진 줄을 상품 + 컬러로 합친다.
+ *
+ * 인보이스는 청구서다. 무엇을 몇 장 얼마에 사는지만 있으면 되고,
+ * 사이즈 배분은 패킹리스트가 맡는다. 사이즈까지 펼치면 한 스타일이
+ * 다섯 줄을 차지해 몇 페이지씩 늘어난다.
+ *
+ * 같은 상품·컬러라도 단가가 다르면 합치지 않는다. 합쳐서 하나의
+ * 단가로 적으면 어느 쪽도 맞지 않는 숫자가 된다.
+ */
+export function mergeBySize(items: InvoiceItem[]): InvoiceItem[] {
+  const merged = new Map<string, InvoiceItem>()
+  for (const item of items) {
+    const key = `${item.productName}|${item.colorName}|${item.unitPrice}`
+    const found = merged.get(key)
+    if (found) {
+      found.quantity += item.quantity
+      found.subtotal += item.subtotal
+    } else {
+      merged.set(key, { ...item, sizeName: "" })
+    }
+  }
+  return [...merged.values()]
+}
+
 export interface InvoicePaymentInfo {
   method: string
   accountName: string
@@ -285,20 +310,18 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
         <View style={styles.tableHeader}>
           <Text style={[styles.colNo, styles.thText]}>#</Text>
           <Text style={[styles.colProduct, styles.thText]}>Product</Text>
-          <Text style={[styles.colSpec, styles.thText]}>Color / Size</Text>
+          <Text style={[styles.colSpec, styles.thText]}>Color</Text>
           <Text style={[styles.colQty, styles.thText]}>Qty</Text>
           <Text style={[styles.colPrice, styles.thText]}>Unit Price</Text>
           <Text style={[styles.colSubtotal, styles.thText]}>Subtotal</Text>
         </View>
 
         {/* Items Rows */}
-        {data.items.map((item, i) => (
+        {mergeBySize(data.items).map((item, i) => (
           <View key={i} style={styles.tableRow}>
             <Text style={styles.colNo}>{i + 1}</Text>
             <Text style={styles.colProduct}>{item.productName}</Text>
-            <Text style={styles.colSpec}>
-              {item.colorName} - {item.sizeName}
-            </Text>
+            <Text style={styles.colSpec}>{item.colorName}</Text>
             <Text style={styles.colQty}>{item.quantity}</Text>
             <Text style={styles.colPrice}>{formatAmount(item.unitPrice)}</Text>
             <Text style={styles.colSubtotal}>{formatAmount(item.subtotal)}</Text>
