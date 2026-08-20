@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
-import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition } from "@/lib/order-status"
+import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition, isPrePayment, PRE_PAYMENT_STATUSES } from "@/lib/order-status"
 import { notifyCustomerShipped, notifyCustomerOrderCancelled } from "@/lib/email"
 import { apiRoute } from "@/lib/api-route"
 import { holdsReservation, releaseReservation, refreshProductStock } from "@/lib/order-revision"
@@ -103,8 +103,7 @@ async function DELETE_impl(
   }
 
   // 취소 처리
-  const cancelableStatuses = ["ORDER_PLACED", "STOCK_CHECKING", "BUYER_REVIEW", "CONFIRMED", "INVOICE_SENT"]
-  if (!isAdmin && !cancelableStatuses.includes(order.status)) {
+  if (!isAdmin && !isPrePayment(order.status)) {
     return NextResponse.json(
       { error: "입금 전 상태의 주문만 취소할 수 있습니다." },
       { status: 400 },
@@ -187,8 +186,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  const editableStatuses = ["ORDER_PLACED", "INVOICE_SENT"]
-  if (!editableStatuses.includes(order.status)) {
+  if (!isPrePayment(order.status)) {
     return NextResponse.json({ error: "입금 전 상태의 주문만 수정할 수 있습니다." }, { status: 400 })
   }
 
@@ -243,8 +241,7 @@ async function PUT_impl(
     data.paymentStatus = paymentStatus
     // 결제완료 → 주문 상태 자동 PAYMENT_CONFIRMED
     if (paymentStatus === "PAID") {
-      const prePaymentStatuses = ["ORDER_PLACED", "INVOICE_SENT"]
-      if (prePaymentStatuses.includes(currentOrder.status)) {
+      if (isPrePayment(currentOrder.status)) {
         data.status = "PAYMENT_CONFIRMED"
         data.paymentConfirmedAt = new Date()
       }

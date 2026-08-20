@@ -13,6 +13,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { FileDown, Package, Truck } from "lucide-react"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
+import { PRE_PAYMENT_STATUSES } from "@/lib/order-status"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
 
@@ -245,7 +246,7 @@ export function OrderStatusForm({
   }
 
   // 현재 단계에 맞는 다음 액션 결정
-  const isPrePayment = ["ORDER_PLACED", "STOCK_CHECKING", "BUYER_REVIEW", "CONFIRMED", "INVOICE_SENT"].includes(currentStatus)
+  const isPrePayment = PRE_PAYMENT_STATUSES.includes(currentStatus as (typeof PRE_PAYMENT_STATUSES)[number])
   const isPaymentConfirmed = currentStatus === "PAYMENT_CONFIRMED"
   const isShipped = currentStatus === "SHIPPED"
   const isCancelled = currentStatus === "CANCELLED"
