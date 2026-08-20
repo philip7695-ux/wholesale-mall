@@ -21,5 +21,11 @@
   "vat": "VAT ({rate}%)",
   "color": "Color",
   "stockLeft": "Stock {count}",
-  "soldOut": "Sold out"
+  "soldOut": "Sold out",
+  "style": "Style",
+  "sizeTotal": "Size total",
+  "productDelete": "Remove this style",
+  "image": "Image",
+  "styleNo": "Style no.",
+  "grandQty": "Total qty"
 }

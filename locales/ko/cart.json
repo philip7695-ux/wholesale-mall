@@ -6,7 +6,7 @@
   "size": "사이즈",
   "unitPrice": "단가",
   "quantity": "수량",
-  "amount": "금액",
+  "amount": "총액",
   "productSummary": "상품 {count}건 · {qty}장",
   "totalPayment": "총 결제금액",
   "order": "주문하기",
@@ -21,5 +21,11 @@
   "vat": "부가세 ({rate}%)",
   "color": "컬러",
   "stockLeft": "재고 {count}",
-  "soldOut": "품절"
+  "soldOut": "품절",
+  "style": "스타일",
+  "sizeTotal": "사이즈 합계",
+  "productDelete": "이 스타일 삭제",
+  "image": "이미지",
+  "styleNo": "품번",
+  "grandQty": "총계"
 }

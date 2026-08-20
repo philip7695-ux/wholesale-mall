@@ -5,6 +5,30 @@ export const KIDS_LETTER_SIZES: string[] = ["F", "S", "M", "L", "XL", "XXL"]
 export const KIDS_SIZES: string[] = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
 export const ALL_SIZES: string[] = [...ADULT_SIZES, ...KIDS_SIZES]
 
+/**
+ * 여러 상품의 사이즈를 한 표에 펼칠 때 쓰는 정렬 순서.
+ * 쓰던 오더시트를 따라 숫자 사이즈를 앞에 작은 것부터, 문자 사이즈를 뒤에 둔다.
+ * 목록에 없는 값은 맨 뒤로 보내되 이름순으로 묶어 뒤죽박죽이 되지 않게 한다.
+ */
+const SIZE_ORDER = ["F", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "FREE"]
+
+export function sizeSortIndex(name: string): number {
+  const v = name.trim().toUpperCase()
+  const num = Number(v)
+  if (Number.isFinite(num)) return num
+  const letter = SIZE_ORDER.indexOf(v)
+  if (letter >= 0) return 10000 + letter
+  return 20000
+}
+
+/** 사이즈 이름들을 표의 열 순서대로 정렬한다. */
+export function sortSizeNames(names: string[]): string[] {
+  return [...names].sort((a, b) => {
+    const d = sizeSortIndex(a) - sizeSortIndex(b)
+    return d !== 0 ? d : a.localeCompare(b)
+  })
+}
+
 const BABY_NUM_SIZES = new Set(["80", "85", "90", "95", "100"])
 const KIDS_ONLY_NUM_SIZES = new Set(["110", "120", "130", "140", "150"])
 
