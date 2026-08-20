@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 
@@ -26,6 +27,8 @@ export default function EditMemberPage() {
     businessName: "",
     businessNumber: "",
     businessAddress: "",
+    country: "",
+    adminNote: "",
   })
 
   useEffect(() => {
@@ -39,6 +42,8 @@ export default function EditMemberPage() {
           businessName: data.businessName || "",
           businessNumber: data.businessNumber || "",
           businessAddress: data.businessAddress || "",
+          country: data.country || "",
+          adminNote: data.adminNote || "",
         })
       })
       .catch(() => toast.error(tc("error")))
@@ -56,6 +61,8 @@ export default function EditMemberPage() {
       businessName: formData.get("businessName"),
       businessNumber: formData.get("businessNumber"),
       businessAddress: formData.get("businessAddress"),
+      country: formData.get("country"),
+      adminNote: formData.get("adminNote"),
     }
 
     try {
@@ -156,6 +163,25 @@ export default function EditMemberPage() {
                 id="businessAddress"
                 name="businessAddress"
                 defaultValue={member.businessAddress}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="country">{ta("country")}</Label>
+              <Input
+                id="country"
+                name="country"
+                defaultValue={member.country}
+                placeholder={ta("countryPlaceholder")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adminNote">{ta("adminNote")}</Label>
+              <Textarea
+                id="adminNote"
+                name="adminNote"
+                defaultValue={member.adminNote}
+                placeholder={ta("adminNotePlaceholder")}
+                rows={3}
               />
             </div>
           </CardContent>

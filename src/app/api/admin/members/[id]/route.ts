@@ -25,8 +25,12 @@ async function GET_impl(
       businessName: true,
       businessNumber: true,
       businessAddress: true,
+      country: true,
+      adminNote: true,
       approvalStatus: true,
       buyerGrade: true,
+      tradeType: true,
+      currency: true,
     },
   })
 
@@ -52,6 +56,7 @@ async function PUT_impl(
   const allowedFields = [
     "approvalStatus", "buyerGrade", "role",
     "name", "phone", "businessName", "businessNumber", "businessAddress",
+    "country", "adminNote",
     "tradeType", "currency",
   ] as const
 

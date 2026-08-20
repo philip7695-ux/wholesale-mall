@@ -439,5 +439,11 @@
   "orderExportSelectedGrid": "{count}件ダウンロード (横)",
   "orderExportSelectedRows": "{count}件ダウンロード (縦)",
   "trackingNumberAdd": "箱を追加",
-  "trackingNumberBox": "箱{n}の送り状番号"
+  "trackingNumberBox": "箱{n}の送り状番号",
+  "country": "国",
+  "countryPlaceholder": "例: ベトナム、アメリカ",
+  "adminNote": "管理者メモ",
+  "adminNotePlaceholder": "通関・取引特記事項など（バイヤーには表示されません）",
+  "countryPrefix": "国: ",
+  "adminNotePrefix": "メモ: "
 }

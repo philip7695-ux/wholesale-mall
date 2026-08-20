@@ -439,5 +439,11 @@
   "orderExportSelectedGrid": "下载 {count} 条 (横向)",
   "orderExportSelectedRows": "下载 {count} 条 (纵向)",
   "trackingNumberAdd": "添加箱",
-  "trackingNumberBox": "第{n}箱运单号"
+  "trackingNumberBox": "第{n}箱运单号",
+  "country": "国家",
+  "countryPlaceholder": "例：越南、美国",
+  "adminNote": "管理员备注",
+  "adminNotePlaceholder": "通关、交易特殊事项等（买家不可见）",
+  "countryPrefix": "国家：",
+  "adminNotePrefix": "备注："
 }

@@ -439,5 +439,11 @@
   "orderExportSelectedGrid": "{count}건 다운로드 (가로)",
   "orderExportSelectedRows": "{count}건 다운로드 (세로)",
   "trackingNumberAdd": "박스 추가",
-  "trackingNumberBox": "{n}번 박스 운송장 번호"
+  "trackingNumberBox": "{n}번 박스 운송장 번호",
+  "country": "국가",
+  "countryPlaceholder": "예: 베트남, 미국",
+  "adminNote": "관리자 메모",
+  "adminNotePlaceholder": "통관·거래 특이사항 등 (바이어에게 보이지 않음)",
+  "countryPrefix": "국가: ",
+  "adminNotePrefix": "메모: "
 }

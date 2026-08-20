@@ -439,5 +439,11 @@
   "orderExportSelectedGrid": "Export {count} (across)",
   "orderExportSelectedRows": "Export {count} (down)",
   "trackingNumberAdd": "Add box",
-  "trackingNumberBox": "Box {n} tracking no."
+  "trackingNumberBox": "Box {n} tracking no.",
+  "country": "Country",
+  "countryPlaceholder": "e.g. Vietnam, USA",
+  "adminNote": "Admin note",
+  "adminNotePlaceholder": "Customs, trade notes, etc. (not shown to the buyer)",
+  "countryPrefix": "Country: ",
+  "adminNotePrefix": "Note: "
 }
