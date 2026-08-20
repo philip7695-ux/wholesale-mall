@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { OrderStatusForm } from "@/components/admin/order-status-form"
+import { OrderRevisionTable } from "@/components/order-revision-table"
+import { isEditable } from "@/lib/order-revision"
 import { getExchangeRate } from "@/lib/currency.server"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_DOT_COLOR, STATUS_TEXT_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
 
@@ -25,7 +27,7 @@ export default async function AdminOrderDetailPage({
     where: { id },
     include: {
       user: { select: { name: true, email: true, phone: true, businessName: true } },
-      items: true,
+      items: { include: { variant: { select: { stock: true, reserved: true } } } },
       paymentConfirmations: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -197,23 +199,44 @@ export default async function AdminOrderDetailPage({
           <CardTitle>{to("orderProducts")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {order.items.map((item: any) => (
-              <div key={item.id} className="flex items-center justify-between text-sm">
-                <div>
-                  <span className="font-medium">{item.productName}</span>
-                  <span className="ml-2 text-muted-foreground">
-                    {item.colorName} / {item.sizeName}
-                  </span>
+          {/* 확정 전에는 수량을 고칠 수 있는 표로 보여준다.
+              창고 확인 결과를 바로 반영하고 바이어에게 넘기기 위해서다. */}
+          {isEditable(order.status) ? (
+            <OrderRevisionTable
+              orderId={order.id}
+              isAdmin
+              canEdit
+              items={order.items.map((item: any) => ({
+                id: item.id,
+                productName: item.productName,
+                colorName: item.colorName,
+                sizeName: item.sizeName,
+                quantity: item.quantity,
+                orderedQuantity: item.orderedQuantity,
+                price: item.price,
+                stock: item.variant ? item.variant.stock : undefined,
+              }))}
+              formatPrice={(amount) => formatPrice(amount, locale, rate)}
+            />
+          ) : (
+            <div className="space-y-3">
+              {order.items.map((item: any) => (
+                <div key={item.id} className="flex items-center justify-between text-sm">
+                  <div>
+                    <span className="font-medium">{item.productName}</span>
+                    <span className="ml-2 text-muted-foreground">
+                      {item.colorName} / {item.sizeName}
+                    </span>
+                  </div>
+                  <div>
+                    <span>{item.quantity}{tc("items")}</span>
+                    <span className="ml-3">{formatPrice(item.price, locale, rate)}</span>
+                    <span className="ml-3 font-medium">{formatPrice(item.price * item.quantity, locale, rate)}</span>
+                  </div>
                 </div>
-                <div>
-                  <span>{item.quantity}{tc("items")}</span>
-                  <span className="ml-3">{formatPrice(item.price, locale, rate)}</span>
-                  <span className="ml-3 font-medium">{formatPrice(item.price * item.quantity, locale, rate)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -84,7 +84,8 @@ export default async function ProductDetailPage({
       colorId: v.colorId,
       sizeId: v.sizeId,
       price: buyerPrice(v.price, seasonRate, gradeRate, specialRate),
-      stock: v.stock,
+      // 다른 주문이 잡아둔 수량을 뺀 판매 가능 수량을 보여준다
+      stock: Math.max(v.stock - v.reserved, 0),
       color: { id: v.color.id, name: v.color.name },
       size: { id: v.size.id, name: v.size.name },
     })),

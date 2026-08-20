@@ -102,6 +102,9 @@ export function OrderStatusForm({
 
   const orderStatuses = [
     { value: "ORDER_PLACED", label: t("orderStatusOrderPlaced") },
+    { value: "STOCK_CHECKING", label: t("orderStatusStockChecking") },
+    { value: "BUYER_REVIEW", label: t("orderStatusBuyerReview") },
+    { value: "CONFIRMED", label: t("orderStatusConfirmed") },
     { value: "INVOICE_SENT", label: t("orderStatusInvoiceSent") },
     { value: "PAYMENT_CONFIRMED", label: t("orderStatusPaymentConfirmed") },
     { value: "SHIPPED", label: t("orderStatusShipped") },
@@ -233,7 +236,7 @@ export function OrderStatusForm({
   }
 
   // 현재 단계에 맞는 다음 액션 결정
-  const isPrePayment = ["ORDER_PLACED", "INVOICE_SENT"].includes(currentStatus)
+  const isPrePayment = ["ORDER_PLACED", "STOCK_CHECKING", "BUYER_REVIEW", "CONFIRMED", "INVOICE_SENT"].includes(currentStatus)
   const isPaymentConfirmed = currentStatus === "PAYMENT_CONFIRMED"
   const isShipped = currentStatus === "SHIPPED"
   const isCancelled = currentStatus === "CANCELLED"

@@ -419,5 +419,11 @@
   "dropHint": "사진을 이 영역에 끌어다 놓거나 + 를 눌러 선택하세요.",
   "nonImageSkipped": "이미지가 아닌 파일 {count}개는 건너뛰었습니다.",
   "filterCapped": "조건에 맞는 상품이 {total}개입니다. 화면에는 {shown}개만 보여줍니다. 조건을 더 좁혀주세요.",
-  "uploadLeaveWarning": "사진을 올리는 중입니다. 지금 이동하면 업로드가 중단됩니다. 그래도 이동할까요?"
+  "uploadLeaveWarning": "사진을 올리는 중입니다. 지금 이동하면 업로드가 중단됩니다. 그래도 이동할까요?",
+  "statusStockChecking": "재고확인중",
+  "statusBuyerReview": "바이어확인중",
+  "statusConfirmed": "확정",
+  "orderStatusStockChecking": "재고확인중",
+  "orderStatusBuyerReview": "바이어확인중",
+  "orderStatusConfirmed": "확정"
 }
