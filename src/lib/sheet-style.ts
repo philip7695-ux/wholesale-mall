@@ -130,11 +130,6 @@ export async function renderSheet({
     ws.getColumn(i + 1).width = isNarrow ? 7 : Math.min(Math.max(maxLen + 3, 8), 28)
   })
 
-  ws.autoFilter = {
-    from: { row: HEADER_ROW, column: 1 },
-    to: { row: HEADER_ROW + rows.length, column: lastCol },
-  }
-
   // exceljs 는 ArrayBuffer 를 돌려준다. Response 본문으로 그대로 쓸 수 있다.
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer
 }
