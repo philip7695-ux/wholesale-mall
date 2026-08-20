@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Trash2, Pencil, AlertTriangle } from "lucide-react"
+import { Trash2, AlertTriangle } from "lucide-react"
 import { formatPriceCross } from "@/lib/utils"
 import { convertCurrency } from "@/lib/currency"
 import { resolveTradeTerms, applyVat } from "@/lib/trade"
@@ -18,6 +18,7 @@ import { checkMoq, type MoqCheckResult } from "@/lib/moq"
 interface ProductColor {
   id: string
   name: string
+  hexColor: string | null
   moq: number
 }
 
@@ -31,55 +32,46 @@ interface CartItem {
     product: {
       id: string
       name: string
+      code: string | null
       thumbnail: string | null
       moq: number
       colorMoq: number
       priceCurrency: string
       colors: ProductColor[]
+      sizes: { id: string; name: string }[]
+      variants: { id: string; colorId: string; sizeId: string; price: number; stock: number }[]
     }
     color: { id: string; name: string; colorCode: string | null; hexColor: string | null }
     size: { name: string }
   }
 }
 
+interface GridCell {
+  variantId: string
+  quantity: number
+  price: number
+  stock: number
+}
+
+interface GridRow {
+  colorId: string
+  colorName: string
+  hexColor: string | null
+  cells: Record<string, GridCell>   // sizeId -> 칸
+  totalQty: number
+  subtotal: number
+}
+
 interface GroupedProduct {
   productId: string
   productName: string
+  productCode: string | null
   thumbnail: string | null
   items: CartItem[]
   subtotal: number
   totalQty: number
-}
-
-interface ColorGroup {
-  colorName: string
-  colorCode: string | null
-  hexColor: string | null
-  items: CartItem[]
-  subtotal: number
-  totalQty: number
-}
-
-function groupItemsByColor(items: CartItem[]): ColorGroup[] {
-  const map = new Map<string, ColorGroup>()
-  for (const item of items) {
-    const cname = item.variant.color.name
-    if (!map.has(cname)) {
-      map.set(cname, {
-        colorName: cname,
-        colorCode: item.variant.color.colorCode,
-        hexColor: item.variant.color.hexColor,
-        items: [],
-        subtotal: 0,
-        totalQty: 0,
-      })
-    }
-    const g = map.get(cname)!
-    g.items.push(item)
-    g.subtotal += item.variant.price * item.quantity
-    g.totalQty += item.quantity
-  }
-  return Array.from(map.values())
+  sizes: { id: string; name: string }[]
+  rows: GridRow[]
 }
 
 function groupByProduct(items: CartItem[]): GroupedProduct[] {
@@ -90,16 +82,54 @@ function groupByProduct(items: CartItem[]): GroupedProduct[] {
       map.set(pid, {
         productId: pid,
         productName: item.variant.product.name,
+        productCode: item.variant.product.code,
         thumbnail: item.variant.product.thumbnail,
         items: [],
         subtotal: 0,
         totalQty: 0,
+        sizes: [],
+        rows: [],
       })
     }
     const group = map.get(pid)!
     group.items.push(item)
     group.subtotal += item.variant.price * item.quantity
     group.totalQty += item.quantity
+  }
+
+  // 사이즈를 가로로 펼친 표를 만든다. 담지 않은 사이즈도 칸을 두어
+  // 빈 칸에 수를 넣으면 바로 담기게 한다.
+  for (const group of map.values()) {
+    const product = group.items[0].variant.product
+    const qtyOf = new Map(group.items.map((i) => [i.variant.id, i.quantity]))
+
+    group.sizes = product.sizes
+    // 담긴 컬러만 줄로 만든다. 전 컬러를 펼치면 표가 불필요하게 길어진다.
+    const usedColors = new Set(group.items.map((i) => i.variant.color.id))
+
+    group.rows = product.colors
+      .filter((c) => usedColors.has(c.id))
+      .map((c) => {
+        const cells: Record<string, GridCell> = {}
+        let totalQty = 0
+        let subtotal = 0
+        for (const sz of product.sizes) {
+          const v = product.variants.find((x) => x.colorId === c.id && x.sizeId === sz.id)
+          if (!v) continue
+          const quantity = qtyOf.get(v.id) ?? 0
+          cells[sz.id] = { variantId: v.id, quantity, price: v.price, stock: v.stock }
+          totalQty += quantity
+          subtotal += v.price * quantity
+        }
+        return {
+          colorId: c.id,
+          colorName: c.name,
+          hexColor: (c as any).hexColor ?? null,
+          cells,
+          totalQty,
+          subtotal,
+        }
+      })
   }
   return Array.from(map.values())
 }
@@ -115,7 +145,6 @@ export default function CartPage() {
   const buyerGrade = session?.user?.buyerGrade || "BRONZE"
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingGroup, setEditingGroup] = useState<string | null>(null)
 
   const [loadError, setLoadError] = useState(false)
 
@@ -160,6 +189,34 @@ export default function CartPage() {
     })
     setItems((prev) => prev.filter((item) => item.id !== cartItemId))
     toast.success(t("deleted"))
+  }
+
+  /**
+   * 그리드 한 칸의 수량을 반영한다.
+   * 담기지 않은 사이즈에 수를 넣으면 새로 담고, 0 으로 지우면 뺀다.
+   */
+  async function setCellQuantity(variantId: string, quantity: number) {
+    const existing = items.find((i) => i.variant.id === variantId)
+
+    if (existing) {
+      if (quantity <= 0) await removeItem(existing.id)
+      else await updateQuantity(existing.id, quantity)
+      return
+    }
+    if (quantity <= 0) return
+
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [{ variantId, quantity }] }),
+    })
+    if (!res.ok) {
+      toast.error((await res.json().catch(() => ({}))).error || tc("error"))
+      return
+    }
+    // 새로 담은 항목의 id 를 알아야 이후 수정이 되므로 다시 불러온다
+    const fresh = await fetch("/api/cart").then((r) => r.json()).catch(() => null)
+    if (Array.isArray(fresh)) setItems(fresh)
   }
 
   async function removeProduct(productId: string) {
@@ -254,7 +311,6 @@ export default function CartPage() {
         <>
           <div className="space-y-4">
             {groups.map((group) => {
-              const isEditing = editingGroup === group.productId
               return (
                 <Card key={group.productId}>
                   <CardContent className="py-4">
@@ -276,22 +332,15 @@ export default function CartPage() {
                         >
                           {group.productName}
                         </Link>
+                        {group.productCode && (
+                          <p className="font-mono text-xs text-muted-foreground">{group.productCode}</p>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           {t("optionsAndQty", { options: group.items.length, qty: group.totalQty })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="text-lg font-bold">{fp(group.subtotal, group.items[0].variant.product.priceCurrency)}</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setEditingGroup(isEditing ? null : group.productId)
-                          }
-                        >
-                          <Pencil className="mr-1 h-3 w-3" />
-                          {isEditing ? tc("done") : tc("edit")}
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -302,70 +351,84 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    {/* 컬러별 옵션 테이블 */}
-                    <div className="mt-3 space-y-2">
-                      {groupItemsByColor(group.items).map((colorGroup) => (
-                        <div key={colorGroup.colorName} className="overflow-x-auto rounded border">
-                          {/* 컬러 헤더 */}
-                          <div className="flex items-center gap-2 border-b bg-gray-50 px-3 py-2">
-                            {colorGroup.hexColor && (
-                              <span
-                                className="inline-block h-3.5 w-3.5 rounded-full border"
-                                style={{ backgroundColor: colorGroup.hexColor }}
-                              />
-                            )}
-                            <span className="text-sm font-medium">{colorGroup.colorName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {t("subtotalUnit", { qty: colorGroup.totalQty, price: fp(colorGroup.subtotal, group.items[0].variant.product.priceCurrency) })}
-                            </span>
-                          </div>
-                          {/* 사이즈 행 */}
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b bg-gray-50/50">
-                                <th className="px-3 py-1.5 text-left text-xs font-medium text-muted-foreground">{t("size")}</th>
-                                <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">{t("unitPrice")}</th>
-                                <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">{t("quantity")}</th>
-                                <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">{t("amount")}</th>
-                                {isEditing && <th className="w-8"></th>}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {colorGroup.items.map((item) => (
-                                <tr key={item.id} className="border-b last:border-0">
-                                  <td className="px-3 py-1.5">{item.variant.size.name}</td>
-                                  <td className="px-3 py-1.5 text-right">{fp(item.variant.price, item.variant.product.priceCurrency)}</td>
-                                  <td className="px-3 py-1.5 text-right">
-                                    {isEditing ? (
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        value={item.quantity}
-                                        onChange={(e) =>
-                                          updateQuantity(item.id, parseInt(e.target.value) || 0)
-                                        }
-                                        className="ml-auto h-7 w-16 text-center text-sm"
-                                      />
-                                    ) : (
-                                      item.quantity
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-1.5 text-right font-medium">
-                                    {fp(item.variant.price * item.quantity, item.variant.product.priceCurrency)}
-                                  </td>
-                                  {isEditing && (
-                                    <td className="px-1 py-1.5 text-center">
-                                      <button onClick={() => removeItem(item.id)}>
-                                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                      </button>
-                                    </td>
+                    {/* 사이즈를 가로로 펼친 오더시트.
+                        담지 않은 사이즈도 열로 두어 빈 칸에 수를 넣으면 바로 담긴다. */}
+                    <div className="mt-3 overflow-x-auto rounded border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="px-3 py-1.5 text-left text-xs font-medium text-muted-foreground">
+                              {t("color")}
+                            </th>
+                            {group.sizes.map((sz) => (
+                              <th
+                                key={sz.id}
+                                className="px-2 py-1.5 text-center text-xs font-medium text-muted-foreground"
+                              >
+                                {sz.name}
+                              </th>
+                            ))}
+                            <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">
+                              {t("quantity")}
+                            </th>
+                            <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">
+                              {t("amount")}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.rows.map((row) => (
+                            <tr key={row.colorId} className="border-b last:border-0">
+                              <td className="whitespace-nowrap px-3 py-1.5">
+                                <span className="flex items-center gap-1.5">
+                                  {row.hexColor && (
+                                    <span
+                                      className="inline-block h-3 w-3 shrink-0 rounded-full border"
+                                      style={{ backgroundColor: row.hexColor }}
+                                    />
                                   )}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ))}
+                                  {row.colorName}
+                                </span>
+                              </td>
+                              {group.sizes.map((sz) => {
+                                const cell = row.cells[sz.id]
+                                // 그 컬러에 없는 사이즈는 칸 자체를 비운다
+                                if (!cell) {
+                                  return (
+                                    <td key={sz.id} className="px-2 py-1.5 text-center text-gray-300">
+                                      –
+                                    </td>
+                                  )
+                                }
+                                const soldOut = cell.stock <= 0
+                                return (
+                                  <td key={sz.id} className="px-1 py-1.5 text-center">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      max={cell.stock > 0 ? cell.stock : undefined}
+                                      value={cell.quantity || ""}
+                                      placeholder={soldOut ? "-" : "0"}
+                                      disabled={soldOut}
+                                      title={soldOut ? t("soldOut") : t("stockLeft", { count: cell.stock })}
+                                      onChange={(e) => {
+                                        const v = parseInt(e.target.value) || 0
+                                        // 재고를 넘겨 담을 수 없다
+                                        setCellQuantity(cell.variantId, Math.min(v, cell.stock))
+                                      }}
+                                      className="mx-auto h-8 w-14 px-1 text-center text-sm"
+                                    />
+                                  </td>
+                                )
+                              })}
+                              <td className="px-3 py-1.5 text-right tabular-nums">{row.totalQty}</td>
+                              <td className="px-3 py-1.5 text-right font-medium tabular-nums">
+                                {fp(row.subtotal, group.items[0].variant.product.priceCurrency)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </CardContent>
                 </Card>

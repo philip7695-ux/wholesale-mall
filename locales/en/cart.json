@@ -18,5 +18,8 @@
   "moqProductWarning": "{productName}: min. {required} pcs required (current {actual} pcs)",
   "moqColorWarning": "{productName} - {colorName}: min. {required} pcs required (current {actual} pcs)",
   "approvalRequired": "Orders are available after membership approval.",
-  "vat": "VAT ({rate}%)"
+  "vat": "VAT ({rate}%)",
+  "color": "Color",
+  "stockLeft": "Stock {count}",
+  "soldOut": "Sold out"
 }

@@ -18,5 +18,8 @@
   "moqProductWarning": "{productName}: 最低{required}枚必要 (現在{actual}枚)",
   "moqColorWarning": "{productName} - {colorName}: 最低{required}枚必要 (現在{actual}枚)",
   "approvalRequired": "会員承認後に注文が可能です。",
-  "vat": "消費税 ({rate}%)"
+  "vat": "消費税 ({rate}%)",
+  "color": "カラー",
+  "stockLeft": "在庫 {count}",
+  "soldOut": "品切れ"
 }

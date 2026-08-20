@@ -20,7 +20,15 @@ export async function GET() {
         include: {
           variant: {
             include: {
-              product: { include: { colors: true } },
+              // 장바구니를 오더시트처럼 보여주려면 담지 않은 사이즈도 알아야 한다.
+              // 상품의 전체 사이즈·변형을 함께 내려보낸다.
+              product: {
+                include: {
+                  colors: { orderBy: { sortOrder: "asc" } },
+                  sizes: { orderBy: { sortOrder: "asc" } },
+                  variants: { select: { id: true, colorId: true, sizeId: true, price: true, stock: true } },
+                },
+              },
               color: true,
               size: true,
             },
@@ -36,17 +44,29 @@ export async function GET() {
       getGradeDiscount(session.user.buyerGrade || "BRONZE").catch(() => 0),
       getSpecialOfferRate(),
     ])
+    // 담지 않은 변형도 같은 규칙으로 값을 매겨야 빈 칸에 수량을 넣었을 때
+    // 가격이 달라지지 않는다.
+    const priceOf = (product: any, raw: number) =>
+      buyerPrice(
+        raw,
+        seasonRateFor(product.code, seasonRates),
+        gradeRate,
+        product.specialOffer ? specialOfferRate : 0,
+      )
+
     const priced = items.map((item: any) => ({
       ...item,
       variant: {
         ...item.variant,
         retailPrice: item.variant.price,
-        price: buyerPrice(
-          item.variant.price,
-          seasonRateFor(item.variant.product.code, seasonRates),
-          gradeRate,
-          item.variant.product.specialOffer ? specialOfferRate : 0,
-        ),
+        price: priceOf(item.variant.product, item.variant.price),
+        product: {
+          ...item.variant.product,
+          variants: item.variant.product.variants.map((v: any) => ({
+            ...v,
+            price: priceOf(item.variant.product, v.price),
+          })),
+        },
       },
     }))
     return NextResponse.json(priced)
