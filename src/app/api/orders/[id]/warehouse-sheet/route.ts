@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { apiRoute } from "@/lib/api-route"
 import { sortSizeNames } from "@/lib/product-sizes"
+import { renderSheet } from "@/lib/sheet-style"
 
 /**
  * 창고에 보낼 발주서.
@@ -127,48 +128,26 @@ async function GET_impl(
     return out
   }
 
-  const wb = XLSX.utils.book_new()
-  // 머리말 세 줄을 비워 두고 표를 4행부터 놓는다
-  const ws = XLSX.utils.json_to_sheet([])
-  XLSX.utils.sheet_add_json(ws, rows, { origin: "A4", header })
-
-  // 창고가 어느 주문인지, 무엇을 해야 하는지 위에 적어 둔다
-  XLSX.utils.sheet_add_aoa(
-    ws,
-    [
-      [
-        `발주서  ${order.orderNumber}`,
-        "",
-        `바이어: ${order.user?.businessName || order.user?.name || "-"}`,
-        "",
-        `주문일: ${new Date(order.createdAt).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}`,
-      ],
-      [
-        layout === "grid"
-          ? "실물 확인 후 사이즈 칸의 수량을 고쳐서 회신해 주세요."
-          : "실물 확인 후 확인수량 칸을 채워서 회신해 주세요.",
-      ],
-      [],
-    ],
-    { origin: "A1" },
-  )
-
-  const cols = header.map((key) => {
-    const maxLen = Math.max(
-      key.length * 2,
-      ...rows.map((r) => String(r[key] ?? "").length),
-    )
-    return { wch: Math.min(maxLen + 2, 30) }
+  const buf = await renderSheet({
+    sheetName: layout === "grid" ? "발주서(사이즈 가로)" : "발주서(사이즈 세로)",
+    title: `발주서  ${order.orderNumber}`,
+    subtitle: [
+      `바이어: ${order.user?.businessName || order.user?.name || "-"}`,
+      `주문일: ${new Date(order.createdAt).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}`,
+      `품목: ${order.items.length}개`,
+    ].join("      "),
+    notice:
+      layout === "grid"
+        ? "실물 확인 후 사이즈 칸의 수량을 고쳐서 회신해 주세요."
+        : "실물 확인 후 확인수량 칸을 채워서 회신해 주세요.",
+    header,
+    rows,
+    // 창고가 채워 넣는 칸. 눈에 띄게 칠해 어디를 적어야 하는지 알린다.
+    fillableColumns:
+      layout === "grid"
+        ? header.filter((h) => !["품번", "상품명", "컬러", "주문합계"].includes(h))
+        : ["확인수량", "비고"],
   })
-  ws["!cols"] = cols
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    ws,
-    layout === "grid" ? "발주서(사이즈 가로)" : "발주서(사이즈 세로)",
-  )
-
-  const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
   const filename = `발주서_${order.orderNumber}_${layout === "grid" ? "가로" : "세로"}.xlsx`
 
   return new NextResponse(buf, {
