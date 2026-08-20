@@ -23,14 +23,14 @@ import { buyerPrice } from "@/lib/pricing"
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string; code?: string }>
+  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string; code?: string; sort?: string }>
 }) {
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
   const tCat = await getTranslations("categories")
   const locale = await getLocale()
   const rates = await getAllExchangeRates()
-  const { year, season, category, brand, code } = await searchParams
+  const { year, season, category, brand, code, sort } = await searchParams
 
   const [categories, brandRows, seasonRates] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -54,6 +54,12 @@ export default async function AdminProductsPage({
   // 스타일 넘버는 일부만 넣어도 찾는다
   if (code) where.code = { contains: code, mode: "insensitive" }
 
+  // 재고 많은 순은 스페셜 오퍼로 묶을 대상을 찾을 때 쓴다
+  const orderBy =
+    sort === "stock"
+      ? [{ totalStock: "desc" as const }]
+      : [{ seasonKey: "desc" as const }, { code: "asc" as const }]
+
   const products = await prisma.product.findMany({
     where,
     include: {
@@ -61,7 +67,7 @@ export default async function AdminProductsPage({
       colors: true,
       variants: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
   })
 
   return (
@@ -99,6 +105,10 @@ export default async function AdminProductsPage({
         countLabel={t("filterCount", { count: products.length })}
         searchLabel={t("search")}
         searchPlaceholder={t("codeSearchPlaceholder")}
+        sorts={[
+          { value: "", label: t("sortSeason") },
+          { value: "stock", label: t("sortStock") },
+        ]}
       />
 
       {products.length === 0 ? (
@@ -166,6 +176,16 @@ export default async function AdminProductsPage({
                     <CardTitle className="text-sm font-semibold line-clamp-1">{product.name}</CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {translateCategory(product.category.slug, tCat, product.category.name)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
+                    </p>
+                    {/* 재고가 많은 상품을 골라 스페셜 오퍼로 묶기 위한 표시 */}
+                    <p className="text-xs">
+                      {product.totalStock > 0 ? (
+                        <span className={product.totalStock >= 500 ? "font-medium text-emerald-600" : "text-muted-foreground"}>
+                          {t("stockTotal", { count: product.totalStock.toLocaleString() })}
+                        </span>
+                      ) : (
+                        <span className="text-red-500">{t("outOfStock")}</span>
+                      )}
                     </p>
                     <div className="mt-1 flex items-baseline gap-2">
                       <span className="text-sm font-medium">

@@ -403,5 +403,9 @@
   "bulkDeleteConfirm": "選択した商品を削除します。元に戻せません。続けますか？",
   "bulkOrderedWarning": "選択した商品のうち{count}件は注文履歴があります。履歴は残りますが商品との紐付けは切れます。続けますか？",
   "bulkDone": "{count}件を処理しました。",
-  "imageCountTitle": "登録写真数"
+  "imageCountTitle": "登録写真数",
+  "sortSeason": "最新シーズン順",
+  "sortStock": "在庫が多い順",
+  "stockTotal": "在庫 {count}",
+  "outOfStock": "品切れ"
 }
