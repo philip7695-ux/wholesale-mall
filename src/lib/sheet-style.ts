@@ -37,6 +37,7 @@ export async function renderSheet({
   header,
   rows,
   fillableColumns = [],
+  summary,
 }: {
   sheetName: string
   title: string
@@ -46,8 +47,13 @@ export async function renderSheet({
   rows: Record<string, unknown>[]
   /** 상대가 채워 넣어야 하는 열. 옅게 칠해 표시한다. */
   fillableColumns?: string[]
+  /** 앞에 붙일 요약 시트. 항목과 값을 두 열로 늘어놓는다. */
+  summary?: { sheetName: string; title: string; rows: [string, string | number][] }
 }): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook()
+
+  if (summary) addSummarySheet(wb, summary)
+
   const ws = wb.addWorksheet(sheetName, {
     views: [{ state: "frozen", xSplit: 3, ySplit: HEADER_ROW }],
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
@@ -132,4 +138,33 @@ export async function renderSheet({
 
   // exceljs 는 ArrayBuffer 를 돌려준다. Response 본문으로 그대로 쓸 수 있다.
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer
+}
+
+/** 주문번호·수령인 같은 머리 정보를 담는 앞 시트 */
+function addSummarySheet(
+  wb: ExcelJS.Workbook,
+  summary: { sheetName: string; title: string; rows: [string, string | number][] },
+) {
+  const ws = wb.addWorksheet(summary.sheetName)
+  ws.getColumn(1).width = 18
+  ws.getColumn(2).width = 44
+
+  ws.mergeCells(1, 1, 1, 2)
+  const title = ws.getCell(1, 1)
+  title.value = summary.title
+  title.font = { size: 14, bold: true }
+  ws.getRow(1).height = 22
+
+  summary.rows.forEach(([label, value], i) => {
+    const row = ws.getRow(i + 3)
+    // 빈 항목은 구분을 위한 여백이므로 테두리를 두르지 않는다
+    if (!label) return
+    row.getCell(1).value = label
+    row.getCell(1).font = { size: 10, bold: true }
+    row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } }
+    row.getCell(1).border = boxed
+    row.getCell(2).value = value === "" ? null : value
+    row.getCell(2).font = { size: 10 }
+    row.getCell(2).border = boxed
+  })
 }
