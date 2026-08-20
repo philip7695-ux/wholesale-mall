@@ -257,13 +257,21 @@ async function POST_impl(
   const iColor = col("컬러")
   const isRows = col("사이즈") !== -1
 
+  // 사람이 손으로 만진 파일이라 앞뒤 공백과 대소문자가 섞여 들어온다.
+  const norm = (v: unknown) => String(v ?? "").trim().toUpperCase()
+
   // (품번|컬러|사이즈) -> 주문 항목. 품번이 없는 옛 데이터는 상품명으로도 찾는다.
   const byKey = new Map<string, (typeof order.items)[number]>()
   for (const item of order.items) {
     const code = item.variant?.product?.code
-    if (code) byKey.set(`${code}|${item.colorName}|${item.sizeName}`, item)
-    byKey.set(`${item.productName}|${item.colorName}|${item.sizeName}`, item)
+    const tail = `${norm(item.colorName)}|${norm(item.sizeName)}`
+    if (code) byKey.set(`${norm(code)}|${tail}`, item)
+    byKey.set(`${norm(item.productName)}|${tail}`, item)
   }
+
+  // 이 주문에 실제로 있는 사이즈만 열로 인정한다. 그래야 창고가 담당자나
+  // 메모 같은 열을 덧붙여도 그걸 사이즈로 잘못 읽지 않는다.
+  const orderSizes = new Set(order.items.map((i) => norm(i.sizeName)))
 
   const num = (v: unknown): number | null => {
     if (v === null || v === undefined || String(v).trim() === "") return null
@@ -287,13 +295,12 @@ async function POST_impl(
       ? [[String(row[col("사이즈")] ?? "").trim(), row[col("확인수량")]]]
       : header
           .map((h, idx) => [h, row[idx]] as [string, unknown])
-          .filter(
-            ([h]) => !["품번", "상품명", "컬러", "주문합계", "비고"].includes(h) && h !== "",
-          )
+          // 주문에 있는 사이즈 이름을 가진 열만 읽는다
+          .filter(([h]) => orderSizes.has(norm(h)))
 
     for (const [size, raw] of pairs) {
       if (!size) continue
-      const item = byKey.get(`${code}|${color}|${size}`)
+      const item = byKey.get(`${norm(code)}|${norm(color)}|${norm(size)}`)
       if (!item) {
         // 주문에 없던 칸에 창고가 숫자를 적었을 수 있다. 0 이나 빈 칸은 조용히 넘긴다.
         const n = num(raw)
