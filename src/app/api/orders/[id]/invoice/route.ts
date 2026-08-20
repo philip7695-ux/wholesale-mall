@@ -59,12 +59,7 @@ export async function GET(
     try {
       const updated = await prisma.order.update({
         where: { id },
-        data: {
-          invoiceNumber,
-          ...(order.status === "ORDER_PLACED"
-            ? { status: "INVOICE_SENT", invoiceSentAt: new Date() }
-            : {}),
-        },
+        data: { invoiceNumber },
       })
       invoiceNumber = updated.invoiceNumber!
     } catch {
@@ -75,6 +70,18 @@ export async function GET(
       })
       invoiceNumber = refetched?.invoiceNumber ?? invoiceNumber
     }
+  }
+
+  // 상태 전이는 번호 발급과 따로 본다. 번호가 이미 있는 주문을 다시
+  // 내려받는 경우에도 진행 현황이 인보이스 발행에서 멈추면 안 된다.
+  //
+  // 확정 단계가 생기기 전에는 주문접수 다음이 바로 인보이스였다.
+  // 지금은 확정을 거쳐 오므로 그쪽도 함께 넘긴다.
+  if (isAdmin && (order.status === "ORDER_PLACED" || order.status === "CONFIRMED")) {
+    await prisma.order.update({
+      where: { id },
+      data: { status: "INVOICE_SENT", invoiceSentAt: new Date() },
+    })
   }
 
   // 결제수단별 결제 정보 조회
