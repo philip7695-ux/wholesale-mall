@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { toast } from "sonner"
-import { FileDown, Package, Truck } from "lucide-react"
+import { FileDown, Package, Truck, Plus, X } from "lucide-react"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
 import { PRE_PAYMENT_STATUSES } from "@/lib/order-status"
 import { formatPrice, formatDateTime } from "@/lib/utils"
@@ -31,7 +31,7 @@ export function OrderStatusForm({
   orderId,
   currentStatus,
   currentPaymentStatus,
-  currentTrackingNumber,
+  currentTrackingNumbers,
   currentShippingCarrier,
   invoiceNumber,
   paymentConfirmation,
@@ -39,7 +39,7 @@ export function OrderStatusForm({
   orderId: string
   currentStatus: string
   currentPaymentStatus: string
-  currentTrackingNumber?: string | null
+  currentTrackingNumbers?: string[]
   currentShippingCarrier?: string | null
   invoiceNumber?: string | null
   paymentConfirmation?: PaymentConfirmationData | null
@@ -49,7 +49,12 @@ export function OrderStatusForm({
   const locale = useLocale()
   const { rate } = useCurrency()
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
-  const [trackingNumber, setTrackingNumber] = useState(currentTrackingNumber || "")
+  // 박스가 여럿이면 운송장 번호도 여럿. 빈 칸 하나로 시작해 늘려간다.
+  const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
+    currentTrackingNumbers && currentTrackingNumbers.length > 0
+      ? currentTrackingNumbers
+      : [""],
+  )
   const [shippingCarrier, setShippingCarrier] = useState(currentShippingCarrier || "")
   const [loading, setLoading] = useState(false)
   const [invoiceLoading, setInvoiceLoading] = useState(false)
@@ -177,7 +182,8 @@ export function OrderStatusForm({
 
   // 송장번호 저장 (자동 SHIPPED 전환은 서버에서 처리)
   async function handleShippingSave() {
-    if (!trackingNumber.trim()) {
+    const cleaned = trackingNumbers.map((n) => n.trim()).filter((n) => n !== "")
+    if (cleaned.length === 0) {
       toast.error(t("trackingNumberRequired"))
       return
     }
@@ -186,7 +192,7 @@ export function OrderStatusForm({
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trackingNumber, shippingCarrier }),
+        body: JSON.stringify({ trackingNumbers: cleaned, shippingCarrier }),
       })
 
       if (!res.ok) throw new Error()
@@ -376,11 +382,45 @@ export function OrderStatusForm({
                   placeholder={t("trackingShippingCarrier")}
                 />
                 <Label>{t("trackingNumber")}</Label>
-                <Input
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder={t("trackingNumber")}
-                />
+                {/* 박스마다 한 줄. 여러 개면 + 로 늘린다. */}
+                {trackingNumbers.map((num, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      value={num}
+                      onChange={(e) =>
+                        setTrackingNumbers((prev) =>
+                          prev.map((v, j) => (j === i ? e.target.value : v)),
+                        )
+                      }
+                      placeholder={
+                        trackingNumbers.length > 1
+                          ? t("trackingNumberBox", { n: i + 1 })
+                          : t("trackingNumber")
+                      }
+                    />
+                    {trackingNumbers.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setTrackingNumbers((prev) => prev.filter((_, j) => j !== i))
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTrackingNumbers((prev) => [...prev, ""])}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  {t("trackingNumberAdd")}
+                </Button>
               </div>
               <Button onClick={handleShippingSave} disabled={loading} className="w-full">
                 <Truck className="mr-2 h-4 w-4" />
@@ -392,9 +432,16 @@ export function OrderStatusForm({
           {/* 배송 완료 (SHIPPED = 최종 상태) */}
           {isShipped && (
             <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-4">
-              {currentTrackingNumber && (
-                <div className="text-sm text-muted-foreground">
-                  {t("trackingShippingCarrier")}: {currentShippingCarrier || "-"} / {t("trackingNumber")}: {currentTrackingNumber}
+              {currentTrackingNumbers && currentTrackingNumbers.length > 0 && (
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <div>
+                    {t("trackingShippingCarrier")}: {currentShippingCarrier || "-"}
+                  </div>
+                  <div>
+                    {t("trackingNumber")}
+                    {currentTrackingNumbers.length > 1 && ` (${currentTrackingNumbers.length})`}:{" "}
+                    {currentTrackingNumbers.join(", ")}
+                  </div>
                 </div>
               )}
             </div>

@@ -437,5 +437,7 @@
   "orderExportAllGrid": "全部下载 (横向)",
   "orderExportAllRows": "全部下载 (纵向)",
   "orderExportSelectedGrid": "下载 {count} 条 (横向)",
-  "orderExportSelectedRows": "下载 {count} 条 (纵向)"
+  "orderExportSelectedRows": "下载 {count} 条 (纵向)",
+  "trackingNumberAdd": "添加箱",
+  "trackingNumberBox": "第{n}箱运单号"
 }

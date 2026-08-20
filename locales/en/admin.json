@@ -437,5 +437,7 @@
   "orderExportAllGrid": "Export all (across)",
   "orderExportAllRows": "Export all (down)",
   "orderExportSelectedGrid": "Export {count} (across)",
-  "orderExportSelectedRows": "Export {count} (down)"
+  "orderExportSelectedRows": "Export {count} (down)",
+  "trackingNumberAdd": "Add box",
+  "trackingNumberBox": "Box {n} tracking no."
 }

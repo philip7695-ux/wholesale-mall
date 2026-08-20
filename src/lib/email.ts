@@ -135,17 +135,25 @@ export async function notifyCustomerPaymentConfirmed(customerEmail: string, orde
 export async function notifyCustomerShipped(customerEmail: string, order: {
   orderNumber: string
   customerName: string
-  trackingNumber: string
+  trackingNumbers: string[]
   shippingCarrier: string
 }) {
+  // 박스가 여럿이면 운송장 번호도 여럿. 한 줄씩 늘어놓는다.
+  const numbers = order.trackingNumbers.filter((n) => n && n.trim() !== "")
+  const trackingRows = numbers
+    .map(
+      (n, i) =>
+        `<tr><td style="padding:8px;color:#666">Tracking No.${numbers.length > 1 ? ` (${i + 1})` : ""}</td><td style="padding:8px;font-weight:bold">${n}</td></tr>`,
+    )
+    .join("")
   await send(customerEmail, `[Shipped] ${order.orderNumber}`,
     `<div style="font-family:sans-serif;max-width:600px">
       <h2>Order Shipped</h2>
       <p>Dear ${order.customerName},</p>
-      <p>Your order <strong>${order.orderNumber}</strong> has been shipped!</p>
+      <p>Your order <strong>${order.orderNumber}</strong> has been shipped${numbers.length > 1 ? ` in ${numbers.length} boxes` : ""}!</p>
       <table style="border-collapse:collapse;width:100%">
         <tr><td style="padding:8px;color:#666">Carrier</td><td style="padding:8px">${order.shippingCarrier || "-"}</td></tr>
-        <tr><td style="padding:8px;color:#666">Tracking No.</td><td style="padding:8px;font-weight:bold">${order.trackingNumber}</td></tr>
+        ${trackingRows}
       </table>
     </div>`)
 }

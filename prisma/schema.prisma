@@ -182,7 +182,10 @@ model Order {
   recipientPhone       String?
   shippingAddress      String?
   shippingMemo         String?
+  // 여러 박스로 나눠 보내면 운송장 번호도 여럿이다. 배송사는 주문당 하나.
+  // trackingNumber 는 옛 코드와 호환을 위해 번호들을 합쳐 그대로 둔다.
   trackingNumber       String?
+  trackingNumbers      String[]       @default([])
   shippingCarrier      String?
   confirmedAt          DateTime?
   invoiceSentAt        DateTime?
