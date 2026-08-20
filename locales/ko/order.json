@@ -133,5 +133,11 @@
   "styleNo": "품번",
   "grandQty": "총계",
   "unitPrice": "단가",
-  "sizeTotal": "사이즈 합계"
+  "sizeTotal": "사이즈 합계",
+  "sheetImport": "창고 회신 불러오기",
+  "sheetImportApplied": "{count}개 항목의 수량을 채웠습니다. 확인 후 저장하세요.",
+  "sheetImportNoChange": "주문과 수량이 같습니다. 바꿀 것이 없습니다.",
+  "sheetImportUnmatched": "주문에 없는 줄은 건너뛰었습니다: {list}",
+  "sheetImportMissing": "파일에 없는 항목 {count}개는 그대로 두었습니다.",
+  "sheetImportFailed": "발주서를 읽지 못했습니다."
 }

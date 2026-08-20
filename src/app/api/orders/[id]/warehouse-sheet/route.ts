@@ -181,3 +181,158 @@ async function GET_impl(
 }
 
 export const GET = apiRoute(GET_impl, { retry: true })
+
+/**
+ * 창고가 채워 보낸 발주서를 읽는다.
+ *
+ * 여기서 DB 를 고치지는 않는다. 읽은 수량을 조정 표에 채워 넣기만 하고,
+ * 관리자가 눈으로 확인한 뒤 저장한다. 남이 만진 파일을 그대로 재고에
+ * 반영하면 오타 하나가 주문을 망가뜨린다.
+ *
+ * 가로·세로 둘 다 받는다. 머리글 줄을 찾아 형식을 알아낸다.
+ */
+async function POST_impl(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await params
+  const form = await request.formData()
+  const file = form.get("file")
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      items: {
+        include: { variant: { select: { product: { select: { code: true } } } } },
+      },
+    },
+  })
+  if (!order) {
+    return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
+  }
+
+  let sheet: XLSX.WorkSheet
+  try {
+    const wb = XLSX.read(Buffer.from(await file.arrayBuffer()), { type: "buffer" })
+    const name = wb.SheetNames[0]
+    if (!name) throw new Error("empty")
+    sheet = wb.Sheets[name]
+  } catch {
+    return NextResponse.json(
+      { error: "엑셀 파일을 읽지 못했습니다. 내려받은 발주서를 그대로 채워 올려주세요." },
+      { status: 400 },
+    )
+  }
+
+  const grid = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    blankrows: true,
+  })
+
+  // 머리글 줄을 찾는다. 창고가 위에 줄을 넣거나 지울 수 있으므로
+  // 4행이라고 못박지 않고 "품번"이 있는 줄을 찾는다.
+  const headerRow = grid.findIndex(
+    (r) => Array.isArray(r) && r.some((c) => String(c ?? "").trim() === "품번"),
+  )
+  if (headerRow === -1) {
+    return NextResponse.json(
+      { error: "품번 열을 찾지 못했습니다. 내려받은 발주서를 그대로 채워 올려주세요." },
+      { status: 400 },
+    )
+  }
+
+  const header = (grid[headerRow] as unknown[]).map((c) => String(c ?? "").trim())
+  const col = (name: string) => header.indexOf(name)
+  const body = grid.slice(headerRow + 1) as unknown[][]
+
+  const iCode = col("품번")
+  const iColor = col("컬러")
+  const isRows = col("사이즈") !== -1
+
+  // (품번|컬러|사이즈) -> 주문 항목. 품번이 없는 옛 데이터는 상품명으로도 찾는다.
+  const byKey = new Map<string, (typeof order.items)[number]>()
+  for (const item of order.items) {
+    const code = item.variant?.product?.code
+    if (code) byKey.set(`${code}|${item.colorName}|${item.sizeName}`, item)
+    byKey.set(`${item.productName}|${item.colorName}|${item.sizeName}`, item)
+  }
+
+  const num = (v: unknown): number | null => {
+    if (v === null || v === undefined || String(v).trim() === "") return null
+    const n = Number(String(v).replace(/[, ]/g, ""))
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
+  }
+
+  const changes: { itemId: string; label: string; from: number; to: number }[] = []
+  const unmatched: string[] = []
+  const seen = new Set<string>()
+
+  for (const row of body) {
+    if (!Array.isArray(row) || row.length === 0) continue
+    const code = String(row[iCode] ?? "").trim()
+    const color = String(row[iColor] ?? "").trim()
+    // 합계 줄과 빈 줄은 건너뛴다
+    if (!code || code === "합계" || !color) continue
+
+    // 사이즈별로 (사이즈이름, 수량) 한 쌍씩 뽑는다
+    const pairs: [string, unknown][] = isRows
+      ? [[String(row[col("사이즈")] ?? "").trim(), row[col("확인수량")]]]
+      : header
+          .map((h, idx) => [h, row[idx]] as [string, unknown])
+          .filter(
+            ([h]) => !["품번", "상품명", "컬러", "주문합계", "비고"].includes(h) && h !== "",
+          )
+
+    for (const [size, raw] of pairs) {
+      if (!size) continue
+      const item = byKey.get(`${code}|${color}|${size}`)
+      if (!item) {
+        // 주문에 없던 칸에 창고가 숫자를 적었을 수 있다. 0 이나 빈 칸은 조용히 넘긴다.
+        const n = num(raw)
+        if (n) unmatched.push(`${code} / ${color} / ${size}`)
+        continue
+      }
+      if (seen.has(item.id)) continue
+
+      const n = num(raw)
+      // 세로 형식에서 확인수량을 비워 두면 "그대로"라는 뜻이다.
+      // 가로 형식에서는 빈 칸이 0 을 뜻하므로 0 으로 읽는다.
+      const to = n === null ? (isRows ? item.quantity : 0) : n
+      seen.add(item.id)
+      if (to !== item.quantity) {
+        changes.push({
+          itemId: item.id,
+          label: `${code} / ${color} / ${size}`,
+          from: item.quantity,
+          to,
+        })
+      }
+    }
+  }
+
+  if (seen.size === 0) {
+    return NextResponse.json(
+      { error: "이 주문과 맞는 줄을 찾지 못했습니다. 다른 주문의 발주서인지 확인해주세요." },
+      { status: 400 },
+    )
+  }
+
+  return NextResponse.json({
+    changes,
+    unmatched: [...new Set(unmatched)],
+    // 파일에 아예 없던 항목. 창고가 줄을 지웠을 수 있어 그대로 두고 알린다.
+    missing: order.items
+      .filter((i) => !seen.has(i.id))
+      .map((i) => `${i.variant?.product?.code || i.productName} / ${i.colorName} / ${i.sizeName}`),
+  })
+}
+
+export const POST = apiRoute(POST_impl, { retry: false })

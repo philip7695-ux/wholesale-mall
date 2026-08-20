@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "@/i18n/navigation"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Loader2, Send, CheckCircle2 } from "lucide-react"
+import { Loader2, Send, CheckCircle2, Upload } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { sortSizeNames } from "@/lib/product-sizes"
 
@@ -70,6 +70,7 @@ export function OrderRevisionTable({
     Object.fromEntries(items.map((i) => [i.id, String(i.quantity)])),
   )
   const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const fp = (amount: number) => formatPrice(amount, locale, rate)
   const qtyOf = (item: RevisionItem) => Number(draft[item.id]) || 0
@@ -137,6 +138,49 @@ export function OrderRevisionTable({
       toast.error(e?.message || t("revisionFailed"))
     } finally {
       setBusy(false)
+    }
+  }
+
+  /**
+   * 창고가 채워 보낸 발주서를 읽어 표에 채운다.
+   *
+   * 바로 저장하지 않는다. 표에 넣어두고 관리자가 눈으로 확인한 뒤
+   * 저장 버튼을 누른다. 남이 만진 파일의 오타가 그대로 반영되면 곤란하다.
+   */
+  async function importSheet(file: File) {
+    setBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await fetch(`/api/orders/${orderId}/warehouse-sheet`, {
+        method: "POST",
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      if (data.changes.length === 0) {
+        toast.info(t("sheetImportNoChange"))
+      } else {
+        setDraft((d) => {
+          const next = { ...d }
+          for (const c of data.changes) next[c.itemId] = String(c.to)
+          return next
+        })
+        toast.success(t("sheetImportApplied", { count: data.changes.length }))
+      }
+      // 못 맞춘 줄은 조용히 넘기지 않는다. 창고가 다른 걸 적었을 수 있다.
+      if (data.unmatched?.length) {
+        toast.warning(t("sheetImportUnmatched", { list: data.unmatched.slice(0, 3).join(", ") }))
+      }
+      if (data.missing?.length) {
+        toast.warning(t("sheetImportMissing", { count: data.missing.length }))
+      }
+    } catch (e: any) {
+      toast.error(e?.message || t("sheetImportFailed"))
+    } finally {
+      setBusy(false)
+      if (fileRef.current) fileRef.current.value = ""
     }
   }
 
@@ -308,6 +352,25 @@ export function OrderRevisionTable({
         <div className="flex flex-wrap items-center gap-2">
           {isAdmin ? (
             <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) importSheet(f)
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+                disabled={busy}
+              >
+                <Upload className="mr-1 h-3 w-3" />
+                {t("sheetImport")}
+              </Button>
               <Button size="sm" variant="outline" onClick={() => submit()} disabled={busy || !changed}>
                 {busy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                 {tc("save")}

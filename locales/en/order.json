@@ -133,5 +133,11 @@
   "styleNo": "Style no.",
   "grandQty": "Total qty",
   "unitPrice": "Unit price",
-  "sizeTotal": "Size total"
+  "sizeTotal": "Size total",
+  "sheetImport": "Load warehouse reply",
+  "sheetImportApplied": "Filled in {count} items. Review, then save.",
+  "sheetImportNoChange": "Quantities match the order. Nothing to change.",
+  "sheetImportUnmatched": "Skipped rows not in this order: {list}",
+  "sheetImportMissing": "{count} items were missing from the file and left unchanged.",
+  "sheetImportFailed": "Could not read the sheet."
 }

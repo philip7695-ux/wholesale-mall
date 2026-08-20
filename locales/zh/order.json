@@ -133,5 +133,11 @@
   "styleNo": "货号",
   "grandQty": "合计",
   "unitPrice": "单价",
-  "sizeTotal": "尺码合计"
+  "sizeTotal": "尺码合计",
+  "sheetImport": "导入仓库回复",
+  "sheetImportApplied": "已填入 {count} 项数量。确认后保存。",
+  "sheetImportNoChange": "数量与订单一致，无需更改。",
+  "sheetImportUnmatched": "已跳过不属于此订单的行：{list}",
+  "sheetImportMissing": "文件中缺少的 {count} 项保持不变。",
+  "sheetImportFailed": "无法读取订货单。"
 }

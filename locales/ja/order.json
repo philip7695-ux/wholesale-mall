@@ -133,5 +133,11 @@
   "styleNo": "品番",
   "grandQty": "合計",
   "unitPrice": "単価",
-  "sizeTotal": "サイズ合計"
+  "sizeTotal": "サイズ合計",
+  "sheetImport": "倉庫の回答を読み込む",
+  "sheetImportApplied": "{count}件の数量を入力しました。確認して保存してください。",
+  "sheetImportNoChange": "注文と数量が同じです。変更はありません。",
+  "sheetImportUnmatched": "注文にない行は飛ばしました: {list}",
+  "sheetImportMissing": "ファイルにない{count}件はそのままにしました。",
+  "sheetImportFailed": "発注書を読み込めませんでした。"
 }
