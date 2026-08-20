@@ -2,6 +2,7 @@ import "server-only"
 import { prisma } from "@/lib/prisma"
 import {
   calculateGrade,
+  sortByGrade,
   GRADE_DISCOUNT,
   GRADE_MOQ_RATE,
   GRADE_THRESHOLDS,
@@ -10,11 +11,10 @@ import {
 
 // DB에서 등급 설정 조회, 없으면 기본값
 export async function getGradeConfig(): Promise<GradeConfigData[]> {
-  const configs = await prisma.gradeConfig.findMany({
-    orderBy: { grade: "asc" },
-  })
+  const configs = await prisma.gradeConfig.findMany()
 
-  if (configs.length > 0) return configs
+  // 알파벳순(BRONZE, GOLD, SILVER, VIP)이 아니라 등급 서열로 돌려준다
+  if (configs.length > 0) return sortByGrade(configs)
 
   return ["BRONZE", "SILVER", "GOLD", "VIP"].map((grade) => ({
     grade,

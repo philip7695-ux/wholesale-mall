@@ -1,4 +1,15 @@
 // 등급별 할인율
+/** 등급 서열. 알파벳순으로 정렬하면 BRONZE, GOLD, SILVER, VIP 가 되어 어긋난다. */
+export const GRADE_ORDER = ["BRONZE", "SILVER", "GOLD", "VIP"] as const
+
+export function sortByGrade<T extends { grade: string }>(rows: T[]): T[] {
+  const rank = (g: string) => {
+    const i = (GRADE_ORDER as readonly string[]).indexOf(g)
+    return i === -1 ? GRADE_ORDER.length : i
+  }
+  return [...rows].sort((a, b) => rank(a.grade) - rank(b.grade))
+}
+
 export const GRADE_DISCOUNT: Record<string, number> = {
   BRONZE: 0,
   SILVER: 0.05,

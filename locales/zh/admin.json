@@ -392,5 +392,6 @@
   "seasonRateRange": "折扣率须在0~95%之间。",
   "seasonRateHint": "以吊牌价{sample}为基准的各等级最终单价。等级折扣按吊牌价累加。",
   "apply": "应用",
-  "season": "季节"
+  "season": "季节",
+  "seasonRateUnset": "未设置"
 }
