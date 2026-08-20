@@ -19,7 +19,8 @@ import { buyerPrice } from "@/lib/pricing"
 export interface SeasonRow {
   key: string        // "53"
   label: string      // "25 FW"
-  year: string       // "25"
+  seasonName: string // "가을"
+  year: string       // "5" (코드의 연도 한 자리)
   rate: number
   productCount: number
 }
@@ -30,6 +31,9 @@ interface Grade {
 }
 
 const SAMPLE = 10000
+
+/** 코드의 연도 한 자리를 연도로 편다. "6" -> 2026 (문자열로 이으면 206 이 된다) */
+const fullYear = (digit: string) => 2020 + Number(digit)
 
 /**
  * 시즌별 도매 할인율.
@@ -112,7 +116,7 @@ export function SeasonDiscountForm({
               onClick={() => open(y.year)}
               className="flex w-full items-center gap-4 border-b px-4 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >
-              <span className="w-16 font-mono text-base">20{y.year}</span>
+              <span className="w-16 font-mono text-base">{fullYear(y.year)}</span>
               <span className="w-24 text-sm text-muted-foreground">
                 {t("productCount")} {total.toLocaleString()}
               </span>
@@ -130,7 +134,7 @@ export function SeasonDiscountForm({
               <span className="hidden gap-1.5 text-xs text-muted-foreground sm:flex">
                 {y.seasons.map((s) => (
                   <span key={s.key} className="rounded bg-muted px-1.5 py-0.5">
-                    {s.label.split(" ")[1]} {Math.round(s.rate * 100)}%
+                    {s.seasonName} {Math.round(s.rate * 100)}%
                   </span>
                 ))}
               </span>
@@ -143,7 +147,7 @@ export function SeasonDiscountForm({
       <Dialog open={openYear !== null} onOpenChange={(v) => !v && setOpenYear(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>20{openYear} {t("seasonRate")}</DialogTitle>
+            <DialogTitle>{openYear && fullYear(openYear)} {t("seasonRate")}</DialogTitle>
           </DialogHeader>
 
           <div className="overflow-x-auto">
@@ -167,7 +171,7 @@ export function SeasonDiscountForm({
                   const rate = Number.isFinite(pct) ? pct / 100 : 0
                   return (
                     <tr key={s.key} className="border-t">
-                      <td className="py-2 font-mono">{s.label}</td>
+                      <td className="py-2">{s.seasonName}</td>
                       <td className="py-2 text-muted-foreground">{s.productCount}</td>
                       <td className="py-2">
                         <div className="flex items-center gap-1">
