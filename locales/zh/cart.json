@@ -24,5 +24,8 @@
   "soldOut": "缺货",
   "style": "款式",
   "sizeTotal": "尺码合计",
-  "productDelete": "删除此款式"
+  "productDelete": "删除此款式",
+  "image": "图片",
+  "styleNo": "货号",
+  "grandQty": "合计"
 }

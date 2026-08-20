@@ -24,5 +24,8 @@
   "soldOut": "Sold out",
   "style": "Style",
   "sizeTotal": "Size total",
-  "productDelete": "Remove this style"
+  "productDelete": "Remove this style",
+  "image": "Image",
+  "styleNo": "Style no.",
+  "grandQty": "Total qty"
 }

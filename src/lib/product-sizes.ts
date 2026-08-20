@@ -7,18 +7,18 @@ export const ALL_SIZES: string[] = [...ADULT_SIZES, ...KIDS_SIZES]
 
 /**
  * 여러 상품의 사이즈를 한 표에 펼칠 때 쓰는 정렬 순서.
- * 문자 사이즈를 앞에, 숫자 사이즈를 뒤에 작은 것부터 둔다.
+ * 쓰던 오더시트를 따라 숫자 사이즈를 앞에 작은 것부터, 문자 사이즈를 뒤에 둔다.
  * 목록에 없는 값은 맨 뒤로 보내되 이름순으로 묶어 뒤죽박죽이 되지 않게 한다.
  */
 const SIZE_ORDER = ["F", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "FREE"]
 
 export function sizeSortIndex(name: string): number {
   const v = name.trim().toUpperCase()
-  const letter = SIZE_ORDER.indexOf(v)
-  if (letter >= 0) return letter
   const num = Number(v)
-  if (Number.isFinite(num)) return 1000 + num
-  return 9000
+  if (Number.isFinite(num)) return num
+  const letter = SIZE_ORDER.indexOf(v)
+  if (letter >= 0) return 10000 + letter
+  return 20000
 }
 
 /** 사이즈 이름들을 표의 열 순서대로 정렬한다. */

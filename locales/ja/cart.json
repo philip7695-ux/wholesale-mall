@@ -24,5 +24,8 @@
   "soldOut": "品切れ",
   "style": "スタイル",
   "sizeTotal": "サイズ合計",
-  "productDelete": "このスタイルを削除"
+  "productDelete": "このスタイルを削除",
+  "image": "画像",
+  "styleNo": "品番",
+  "grandQty": "合計"
 }

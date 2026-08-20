@@ -72,6 +72,9 @@ interface GridRow {
   cells: Record<string, GridCell>   // 사이즈 이름 -> 칸
   totalQty: number
   subtotal: number
+  /** 이 줄의 단가. 사이즈마다 값이 다르면 최소~최대로 적는다. */
+  unitPriceMin: number
+  unitPriceMax: number
 }
 
 interface CartGrid {
@@ -136,6 +139,7 @@ function buildGrid(groups: ProductGroup[]): CartGrid {
       const cells: Record<string, GridCell> = {}
       let totalQty = 0
       let subtotal = 0
+      const prices: number[] = []
       for (const v of product.variants) {
         if (v.colorId !== c.id) continue
         const name = sizeIdToName.get(v.sizeId)
@@ -144,8 +148,11 @@ function buildGrid(groups: ProductGroup[]): CartGrid {
         cells[name] = { variantId: v.id, quantity, price: v.price, stock: v.stock }
         totalQty += quantity
         subtotal += v.price * quantity
+        prices.push(v.price)
       }
       rows.push({
+        unitPriceMin: prices.length ? Math.min(...prices) : 0,
+        unitPriceMax: prices.length ? Math.max(...prices) : 0,
         key: `${product.id}:${c.id}`,
         productId: product.id,
         productName: product.name,
@@ -355,28 +362,43 @@ export default function CartPage() {
           <div className="overflow-x-auto rounded-lg border">
             <table className="min-w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="sticky left-0 z-20 min-w-[200px] bg-muted/50 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                    {t("style")}
+                {/* 쓰던 오더시트처럼 사이즈 열을 하나로 묶어 이름표를 단다 */}
+                <tr className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
+                  <th rowSpan={2} className="sticky left-0 z-20 w-14 bg-muted/50 px-2 py-2">
+                    {t("image")}
                   </th>
-                  <th className="sticky left-[200px] z-20 min-w-[120px] border-r bg-muted/50 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                  <th
+                    rowSpan={2}
+                    className="sticky left-14 z-20 min-w-[120px] bg-muted/50 px-3 py-2 text-left"
+                  >
+                    {t("styleNo")}
+                  </th>
+                  <th
+                    rowSpan={2}
+                    className="sticky left-[176px] z-20 min-w-[110px] border-r bg-muted/50 px-3 py-2 text-left"
+                  >
                     {t("color")}
                   </th>
+                  <th colSpan={grid.sizeNames.length} className="border-b px-2 py-1.5 text-left">
+                    {t("size")}
+                  </th>
+                  <th rowSpan={2} className="border-l px-3 py-2 text-right">
+                    {t("grandQty")}
+                  </th>
+                  <th rowSpan={2} className="px-3 py-2 text-right">
+                    {t("unitPrice")}
+                  </th>
+                  <th rowSpan={2} className="px-3 py-2 text-right">
+                    {t("amount")}
+                  </th>
+                  <th rowSpan={2} className="w-10 px-1 py-2" />
+                </tr>
+                <tr className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
                   {grid.sizeNames.map((name) => (
-                    <th
-                      key={name}
-                      className="min-w-[56px] px-1 py-2 text-center text-xs font-medium text-muted-foreground"
-                    >
+                    <th key={name} className="min-w-[56px] px-1 py-1.5 text-center">
                       {name}
                     </th>
                   ))}
-                  <th className="border-l px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-                    {t("quantity")}
-                  </th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-                    {t("amount")}
-                  </th>
-                  <th className="w-10 px-1 py-2" />
                 </tr>
               </thead>
               <tbody>
@@ -386,37 +408,39 @@ export default function CartPage() {
                     className={`border-b last:border-0 ${row.firstOfProduct ? "border-t-2 border-t-muted" : ""}`}
                   >
                     {row.firstOfProduct && (
-                      <td
-                        rowSpan={row.productRowSpan}
-                        className="sticky left-0 z-10 bg-background px-3 py-1.5 align-top"
-                      >
-                        <div className="flex items-start gap-2">
+                      <>
+                        <td
+                          rowSpan={row.productRowSpan}
+                          className="sticky left-0 z-10 bg-background px-2 py-1.5 align-top"
+                        >
                           {row.thumbnail && (
                             <Link href={`/products/${row.productId}`}>
                               <img
                                 src={row.thumbnail}
                                 alt=""
-                                className="h-10 w-10 shrink-0 rounded bg-white object-contain"
+                                className="h-10 w-10 rounded bg-white object-contain"
                               />
                             </Link>
                           )}
-                          <div className="min-w-0">
-                            <Link
-                              href={`/products/${row.productId}`}
-                              className="line-clamp-2 font-medium hover:underline"
-                            >
-                              {row.productName}
-                            </Link>
-                            {row.productCode && (
-                              <p className="font-mono text-xs text-muted-foreground">
-                                {row.productCode}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+                        </td>
+                        <td
+                          rowSpan={row.productRowSpan}
+                          className="sticky left-14 z-10 bg-background px-3 py-1.5 align-top"
+                        >
+                          <Link
+                            href={`/products/${row.productId}`}
+                            className="whitespace-nowrap font-mono font-medium hover:underline"
+                          >
+                            {row.productCode || "-"}
+                          </Link>
+                          {/* 품번만으로는 무엇인지 떠올리기 어려워 이름을 작게 곁들인다 */}
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {row.productName}
+                          </p>
+                        </td>
+                      </>
                     )}
-                    <td className="sticky left-[200px] z-10 whitespace-nowrap border-r bg-background px-3 py-1.5">
+                    <td className="sticky left-[176px] z-10 whitespace-nowrap border-r bg-background px-3 py-1.5">
                       <span className="flex items-center gap-1.5">
                         {row.hexColor && (
                           <span
@@ -462,6 +486,11 @@ export default function CartPage() {
                       )
                     })}
                     <td className="border-l px-3 py-1.5 text-right tabular-nums">{row.totalQty}</td>
+                    <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                      {row.unitPriceMin === row.unitPriceMax
+                        ? fp(row.unitPriceMin, row.priceCurrency)
+                        : `${fp(row.unitPriceMin, row.priceCurrency)}~${fp(row.unitPriceMax, row.priceCurrency)}`}
+                    </td>
                     <td className="px-3 py-1.5 text-right font-medium tabular-nums">
                       {fp(row.subtotal, row.priceCurrency)}
                     </td>
@@ -485,7 +514,7 @@ export default function CartPage() {
               <tfoot>
                 <tr className="border-t-2 bg-muted/50 font-medium">
                   <td
-                    colSpan={2}
+                    colSpan={3}
                     className="sticky left-0 z-10 border-r bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
                   >
                     {t("sizeTotal")}
@@ -496,6 +525,7 @@ export default function CartPage() {
                     </td>
                   ))}
                   <td className="border-l px-3 py-2 text-right tabular-nums">{totalQty}</td>
+                  <td />
                   <td className="px-3 py-2 text-right tabular-nums">
                     {fp(supplyAmount, customerCurrency)}
                   </td>
