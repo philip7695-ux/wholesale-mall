@@ -407,5 +407,13 @@
   "sortSeason": "最新シーズン順",
   "sortStock": "在庫が多い順",
   "stockTotal": "在庫 {count}",
-  "outOfStock": "品切れ"
+  "outOfStock": "品切れ",
+  "bulkSpecial": "スペシャルに",
+  "bulkUnspecial": "スペシャル解除",
+  "specialOffer": "スペシャル",
+  "specialOfferRate": "スペシャルオファー追加割引",
+  "specialOfferDesc": "シーズン割引後の価格からさらに割り引きます。シーズン50%の商品に30%を設定すると定価の35%になります。",
+  "specialOfferCount": "指定商品 {count}件",
+  "normalPrice": "通常価格",
+  "specialPrice": "スペシャル価格"
 }

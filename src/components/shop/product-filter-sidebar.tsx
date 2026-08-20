@@ -18,12 +18,16 @@ export function ProductFilterSidebar({
   currentAgeGroup,
   currentSeason,
   availableSeasons,
+  specialOnly,
+  hasSpecialOffers,
 }: {
   categories: Category[]
   currentCategory?: string
   currentAgeGroup?: string
   currentSeason?: string
   availableSeasons: string[]
+  specialOnly: boolean
+  hasSpecialOffers: boolean
 }) {
   const router = useRouter()
   const t = useTranslations("shop")
@@ -34,6 +38,7 @@ export function ProductFilterSidebar({
     category?: string | null
     ageGroup?: string | null
     season?: string | null
+    special?: boolean | null
   }) {
     const params = new URLSearchParams()
     const cat = overrides.category !== undefined ? overrides.category : currentCategory
@@ -42,6 +47,8 @@ export function ProductFilterSidebar({
     if (cat) params.set("category", cat)
     if (age) params.set("ageGroup", age)
     if (sea) params.set("season", sea)
+    const sp = overrides.special !== undefined ? overrides.special : specialOnly
+    if (sp) params.set("special", "1")
     const qs = params.toString()
     return `/products${qs ? `?${qs}` : ""}`
   }
@@ -57,6 +64,20 @@ export function ProductFilterSidebar({
 
   return (
     <aside className="w-52 flex-shrink-0 space-y-8">
+      {/* Special offer — 카테고리가 아니라 딱지라 맨 위에 따로 둔다 */}
+      {hasSpecialOffers && (
+        <button
+          onClick={() => router.push(buildUrl({ special: !specialOnly }))}
+          className={`block w-full rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+            specialOnly
+              ? "border-[#1A1A1A] bg-[#1A1A1A] font-medium text-white"
+              : "border-gray-200 text-[#1A1A1A] hover:border-[#1A1A1A]"
+          }`}
+        >
+          {t("specialOffer")}
+        </button>
+      )}
+
       {/* Season */}
       {availableSeasons.length > 0 && (
         <div>

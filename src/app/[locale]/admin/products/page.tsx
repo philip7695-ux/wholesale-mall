@@ -17,7 +17,7 @@ import { ProductSelectCheckbox } from "@/components/admin/product-select-checkbo
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle"
 import { ProductFilters } from "@/components/admin/product-filters"
 import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel } from "@/lib/season"
-import { getSeasonRates } from "@/lib/pricing.server"
+import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { buyerPrice } from "@/lib/pricing"
 
 export default async function AdminProductsPage({
@@ -32,7 +32,7 @@ export default async function AdminProductsPage({
   const rates = await getAllExchangeRates()
   const { year, season, category, brand, code, sort } = await searchParams
 
-  const [categories, brandRows, seasonRates] = await Promise.all([
+  const [categories, brandRows, seasonRates, specialOfferRate] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
       where: { brand: { not: null } },
@@ -41,6 +41,7 @@ export default async function AdminProductsPage({
       orderBy: { brand: "asc" },
     }),
     getSeasonRates(),
+    getSpecialOfferRate(),
   ])
 
   // 연도·시즌은 seasonKey(코드 3~4번째 두 자리)로 거른다.
@@ -126,6 +127,8 @@ export default async function AdminProductsPage({
             activate: t("bulkActivate"),
             deactivate: t("bulkDeactivate"),
             delete: tc("delete"),
+            special: t("bulkSpecial"),
+            unspecial: t("bulkUnspecial"),
             clear: t("bulkClear"),
             deleteConfirm: t("bulkDeleteConfirm"),
             orderedWarning: t("bulkOrderedWarning"),
@@ -141,7 +144,8 @@ export default async function AdminProductsPage({
             // 할인율 설정이 맞는지 확인할 수 있다. 등급 할인은 회원마다 달라
             // 기준가(BRONZE)만 계산한다.
             const seasonRate = seasonRates[product.seasonKey ?? ""] ?? 0
-            const wholesale = minPrice > 0 ? buyerPrice(minPrice, seasonRate, 0) : 0
+            const specialRate = product.specialOffer ? specialOfferRate : 0
+            const wholesale = minPrice > 0 ? buyerPrice(minPrice, seasonRate, 0, specialRate) : 0
             const images: string[] = product.images ?? []
             return (
               <Link key={product.id} href={`/admin/products/${product.id}/edit`}>
@@ -200,6 +204,12 @@ export default async function AdminProductsPage({
                       {seasonRate > 0 && (
                         <span className="text-[10px] text-muted-foreground">
                           -{Math.round(seasonRate * 100)}%
+                          {specialRate > 0 && ` -${Math.round(specialRate * 100)}%`}
+                        </span>
+                      )}
+                      {product.specialOffer && (
+                        <span className="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-800">
+                          {t("specialOffer")}
                         </span>
                       )}
                     </div>

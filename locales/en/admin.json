@@ -407,5 +407,13 @@
   "sortSeason": "Newest season",
   "sortStock": "Most stock",
   "stockTotal": "Stock {count}",
-  "outOfStock": "Out of stock"
+  "outOfStock": "Out of stock",
+  "bulkSpecial": "Mark special",
+  "bulkUnspecial": "Unmark",
+  "specialOffer": "Special",
+  "specialOfferRate": "Special offer discount",
+  "specialOfferDesc": "Applied on top of the season discount. A 50%-off item marked special with 30% here becomes 35% of the tag price.",
+  "specialOfferCount": "{count} products marked",
+  "normalPrice": "Normal",
+  "specialPrice": "Special"
 }

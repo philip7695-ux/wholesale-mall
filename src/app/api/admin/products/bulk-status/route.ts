@@ -33,8 +33,16 @@ async function POST_impl(request: Request) {
       { status: 400 },
     )
   }
-  if (!["activate", "deactivate", "delete"].includes(action)) {
+  if (!["activate", "deactivate", "delete", "special", "unspecial"].includes(action)) {
     return NextResponse.json({ error: "알 수 없는 작업입니다." }, { status: 400 })
+  }
+
+  if (action === "special" || action === "unspecial") {
+    const res = await prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { specialOffer: action === "special" },
+    })
+    return NextResponse.json({ count: res.count })
   }
 
   if (action !== "delete") {

@@ -407,5 +407,13 @@
   "sortSeason": "최신 시즌순",
   "sortStock": "재고 많은순",
   "stockTotal": "재고 {count}",
-  "outOfStock": "품절"
+  "outOfStock": "품절",
+  "bulkSpecial": "스페셜 오퍼로",
+  "bulkUnspecial": "스페셜 해제",
+  "specialOffer": "스페셜",
+  "specialOfferRate": "스페셜 오퍼 추가 할인",
+  "specialOfferDesc": "시즌 할인이 적용된 가격에서 한 번 더 깎습니다. 시즌 50% 상품을 스페셜에 넣고 30%를 적으면 택가의 35%가 됩니다.",
+  "specialOfferCount": "지정된 상품 {count}개",
+  "normalPrice": "일반가",
+  "specialPrice": "스페셜가"
 }

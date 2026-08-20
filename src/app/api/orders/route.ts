@@ -5,7 +5,7 @@ import { generateOrderNumber } from "@/lib/utils"
 import { getExchangeRate, getAllExchangeRates } from "@/lib/currency.server"
 import { convertCurrency } from "@/lib/currency"
 import { resolveTradeTerms, applyVat } from "@/lib/trade"
-import { getSeasonRates } from "@/lib/pricing.server"
+import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { checkMoq } from "@/lib/moq"
@@ -161,9 +161,17 @@ export async function POST(request: Request) {
     // 가격을 고객 통화로 변환하여 주문 저장
     // 저장된 값은 정상가다. 시즌·등급 할인을 적용한 도매가로 계산한다.
     // 할인을 총액에 한 번 더 곱하면 이중 할인이 되므로 단가에서만 적용한다.
-    const seasonRates = await getSeasonRates()
+    const [seasonRates, specialOfferRate] = await Promise.all([
+      getSeasonRates(),
+      getSpecialOfferRate(),
+    ])
     const unitPrice = (item: any) =>
-      buyerPrice(item.variant.price, seasonRateFor(item.variant.product.code, seasonRates), gradeDiscount)
+      buyerPrice(
+        item.variant.price,
+        seasonRateFor(item.variant.product.code, seasonRates),
+        gradeDiscount,
+        item.variant.product.specialOffer ? specialOfferRate : 0,
+      )
 
     const itemsTotal = cartItems.reduce((sum: any, item: any) => {
       const priceCurrency = item.variant.product.priceCurrency || "KRW"

@@ -18,3 +18,19 @@ export async function getSeasonRates(): Promise<Record<string, number>> {
     return {}
   }
 }
+
+/**
+ * 스페셜 오퍼 추가 할인율. 설정을 못 읽으면 0(추가 할인 없음)으로 둔다.
+ * 못 읽었다고 더 깎아 팔면 되돌리기 어렵다.
+ */
+export async function getSpecialOfferRate(): Promise<number> {
+  try {
+    const cfg = await prisma.storeConfig.findUnique({
+      where: { id: "default" },
+      select: { specialOfferRate: true },
+    })
+    return cfg?.specialOfferRate ?? 0
+  } catch {
+    return 0
+  }
+}

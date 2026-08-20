@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { withDbRetry } from "@/lib/db-retry"
 import { apiRoute } from "@/lib/api-route"
-import { getSeasonRates } from "@/lib/pricing.server"
+import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 
@@ -31,9 +31,10 @@ export async function GET() {
     )
     // 상품에 저장된 값은 정상가다. 화면이 다시 계산하면 주문 금액과
     // 어긋나므로, 여기서 도매가로 바꿔 내려준다.
-    const [seasonRates, gradeRate] = await Promise.all([
+    const [seasonRates, gradeRate, specialOfferRate] = await Promise.all([
       getSeasonRates(),
       getGradeDiscount(session.user.buyerGrade || "BRONZE").catch(() => 0),
+      getSpecialOfferRate(),
     ])
     const priced = items.map((item: any) => ({
       ...item,
@@ -44,6 +45,7 @@ export async function GET() {
           item.variant.price,
           seasonRateFor(item.variant.product.code, seasonRates),
           gradeRate,
+          item.variant.product.specialOffer ? specialOfferRate : 0,
         ),
       },
     }))
