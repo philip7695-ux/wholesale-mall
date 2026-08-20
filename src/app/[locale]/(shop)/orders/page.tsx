@@ -8,7 +8,7 @@ import { formatPrice, formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
-import { STATUS_COLOR, isPrePayment } from "@/lib/order-status"
+import { STATUS_COLOR, canBuyerCancel } from "@/lib/order-status"
 
 interface Order {
   id: string
@@ -124,8 +124,8 @@ export default function OrdersPage() {
                         {statusLabels[order.status]}
                       </span>
                       <p className="mt-1 font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
-                      {/* 수정은 창고에 넘어가기 전에만, 취소는 입금 전까지 */}
-                      {isPrePayment(order.status) && (
+                      {/* 수정은 창고에 넘어가기 전에만, 취소는 확정 전까지 */}
+                      {canBuyerCancel(order.status) && (
                         <div className="mt-2 flex justify-end gap-1">
                           {order.status === "ORDER_PLACED" && (
                             <Button

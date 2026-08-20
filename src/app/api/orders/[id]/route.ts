@@ -2,10 +2,10 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
-import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition, isPrePayment, PRE_PAYMENT_STATUSES } from "@/lib/order-status"
+import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition, isPrePayment, canBuyerCancel } from "@/lib/order-status"
 import { notifyCustomerShipped, notifyCustomerOrderCancelled } from "@/lib/email"
 import { apiRoute } from "@/lib/api-route"
-import { holdsReservation, releaseReservation, refreshProductStock } from "@/lib/order-revision"
+import { holdsReservation, releaseReservation, refreshProductStock, isDeductedUnshipped, restoreStock } from "@/lib/order-revision"
 
 async function GET_impl(
   _request: Request,
@@ -103,9 +103,11 @@ async function DELETE_impl(
   }
 
   // 취소 처리
-  if (!isAdmin && !isPrePayment(order.status)) {
+  // 확정 뒤에는 바이어가 혼자 되돌릴 수 없다. 재고가 이미 빠졌고
+  // 양쪽이 합의한 수량이라 담당자와 이야기할 일이다.
+  if (!isAdmin && !canBuyerCancel(order.status)) {
     return NextResponse.json(
-      { error: "입금 전 상태의 주문만 취소할 수 있습니다." },
+      { error: "확정된 주문은 직접 취소할 수 없습니다. 담당자에게 문의해주세요." },
       { status: 400 },
     )
   }
@@ -119,15 +121,18 @@ async function DELETE_impl(
   }
 
   await prisma.$transaction(async (tx) => {
-    // 확정 전이면 잡아둔 재고를 풀어 다른 바이어가 살 수 있게 한다.
-    // 확정 후라면 이미 실재고에서 빠졌으므로 여기서 되돌리지 않는다
-    // (반품·출고 취소는 별도 절차로 다뤄야 한다).
-    if (holdsReservation(order.status)) {
+    // 확정 전이면 예약만 풀면 된다. 확정 뒤라면 실재고가 이미 빠졌지만
+    // 물건은 아직 창고에 있으므로 도로 넣는다. 출고된 주문(SHIPPED)은
+    // 둘 다 아니고, 반품은 실물 확인이 필요한 별도 절차다.
+    const releasing = holdsReservation(order.status)
+    const restoring = isDeductedUnshipped(order.status)
+    if (releasing || restoring) {
       const items = await tx.orderItem.findMany({
         where: { orderId: id },
         select: { variantId: true },
       })
-      await releaseReservation(tx, id)
+      if (releasing) await releaseReservation(tx, id)
+      if (restoring) await restoreStock(tx, id)
 
       const variantIds = items.map((i) => i.variantId).filter(Boolean) as string[]
       if (variantIds.length) {

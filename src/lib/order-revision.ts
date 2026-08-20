@@ -93,3 +93,34 @@ export async function refreshProductStock(tx: Tx, productIds: string[]) {
       ), 0)
     where p.id = any(${productIds})`
 }
+
+/** 확정 뒤 출고 전. 재고는 이미 빠졌지만 물건은 아직 창고에 있다. */
+export const STOCK_DEDUCTED_UNSHIPPED = [
+  "CONFIRMED",
+  "INVOICE_SENT",
+  "PAYMENT_CONFIRMED",
+] as const
+
+export function isDeductedUnshipped(status: string): boolean {
+  return (STOCK_DEDUCTED_UNSHIPPED as readonly string[]).includes(status)
+}
+
+/**
+ * 확정 뒤에 취소된 주문의 재고를 되돌린다.
+ *
+ * 확정 시 stock 에서 뺐지만 물건은 아직 창고에 있으므로, 출고 전
+ * 취소라면 그만큼 도로 넣는 것이 실물과 맞다. 출고된 주문은 여기로
+ * 오면 안 된다. 반품은 실물 확인이 필요한 별도 절차다.
+ */
+export async function restoreStock(tx: Tx, orderId: string) {
+  await tx.$executeRaw`
+    update mall."ProductVariant" v
+    set stock = v.stock + i.qty, "updatedAt" = now()
+    from (
+      select "variantId", sum(quantity)::int qty
+      from mall."OrderItem"
+      where "orderId" = ${orderId} and "variantId" is not null
+      group by 1
+    ) i
+    where v.id = i."variantId"`
+}
