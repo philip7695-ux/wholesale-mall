@@ -228,7 +228,7 @@ async function PUT_impl(
   }
 
   const { id } = await params
-  const { status, paymentStatus, trackingNumber, shippingCarrier } = await request.json()
+  const { status, paymentStatus, trackingNumbers, shippingCarrier } = await request.json()
 
   const currentOrder = await prisma.order.findUnique({
     where: { id },
@@ -254,9 +254,17 @@ async function PUT_impl(
   }
 
   // 송장번호 입력 → 자동 SHIPPED
-  if (trackingNumber !== undefined) data.trackingNumber = trackingNumber
+  // 박스가 여럿이면 번호도 여럿이다. 빈 칸과 앞뒤 공백을 걸러낸다.
+  // trackingNumber(단일 필드)는 옛 코드·이메일·표시가 그대로 쓰도록 합쳐 둔다.
+  if (Array.isArray(trackingNumbers)) {
+    const cleaned = trackingNumbers
+      .map((n: unknown) => String(n ?? "").trim())
+      .filter((n: string) => n !== "")
+    data.trackingNumbers = cleaned
+    data.trackingNumber = cleaned.join(", ") || null
+  }
   if (shippingCarrier !== undefined) data.shippingCarrier = shippingCarrier
-  if (trackingNumber && trackingNumber.trim() !== "") {
+  if (Array.isArray(data.trackingNumbers) && (data.trackingNumbers as string[]).length > 0) {
     const effectiveStatus = (data.status as string) || currentOrder.status
     const shippableStatuses = ["PAYMENT_CONFIRMED"]
     if (shippableStatuses.includes(effectiveStatus)) {
@@ -284,15 +292,15 @@ async function PUT_impl(
   const order = await prisma.order.update({
     where: { id },
     data,
-    select: { id: true, userId: true, status: true, paymentStatus: true, orderNumber: true, trackingNumber: true, shippingCarrier: true, user: { select: { name: true, email: true } } },
+    select: { id: true, userId: true, status: true, paymentStatus: true, orderNumber: true, trackingNumber: true, trackingNumbers: true, shippingCarrier: true, user: { select: { name: true, email: true } } },
   })
 
   // 출하 완료 시 고객 이메일 알림
-  if (order.status === "SHIPPED" && order.trackingNumber && order.user) {
+  if (order.status === "SHIPPED" && order.trackingNumbers.length > 0 && order.user) {
     notifyCustomerShipped(order.user.email, {
       orderNumber: order.orderNumber,
       customerName: order.user.name,
-      trackingNumber: order.trackingNumber,
+      trackingNumbers: order.trackingNumbers,
       shippingCarrier: order.shippingCarrier || "",
     })
   }

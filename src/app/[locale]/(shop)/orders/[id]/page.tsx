@@ -30,6 +30,7 @@ interface OrderDetail {
   shippingAddress: string | null
   shippingMemo: string | null
   trackingNumber: string | null
+  trackingNumbers: string[]
   shippingCarrier: string | null
   createdAt: string
   invoiceSentAt: string | null
@@ -530,10 +531,18 @@ export default function OrderDetailPage() {
               <span className="text-muted-foreground">{t("shippingCarrier")}</span>
               <span>{order.shippingCarrier || "-"}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("trackingNumber")}</span>
-              <span>{order.trackingNumber}</span>
-            </div>
+            {/* 박스가 여럿이면 번호도 여럿. 한 줄에 하나씩 보여준다. */}
+            {(order.trackingNumbers?.length ? order.trackingNumbers : [order.trackingNumber]).map(
+              (num, i) => (
+                <div key={i} className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {t("trackingNumber")}
+                    {order.trackingNumbers?.length > 1 ? ` ${i + 1}` : ""}
+                  </span>
+                  <span>{num}</span>
+                </div>
+              ),
+            )}
           </CardContent>
         </Card>
       )}

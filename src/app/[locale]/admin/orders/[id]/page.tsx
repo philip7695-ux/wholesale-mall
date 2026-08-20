@@ -121,7 +121,7 @@ export default async function AdminOrderDetailPage({
           orderId={order.id}
           currentStatus={order.status}
           currentPaymentStatus={order.paymentStatus}
-          currentTrackingNumber={order.trackingNumber}
+          currentTrackingNumbers={order.trackingNumbers}
           currentShippingCarrier={order.shippingCarrier}
           invoiceNumber={order.invoiceNumber}
           paymentConfirmation={

@@ -437,5 +437,7 @@
   "orderExportAllGrid": "全件ダウンロード (横)",
   "orderExportAllRows": "全件ダウンロード (縦)",
   "orderExportSelectedGrid": "{count}件ダウンロード (横)",
-  "orderExportSelectedRows": "{count}件ダウンロード (縦)"
+  "orderExportSelectedRows": "{count}件ダウンロード (縦)",
+  "trackingNumberAdd": "箱を追加",
+  "trackingNumberBox": "箱{n}の送り状番号"
 }
