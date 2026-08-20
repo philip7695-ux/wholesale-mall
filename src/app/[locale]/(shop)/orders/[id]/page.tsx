@@ -562,7 +562,8 @@ export default function OrderDetailPage() {
                   orderedQuantity: item.orderedQuantity,
                   price: item.price,
                 }))}
-                formatPrice={(amount) => formatPrice(amount, locale, rate)}
+                locale={locale}
+                rate={rate}
               />
             </div>
           )}
