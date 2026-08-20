@@ -125,6 +125,12 @@ model ProductSize {
   @@schema("mall")
 }
 
+/// 재고는 셋으로 나뉜다.
+///   stock    실재고 (창고에 있는 수량)
+///   reserved 확정 안 된 주문이 물고 있는 수량
+///   판매가능 = stock - reserved
+/// 주문 시점에 reserved 를 올리고, 확정될 때 stock 에서 뺀다.
+/// 그래야 조정·취소가 오가는 동안 중복 주문이 생기지 않는다.
 model ProductVariant {
   id         String       @id @default(cuid())
   productId  String
@@ -132,6 +138,7 @@ model ProductVariant {
   sizeId     String
   price      Float
   stock      Int          @default(0)
+  reserved   Int          @default(0)
   sku        String?      @unique
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
@@ -177,6 +184,7 @@ model Order {
   shippingMemo         String?
   trackingNumber       String?
   shippingCarrier      String?
+  confirmedAt          DateTime?
   invoiceSentAt        DateTime?
   awaitingPaymentAt    DateTime?
   paymentConfirmedAt   DateTime?
@@ -231,7 +239,10 @@ model OrderItem {
   id          String          @id @default(cuid())
   orderId     String
   variantId   String?
+  /// 현재 수량. 조정이 오가며 바뀐다
   quantity    Int
+  /// 바이어가 처음 주문한 수량. 무엇이 얼마나 깎였는지 양쪽이 보려면 필요하다
+  orderedQuantity Int         @default(0)
   price       Float
   productName String
   colorName   String
@@ -270,6 +281,12 @@ enum BuyerGrade {
 
 enum OrderStatus {
   ORDER_PLACED
+  /// 관리자가 창고 재고를 확인하며 수량을 조정하는 중
+  STOCK_CHECKING
+  /// 조정안을 바이어가 확인하고 고치는 중
+  BUYER_REVIEW
+  /// 양쪽이 합의해 수량이 확정됨. 이 시점에 실재고가 빠진다
+  CONFIRMED
   INVOICE_SENT
   PAYMENT_CONFIRMED
   SHIPPED

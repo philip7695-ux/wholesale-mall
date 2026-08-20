@@ -65,7 +65,9 @@ async function main() {
   const client = await pool.connect()
   try {
     await client.query("begin")
-    // 자료에 없는 변형은 0 으로 되돌린다. 남겨두면 과거 값이 유령처럼 남는다
+    // 자료에 없는 변형은 0 으로 되돌린다. 남겨두면 과거 값이 유령처럼 남는다.
+    // reserved 는 건드리지 않는다. 진행 중인 주문이 물고 있는 수량이라
+    // 여기서 지우면 중복 판매가 생긴다.
     await client.query(`update mall."ProductVariant" set stock = 0 where stock <> 0`)
     const BATCH = 500
     for (let i = 0; i < updates.length; i += BATCH) {
@@ -84,10 +86,12 @@ async function main() {
     await client.query(`
       update mall."Product" p set
         "inStock" = exists (
-          select 1 from mall."ProductVariant" v where v."productId" = p.id and v.stock > 0
+          select 1 from mall."ProductVariant" v
+          where v."productId" = p.id and v.stock - v.reserved > 0
         ),
         "totalStock" = coalesce((
-          select sum(v.stock)::int from mall."ProductVariant" v where v."productId" = p.id
+          select sum(greatest(v.stock - v.reserved, 0))::int
+          from mall."ProductVariant" v where v."productId" = p.id
         ), 0)`)
     await client.query("commit")
     console.log("\n커밋했습니다.")

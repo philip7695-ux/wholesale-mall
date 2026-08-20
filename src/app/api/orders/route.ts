@@ -188,6 +188,7 @@ export async function POST(request: Request) {
         variantId: item.variant.id,
         quantity: item.quantity,
         price: convertedPrice,
+        orderedQuantity: item.quantity,
         productName: item.variant.product.name,
         colorName: item.variant.color.name,
         sizeName: item.variant.size.name,
@@ -200,13 +201,16 @@ export async function POST(request: Request) {
     let order
     try {
       order = await prisma.$transaction(async (tx) => {
-        // 재고 원자적 차감: stock >= quantity 인 경우에만 차감 (초과판매 방지)
+        // 주문 시점에는 실재고를 빼지 않고 예약만 잡는다.
+        // 창고 확인과 바이어 확인이 오간 뒤 확정될 때 실제로 뺀다.
+        // 판매 가능 = stock - reserved 이므로 그만큼만 잡을 수 있다.
         for (const item of cartItems as any[]) {
-          const res = await tx.productVariant.updateMany({
-            where: { id: item.variant.id, stock: { gte: item.quantity } },
-            data: { stock: { decrement: item.quantity } },
-          })
-          if (res.count === 0) {
+          const res = await tx.$executeRaw`
+            update mall."ProductVariant"
+            set reserved = reserved + ${item.quantity}, "updatedAt" = now()
+            where id = ${item.variant.id} and stock - reserved >= ${item.quantity}`
+          const ok = res > 0
+          if (!ok) {
             throw new Error(
               `${OUT_OF_STOCK}:${item.variant.product.name} (${item.variant.color.name}/${item.variant.size.name})`,
             )
@@ -219,10 +223,12 @@ export async function POST(request: Request) {
         await tx.$executeRaw`
           update mall."Product" p set
             "inStock" = exists (
-              select 1 from mall."ProductVariant" v where v."productId" = p.id and v.stock > 0
+              select 1 from mall."ProductVariant" v
+              where v."productId" = p.id and v.stock - v.reserved > 0
             ),
             "totalStock" = coalesce((
-              select sum(v.stock)::int from mall."ProductVariant" v where v."productId" = p.id
+              select sum(greatest(v.stock - v.reserved, 0))::int
+              from mall."ProductVariant" v where v."productId" = p.id
             ), 0)
           where p.id = any(${touched})`
 

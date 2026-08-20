@@ -419,5 +419,11 @@
   "dropHint": "Drag photos here, or click + to choose files.",
   "nonImageSkipped": "Skipped {count} non-image files.",
   "filterCapped": "{total} products match. Showing the first {shown}. Narrow the filter further.",
-  "uploadLeaveWarning": "Upload in progress. Leaving now will cancel it. Continue anyway?"
+  "uploadLeaveWarning": "Upload in progress. Leaving now will cancel it. Continue anyway?",
+  "statusStockChecking": "Checking stock",
+  "statusBuyerReview": "Buyer review",
+  "statusConfirmed": "Confirmed",
+  "orderStatusStockChecking": "Checking stock",
+  "orderStatusBuyerReview": "Buyer review",
+  "orderStatusConfirmed": "Confirmed"
 }

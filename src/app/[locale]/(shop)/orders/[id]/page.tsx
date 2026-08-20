@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
+import { OrderRevisionTable } from "@/components/order-revision-table"
 import { Textarea } from "@/components/ui/textarea"
 import { FileDown, Upload, Pencil, X, CheckCircle } from "lucide-react"
 
@@ -44,6 +45,7 @@ interface OrderDetail {
     colorName: string
     sizeName: string
     quantity: number
+    orderedQuantity: number
     price: number
   }[]
 }
@@ -101,6 +103,9 @@ export default function OrderDetailPage() {
 
   const statusLabels: Record<string, string> = {
     ORDER_PLACED: t("statusOrderPlaced"),
+    STOCK_CHECKING: t("statusStockChecking"),
+    BUYER_REVIEW: t("statusBuyerReview"),
+    CONFIRMED: t("statusConfirmed"),
     INVOICE_SENT: t("statusInvoiceSent"),
     PAYMENT_CONFIRMED: t("statusPaymentConfirmed"),
     SHIPPED: t("statusShipped"),
@@ -519,8 +524,30 @@ export default function OrderDetailPage() {
           <CardTitle>{t("orderProducts")}</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* 판매자가 창고 확인 후 수량을 조정해 보내오면 여기서 확인하고 고친다.
+              내 차례(바이어확인중)가 아니면 읽기만 된다. */}
+          {["STOCK_CHECKING", "BUYER_REVIEW"].includes(order.status) && (
+            <div className="mb-4">
+              <OrderRevisionTable
+                orderId={order.id}
+                isAdmin={false}
+                canEdit={order.status === "BUYER_REVIEW"}
+                items={order.items.map((item) => ({
+                  id: item.id,
+                  productName: item.productName,
+                  colorName: item.colorName,
+                  sizeName: item.sizeName,
+                  quantity: item.quantity,
+                  orderedQuantity: item.orderedQuantity,
+                  price: item.price,
+                }))}
+                formatPrice={(amount) => formatPrice(amount, locale, rate)}
+              />
+            </div>
+          )}
           <div className="space-y-3">
-            {order.items.map((item) => (
+            {!["STOCK_CHECKING", "BUYER_REVIEW"].includes(order.status) &&
+              order.items.map((item) => (
               <div key={item.id} className="flex items-center justify-between text-sm">
                 <div>
                   <span className="font-medium">{item.productName}</span>

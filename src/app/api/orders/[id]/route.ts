@@ -5,6 +5,7 @@ import { checkAndPromoteGrade } from "@/lib/grade.server"
 import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition } from "@/lib/order-status"
 import { notifyCustomerShipped } from "@/lib/email"
 import { apiRoute } from "@/lib/api-route"
+import { holdsReservation, releaseReservation, refreshProductStock } from "@/lib/order-revision"
 
 async function GET_impl(
   _request: Request,
@@ -82,7 +83,7 @@ async function DELETE_impl(
   }
 
   // 취소 처리
-  const cancelableStatuses = ["ORDER_PLACED", "INVOICE_SENT"]
+  const cancelableStatuses = ["ORDER_PLACED", "STOCK_CHECKING", "BUYER_REVIEW", "CONFIRMED", "INVOICE_SENT"]
   if (session.user.role !== "ADMIN" && !cancelableStatuses.includes(order.status)) {
     return NextResponse.json(
       { error: "입금 전 상태의 주문만 취소할 수 있습니다." },
@@ -90,9 +91,31 @@ async function DELETE_impl(
     )
   }
 
-  await prisma.order.update({
-    where: { id },
-    data: { status: "CANCELLED", cancelledAt: new Date() },
+  await prisma.$transaction(async (tx) => {
+    // 확정 전이면 잡아둔 재고를 풀어 다른 바이어가 살 수 있게 한다.
+    // 확정 후라면 이미 실재고에서 빠졌으므로 여기서 되돌리지 않는다
+    // (반품·출고 취소는 별도 절차로 다뤄야 한다).
+    if (holdsReservation(order.status)) {
+      const items = await tx.orderItem.findMany({
+        where: { orderId: id },
+        select: { variantId: true },
+      })
+      await releaseReservation(tx, id)
+
+      const variantIds = items.map((i) => i.variantId).filter(Boolean) as string[]
+      if (variantIds.length) {
+        const vs = await tx.productVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { productId: true },
+        })
+        await refreshProductStock(tx, [...new Set(vs.map((v) => v.productId))])
+      }
+    }
+
+    await tx.order.update({
+      where: { id },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+    })
   })
 
   return NextResponse.json({ message: "주문이 취소되었습니다." })
