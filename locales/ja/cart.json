@@ -21,5 +21,8 @@
   "vat": "消費税 ({rate}%)",
   "color": "カラー",
   "stockLeft": "在庫 {count}",
-  "soldOut": "品切れ"
+  "soldOut": "品切れ",
+  "style": "スタイル",
+  "sizeTotal": "サイズ合計",
+  "productDelete": "このスタイルを削除"
 }

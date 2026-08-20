@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSession } from "next-auth/react"
 import { checkMoq, type MoqCheckResult } from "@/lib/moq"
+import { sortSizeNames } from "@/lib/product-sizes"
 
 interface ProductColor {
   id: string
@@ -53,85 +54,122 @@ interface GridCell {
   stock: number
 }
 
+/** 표의 한 줄. 스타일 하나의 컬러 하나. */
 interface GridRow {
-  colorId: string
-  colorName: string
-  hexColor: string | null
-  cells: Record<string, GridCell>   // sizeId -> 칸
-  totalQty: number
-  subtotal: number
-}
-
-interface GroupedProduct {
+  key: string
   productId: string
   productName: string
   productCode: string | null
   thumbnail: string | null
-  items: CartItem[]
-  subtotal: number
+  priceCurrency: string
+  /** 이 스타일의 첫 줄인가. 스타일 이름은 첫 줄에만 적어 표를 읽기 쉽게 한다. */
+  firstOfProduct: boolean
+  /** 이 스타일이 차지하는 줄 수. 첫 줄의 rowSpan 에 쓴다. */
+  productRowSpan: number
+  colorId: string
+  colorName: string
+  hexColor: string | null
+  cells: Record<string, GridCell>   // 사이즈 이름 -> 칸
   totalQty: number
-  sizes: { id: string; name: string }[]
-  rows: GridRow[]
+  subtotal: number
 }
 
-function groupByProduct(items: CartItem[]): GroupedProduct[] {
-  const map = new Map<string, GroupedProduct>()
+interface CartGrid {
+  /** 장바구니 전체 사이즈의 합집합. 표의 열이 된다. */
+  sizeNames: string[]
+  rows: GridRow[]
+  /** 사이즈별 세로 합계 */
+  columnTotals: Record<string, number>
+}
+
+/** MOQ 검증에 쓰는 스타일 단위 묶음 */
+interface ProductGroup {
+  productId: string
+  productName: string
+  items: CartItem[]
+  totalQty: number
+}
+
+function groupByProduct(items: CartItem[]): ProductGroup[] {
+  const map = new Map<string, ProductGroup>()
   for (const item of items) {
     const pid = item.variant.product.id
     if (!map.has(pid)) {
       map.set(pid, {
         productId: pid,
         productName: item.variant.product.name,
-        productCode: item.variant.product.code,
-        thumbnail: item.variant.product.thumbnail,
         items: [],
-        subtotal: 0,
         totalQty: 0,
-        sizes: [],
-        rows: [],
       })
     }
-    const group = map.get(pid)!
-    group.items.push(item)
-    group.subtotal += item.variant.price * item.quantity
-    group.totalQty += item.quantity
-  }
-
-  // 사이즈를 가로로 펼친 표를 만든다. 담지 않은 사이즈도 칸을 두어
-  // 빈 칸에 수를 넣으면 바로 담기게 한다.
-  for (const group of map.values()) {
-    const product = group.items[0].variant.product
-    const qtyOf = new Map(group.items.map((i) => [i.variant.id, i.quantity]))
-
-    group.sizes = product.sizes
-    // 담긴 컬러만 줄로 만든다. 전 컬러를 펼치면 표가 불필요하게 길어진다.
-    const usedColors = new Set(group.items.map((i) => i.variant.color.id))
-
-    group.rows = product.colors
-      .filter((c) => usedColors.has(c.id))
-      .map((c) => {
-        const cells: Record<string, GridCell> = {}
-        let totalQty = 0
-        let subtotal = 0
-        for (const sz of product.sizes) {
-          const v = product.variants.find((x) => x.colorId === c.id && x.sizeId === sz.id)
-          if (!v) continue
-          const quantity = qtyOf.get(v.id) ?? 0
-          cells[sz.id] = { variantId: v.id, quantity, price: v.price, stock: v.stock }
-          totalQty += quantity
-          subtotal += v.price * quantity
-        }
-        return {
-          colorId: c.id,
-          colorName: c.name,
-          hexColor: (c as any).hexColor ?? null,
-          cells,
-          totalQty,
-          subtotal,
-        }
-      })
+    const g = map.get(pid)!
+    g.items.push(item)
+    g.totalQty += item.quantity
   }
   return Array.from(map.values())
+}
+
+/**
+ * 장바구니 전체를 표 하나로 편다.
+ *
+ * 열은 담긴 상품들의 사이즈를 모두 합친 것이다. 스타일마다 사이즈 레인지가
+ * 달라서, 그 스타일에 없는 사이즈 칸은 막아 수량을 넣을 수 없게 한다.
+ * 줄은 스타일 × 컬러다. 한 스타일에 컬러가 여럿이면 이름은 첫 줄에만 적는다.
+ */
+function buildGrid(groups: ProductGroup[]): CartGrid {
+  const sizeNames = sortSizeNames([
+    ...new Set(
+      groups.flatMap((g) => g.items[0].variant.product.sizes.map((s) => s.name)),
+    ),
+  ])
+
+  const rows: GridRow[] = []
+  for (const group of groups) {
+    const product = group.items[0].variant.product
+    const qtyOf = new Map(group.items.map((i) => [i.variant.id, i.quantity]))
+    const sizeIdToName = new Map(product.sizes.map((s) => [s.id, s.name]))
+    // 담긴 컬러만 줄로 만든다. 전 컬러를 펼치면 표가 불필요하게 길어진다.
+    const usedColors = new Set(group.items.map((i) => i.variant.color.id))
+    const colors = product.colors.filter((c) => usedColors.has(c.id))
+
+    colors.forEach((c, idx) => {
+      const cells: Record<string, GridCell> = {}
+      let totalQty = 0
+      let subtotal = 0
+      for (const v of product.variants) {
+        if (v.colorId !== c.id) continue
+        const name = sizeIdToName.get(v.sizeId)
+        if (!name) continue
+        const quantity = qtyOf.get(v.id) ?? 0
+        cells[name] = { variantId: v.id, quantity, price: v.price, stock: v.stock }
+        totalQty += quantity
+        subtotal += v.price * quantity
+      }
+      rows.push({
+        key: `${product.id}:${c.id}`,
+        productId: product.id,
+        productName: product.name,
+        productCode: product.code,
+        thumbnail: product.thumbnail,
+        priceCurrency: product.priceCurrency,
+        firstOfProduct: idx === 0,
+        productRowSpan: colors.length,
+        colorId: c.id,
+        colorName: c.name,
+        hexColor: (c as any).hexColor ?? null,
+        cells,
+        totalQty,
+        subtotal,
+      })
+    })
+  }
+
+  const columnTotals: Record<string, number> = {}
+  for (const name of sizeNames) {
+    columnTotals[name] = rows.reduce((s, r) => s + (r.cells[name]?.quantity ?? 0), 0)
+  }
+
+  return { sizeNames, rows, columnTotals }
 }
 
 export default function CartPage() {
@@ -235,6 +273,7 @@ export default function CartPage() {
   }
 
   const groups = groupByProduct(items)
+  const grid = buildGrid(groups)
   // 통화·부가세는 회원의 거래 유형이 정한다(언어와 무관)
   const { currency: customerCurrency, vatRate } = resolveTradeTerms(
     { tradeType: session?.user?.tradeType as any, currency: session?.user?.currency },
@@ -309,131 +348,161 @@ export default function CartPage() {
         </Card>
       ) : (
         <>
-          <div className="space-y-4">
-            {groups.map((group) => {
-              return (
-                <Card key={group.productId}>
-                  <CardContent className="py-4">
-                    {/* 상품 헤더 */}
-                    <div className="flex items-center gap-4">
-                      {group.thumbnail && (
-                        <Link href={`/products/${group.productId}`}>
-                          <img
-                            src={group.thumbnail}
-                            alt=""
-                            className="h-16 w-16 rounded object-contain bg-white"
+          {/* 장바구니 전체를 표 하나로 편다.
+              열은 담긴 상품들의 사이즈 합집합이고, 줄은 스타일 × 컬러다.
+              그 스타일에 없는 사이즈 칸은 막아 수량을 넣을 수 없게 한다.
+              스타일·컬러 열은 가로로 밀어도 따라오도록 왼쪽에 고정한다. */}
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="min-w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="sticky left-0 z-20 min-w-[200px] bg-muted/50 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                    {t("style")}
+                  </th>
+                  <th className="sticky left-[200px] z-20 min-w-[120px] border-r bg-muted/50 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                    {t("color")}
+                  </th>
+                  {grid.sizeNames.map((name) => (
+                    <th
+                      key={name}
+                      className="min-w-[56px] px-1 py-2 text-center text-xs font-medium text-muted-foreground"
+                    >
+                      {name}
+                    </th>
+                  ))}
+                  <th className="border-l px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+                    {t("quantity")}
+                  </th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+                    {t("amount")}
+                  </th>
+                  <th className="w-10 px-1 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {grid.rows.map((row) => (
+                  <tr
+                    key={row.key}
+                    className={`border-b last:border-0 ${row.firstOfProduct ? "border-t-2 border-t-muted" : ""}`}
+                  >
+                    {row.firstOfProduct && (
+                      <td
+                        rowSpan={row.productRowSpan}
+                        className="sticky left-0 z-10 bg-background px-3 py-1.5 align-top"
+                      >
+                        <div className="flex items-start gap-2">
+                          {row.thumbnail && (
+                            <Link href={`/products/${row.productId}`}>
+                              <img
+                                src={row.thumbnail}
+                                alt=""
+                                className="h-10 w-10 shrink-0 rounded bg-white object-contain"
+                              />
+                            </Link>
+                          )}
+                          <div className="min-w-0">
+                            <Link
+                              href={`/products/${row.productId}`}
+                              className="line-clamp-2 font-medium hover:underline"
+                            >
+                              {row.productName}
+                            </Link>
+                            {row.productCode && (
+                              <p className="font-mono text-xs text-muted-foreground">
+                                {row.productCode}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    )}
+                    <td className="sticky left-[200px] z-10 whitespace-nowrap border-r bg-background px-3 py-1.5">
+                      <span className="flex items-center gap-1.5">
+                        {row.hexColor && (
+                          <span
+                            className="inline-block h-3 w-3 shrink-0 rounded-full border"
+                            style={{ backgroundColor: row.hexColor }}
                           />
-                        </Link>
-                      )}
-                      <div className="flex-1">
-                        <Link
-                          href={`/products/${group.productId}`}
-                          className="font-medium hover:underline"
-                        >
-                          {group.productName}
-                        </Link>
-                        {group.productCode && (
-                          <p className="font-mono text-xs text-muted-foreground">{group.productCode}</p>
                         )}
-                        <p className="text-sm text-muted-foreground">
-                          {t("optionsAndQty", { options: group.items.length, qty: group.totalQty })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-lg font-bold">{fp(group.subtotal, group.items[0].variant.product.priceCurrency)}</p>
+                        {row.colorName}
+                      </span>
+                    </td>
+                    {grid.sizeNames.map((name) => {
+                      const cell = row.cells[name]
+                      // 이 스타일에 없는 사이즈는 막는다
+                      if (!cell) {
+                        return (
+                          <td
+                            key={name}
+                            className="bg-muted/30 px-1 py-1.5 text-center text-muted-foreground/40"
+                          >
+                            –
+                          </td>
+                        )
+                      }
+                      const soldOut = cell.stock <= 0
+                      return (
+                        <td key={name} className="px-1 py-1.5 text-center">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={cell.stock > 0 ? cell.stock : undefined}
+                            value={cell.quantity || ""}
+                            placeholder={soldOut ? "-" : "0"}
+                            disabled={soldOut}
+                            title={soldOut ? t("soldOut") : t("stockLeft", { count: cell.stock })}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value) || 0
+                              // 재고를 넘겨 담을 수 없다
+                              setCellQuantity(cell.variantId, Math.min(v, cell.stock))
+                            }}
+                            className="mx-auto h-8 w-14 px-1 text-center text-sm"
+                          />
+                        </td>
+                      )
+                    })}
+                    <td className="border-l px-3 py-1.5 text-right tabular-nums">{row.totalQty}</td>
+                    <td className="px-3 py-1.5 text-right font-medium tabular-nums">
+                      {fp(row.subtotal, row.priceCurrency)}
+                    </td>
+                    <td className="px-1 py-1.5">
+                      {row.firstOfProduct && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeProduct(group.productId)}
+                          className="h-7 w-7"
+                          title={t("productDelete")}
+                          onClick={() => removeProduct(row.productId)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      </div>
-                    </div>
-
-                    {/* 사이즈를 가로로 펼친 오더시트.
-                        담지 않은 사이즈도 열로 두어 빈 칸에 수를 넣으면 바로 담긴다. */}
-                    <div className="mt-3 overflow-x-auto rounded border">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b bg-gray-50">
-                            <th className="px-3 py-1.5 text-left text-xs font-medium text-muted-foreground">
-                              {t("color")}
-                            </th>
-                            {group.sizes.map((sz) => (
-                              <th
-                                key={sz.id}
-                                className="px-2 py-1.5 text-center text-xs font-medium text-muted-foreground"
-                              >
-                                {sz.name}
-                              </th>
-                            ))}
-                            <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">
-                              {t("quantity")}
-                            </th>
-                            <th className="px-3 py-1.5 text-right text-xs font-medium text-muted-foreground">
-                              {t("amount")}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {group.rows.map((row) => (
-                            <tr key={row.colorId} className="border-b last:border-0">
-                              <td className="whitespace-nowrap px-3 py-1.5">
-                                <span className="flex items-center gap-1.5">
-                                  {row.hexColor && (
-                                    <span
-                                      className="inline-block h-3 w-3 shrink-0 rounded-full border"
-                                      style={{ backgroundColor: row.hexColor }}
-                                    />
-                                  )}
-                                  {row.colorName}
-                                </span>
-                              </td>
-                              {group.sizes.map((sz) => {
-                                const cell = row.cells[sz.id]
-                                // 그 컬러에 없는 사이즈는 칸 자체를 비운다
-                                if (!cell) {
-                                  return (
-                                    <td key={sz.id} className="px-2 py-1.5 text-center text-gray-300">
-                                      –
-                                    </td>
-                                  )
-                                }
-                                const soldOut = cell.stock <= 0
-                                return (
-                                  <td key={sz.id} className="px-1 py-1.5 text-center">
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      max={cell.stock > 0 ? cell.stock : undefined}
-                                      value={cell.quantity || ""}
-                                      placeholder={soldOut ? "-" : "0"}
-                                      disabled={soldOut}
-                                      title={soldOut ? t("soldOut") : t("stockLeft", { count: cell.stock })}
-                                      onChange={(e) => {
-                                        const v = parseInt(e.target.value) || 0
-                                        // 재고를 넘겨 담을 수 없다
-                                        setCellQuantity(cell.variantId, Math.min(v, cell.stock))
-                                      }}
-                                      className="mx-auto h-8 w-14 px-1 text-center text-sm"
-                                    />
-                                  </td>
-                                )
-                              })}
-                              <td className="px-3 py-1.5 text-right tabular-nums">{row.totalQty}</td>
-                              <td className="px-3 py-1.5 text-right font-medium tabular-nums">
-                                {fp(row.subtotal, group.items[0].variant.product.priceCurrency)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              {/* 사이즈별 세로 합계. 사이즈 레인지별로 얼마나 담았는지 한눈에 본다. */}
+              <tfoot>
+                <tr className="border-t-2 bg-muted/50 font-medium">
+                  <td
+                    colSpan={2}
+                    className="sticky left-0 z-10 border-r bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
+                  >
+                    {t("sizeTotal")}
+                  </td>
+                  {grid.sizeNames.map((name) => (
+                    <td key={name} className="px-1 py-2 text-center tabular-nums">
+                      {grid.columnTotals[name] || ""}
+                    </td>
+                  ))}
+                  <td className="border-l px-3 py-2 text-right tabular-nums">{totalQty}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {fp(supplyAmount, customerCurrency)}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
           </div>
 
           {/* MOQ 경고 */}

@@ -21,5 +21,8 @@
   "vat": "부가세 ({rate}%)",
   "color": "컬러",
   "stockLeft": "재고 {count}",
-  "soldOut": "품절"
+  "soldOut": "품절",
+  "style": "스타일",
+  "sizeTotal": "사이즈 합계",
+  "productDelete": "이 스타일 삭제"
 }

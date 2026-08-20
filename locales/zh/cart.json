@@ -21,5 +21,8 @@
   "vat": "增值税 ({rate}%)",
   "color": "颜色",
   "stockLeft": "库存 {count}",
-  "soldOut": "缺货"
+  "soldOut": "缺货",
+  "style": "款式",
+  "sizeTotal": "尺码合计",
+  "productDelete": "删除此款式"
 }
