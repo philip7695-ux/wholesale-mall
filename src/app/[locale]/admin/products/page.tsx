@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { getTranslations, getLocale } from "next-intl/server"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, ImageIcon } from "lucide-react"
 import { formatPriceCross } from "@/lib/utils"
 import { translateCategory } from "@/lib/translate"
 import { DeleteProductButton } from "@/components/admin/delete-product-button"
@@ -151,10 +151,17 @@ export default async function AdminProductsPage({
                       {product.code && (
                         <p className="text-xs font-mono text-muted-foreground">{product.code}</p>
                       )}
-                      {/* 사진 장수를 함께 보여 3장이 아닌 상품을 바로 걸러낼 수 있게 한다 */}
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                        {images.length}{t("imageCount")}
-                      </span>
+                      {/* 사진 장수. 3장이 아닌 상품을 목록에서 바로 걸러내기 위한 것이다.
+                          0 장일 때는 이미지 자리에 "사진 없음" 이 이미 나오므로 감춘다. */}
+                      {images.length > 0 && (
+                        <span
+                          className="flex shrink-0 items-center gap-0.5 text-[10px] text-muted-foreground"
+                          title={t("imageCountTitle")}
+                        >
+                          <ImageIcon className="h-3 w-3" />
+                          {images.length}
+                        </span>
+                      )}
                     </div>
                     <CardTitle className="text-sm font-semibold line-clamp-1">{product.name}</CardTitle>
                     <p className="text-xs text-muted-foreground">

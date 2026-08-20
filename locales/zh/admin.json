@@ -402,5 +402,6 @@
   "bulkClear": "取消选择",
   "bulkDeleteConfirm": "将删除所选商品，且无法恢复。是否继续？",
   "bulkOrderedWarning": "所选商品中有 {count} 个已被下单。订单记录会保留，但与商品的关联会断开。是否继续？",
-  "bulkDone": "已处理 {count} 个。"
+  "bulkDone": "已处理 {count} 个。",
+  "imageCountTitle": "图片数量"
 }
