@@ -17,6 +17,12 @@ const BABY_NUM = new Set(["80","85","90","95","100"])
 const KIDS_ONLY_NUM = new Set(["110","120","130","140","150"])
 const SIZE_ORDER = [...KIDS_NUM_SIZES, ...KIDS_LETTER_SIZES]
 
+/** 코드 3~4번째 두 자리. 정렬·필터에 쓴다. BP63AC317 -> "63" */
+const seasonKeyOf = (code) => {
+  const k = (code || "").slice(2, 4)
+  return /^[3-9][1-4]$/.test(k) ? k : null
+}
+
 function determineAgeGroup(name, sizes) {
   const n = (name || "").toLowerCase()
   const hasBaby = n.includes("baby")
@@ -100,7 +106,7 @@ async function main() {
     products.push({
       id: pid, name: head.name, description: null, categoryId: cid, thumbnail: null,
       isActive: true, sortOrder: 0, createdAt: now, updatedAt: now, sizeSpec: null,
-      images: [], code, material: head.material || null,
+      images: [], code, seasonKey: seasonKeyOf(code), material: head.material || null,
       brand: head.brand || null, origin: head.origin || null,
       majorCategory: head.major || null,
       moq: 0, colorMoq: 0, priceCurrency: "KRW",
@@ -139,7 +145,7 @@ async function main() {
   const client = await pool.connect()
   try {
     await client.query("begin")
-    await insertMany(client, "Product", ["id","name","description","categoryId","thumbnail","isActive","sortOrder","createdAt","updatedAt","sizeSpec","images","code","material","brand","origin","majorCategory","moq","colorMoq","priceCurrency","ageGroup"], products)
+    await insertMany(client, "Product", ["id","name","description","categoryId","thumbnail","isActive","sortOrder","createdAt","updatedAt","sizeSpec","images","code","seasonKey","material","brand","origin","majorCategory","moq","colorMoq","priceCurrency","ageGroup"], products)
     console.log("  상품 완료")
     await insertMany(client, "ProductColor", ["id","productId","name","colorCode","hexColor","images","sortOrder","moq","createdAt","updatedAt"], colors)
     console.log("  컬러 완료")
