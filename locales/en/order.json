@@ -129,5 +129,9 @@
   "cancelledBySeller": "Cancelled by the seller",
   "cancelReason": "Reason",
   "cancelNoReason": "No reason was recorded.",
-  "cancelStockReleased": "Any stock held for this order has been released. Contact us if you have questions."
+  "cancelStockReleased": "Any stock held for this order has been released. Contact us if you have questions.",
+  "styleNo": "Style no.",
+  "grandQty": "Total qty",
+  "unitPrice": "Unit price",
+  "sizeTotal": "Size total"
 }

@@ -129,5 +129,9 @@
   "cancelledBySeller": "卖家已取消",
   "cancelReason": "取消原因",
   "cancelNoReason": "未记录取消原因。",
-  "cancelStockReleased": "此订单占用的库存已全部释放。如有疑问请联系我们。"
+  "cancelStockReleased": "此订单占用的库存已全部释放。如有疑问请联系我们。",
+  "styleNo": "货号",
+  "grandQty": "合计",
+  "unitPrice": "单价",
+  "sizeTotal": "尺码合计"
 }

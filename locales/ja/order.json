@@ -129,5 +129,9 @@
   "cancelledBySeller": "販売者がキャンセルしました",
   "cancelReason": "キャンセル理由",
   "cancelNoReason": "キャンセル理由が記録されていません。",
-  "cancelStockReleased": "この注文で確保していた在庫はすべて解放されました。ご不明な点はご連絡ください。"
+  "cancelStockReleased": "この注文で確保していた在庫はすべて解放されました。ご不明な点はご連絡ください。",
+  "styleNo": "品番",
+  "grandQty": "合計",
+  "unitPrice": "単価",
+  "sizeTotal": "サイズ合計"
 }

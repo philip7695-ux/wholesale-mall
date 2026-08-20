@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { OrderStatusForm } from "@/components/admin/order-status-form"
 import { OrderRevisionTable } from "@/components/order-revision-table"
+import { WarehouseSheetButton } from "@/components/admin/warehouse-sheet-button"
 import { isEditable } from "@/lib/order-revision"
 import { getExchangeRate } from "@/lib/currency.server"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_DOT_COLOR, STATUS_TEXT_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
@@ -27,7 +28,17 @@ export default async function AdminOrderDetailPage({
     where: { id },
     include: {
       user: { select: { name: true, email: true, phone: true, businessName: true } },
-      items: { include: { variant: { select: { stock: true, reserved: true } } } },
+      items: {
+        include: {
+          variant: {
+            select: {
+              stock: true,
+              reserved: true,
+              product: { select: { code: true } },
+            },
+          },
+        },
+      },
       paymentConfirmations: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -202,12 +213,17 @@ export default async function AdminOrderDetailPage({
           {/* 확정 전에는 수량을 고칠 수 있는 표로 보여준다.
               창고 확인 결과를 바로 반영하고 바이어에게 넘기기 위해서다. */}
           {isEditable(order.status) ? (
-            <OrderRevisionTable
+            <div className="space-y-3">
+              {/* 창고 답을 받기 전에 먼저 발주서를 보낸다.
+                  수량 조정은 그 답이 온 뒤의 일이므로 표보다 위에 둔다. */}
+              <WarehouseSheetButton orderId={order.id} />
+              <OrderRevisionTable
               orderId={order.id}
               isAdmin
               canEdit
               items={order.items.map((item: any) => ({
                 id: item.id,
+                productCode: item.variant?.product?.code ?? null,
                 productName: item.productName,
                 colorName: item.colorName,
                 sizeName: item.sizeName,
@@ -216,9 +232,10 @@ export default async function AdminOrderDetailPage({
                 price: item.price,
                 stock: item.variant ? item.variant.stock : undefined,
               }))}
-              locale={locale}
-              rate={rate}
-            />
+                locale={locale}
+                rate={rate}
+              />
+            </div>
           ) : (
             <div className="space-y-3">
               {order.items.map((item: any) => (

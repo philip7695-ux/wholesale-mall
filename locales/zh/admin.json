@@ -429,5 +429,13 @@
   "orderCancelReasonAsk": "请输入取消原因。买家会看到，并会收到邮件通知。",
   "orderCancelReasonAskBulk": "将取消 {count} 个订单。请输入原因，买家会看到。",
   "orderCancelReasonRequired": "必须填写取消原因。",
-  "orderCancelledNotified": "订单已取消，并已通知买家。"
+  "orderCancelledNotified": "订单已取消，并已通知买家。",
+  "warehouseSheetGrid": "订货单 (尺码横向)",
+  "warehouseSheetRows": "订货单 (尺码纵向)",
+  "warehouseSheetHint": "发给仓库进行实物核对，收到回复后在下表修改数量。",
+  "warehouseSheetFail": "无法生成订货单。",
+  "orderExportAllGrid": "全部下载 (横向)",
+  "orderExportAllRows": "全部下载 (纵向)",
+  "orderExportSelectedGrid": "下载 {count} 条 (横向)",
+  "orderExportSelectedRows": "下载 {count} 条 (纵向)"
 }

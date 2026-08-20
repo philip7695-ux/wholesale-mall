@@ -429,5 +429,13 @@
   "orderCancelReasonAsk": "Enter a cancellation reason. The buyer will see it and receive it by email.",
   "orderCancelReasonAskBulk": "Cancelling {count} orders. Enter a reason — buyers will see it.",
   "orderCancelReasonRequired": "A cancellation reason is required.",
-  "orderCancelledNotified": "Order cancelled and the buyer was notified."
+  "orderCancelledNotified": "Order cancelled and the buyer was notified.",
+  "warehouseSheetGrid": "PO sheet (sizes across)",
+  "warehouseSheetRows": "PO sheet (sizes down)",
+  "warehouseSheetHint": "Send this to the warehouse for a physical stock check, then adjust the quantities below.",
+  "warehouseSheetFail": "Could not build the purchase order sheet.",
+  "orderExportAllGrid": "Export all (across)",
+  "orderExportAllRows": "Export all (down)",
+  "orderExportSelectedGrid": "Export {count} (across)",
+  "orderExportSelectedRows": "Export {count} (down)"
 }

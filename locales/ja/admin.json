@@ -429,5 +429,13 @@
   "orderCancelReasonAsk": "キャンセル理由を入力してください。バイヤーに表示され、メールでも送信されます。",
   "orderCancelReasonAskBulk": "{count}件をキャンセルします。理由を入力してください。バイヤーに表示されます。",
   "orderCancelReasonRequired": "キャンセル理由の入力が必要です。",
-  "orderCancelledNotified": "注文をキャンセルし、バイヤーに理由を伝えました。"
+  "orderCancelledNotified": "注文をキャンセルし、バイヤーに理由を伝えました。",
+  "warehouseSheetGrid": "発注書 (サイズ横)",
+  "warehouseSheetRows": "発注書 (サイズ縦)",
+  "warehouseSheetHint": "倉庫に送って実物確認を受けてください。返答が来たら下の表で数量を修正します。",
+  "warehouseSheetFail": "発注書を作成できませんでした。",
+  "orderExportAllGrid": "全件ダウンロード (横)",
+  "orderExportAllRows": "全件ダウンロード (縦)",
+  "orderExportSelectedGrid": "{count}件ダウンロード (横)",
+  "orderExportSelectedRows": "{count}件ダウンロード (縦)"
 }

@@ -129,5 +129,9 @@
   "cancelledBySeller": "판매자가 취소했습니다",
   "cancelReason": "취소 사유",
   "cancelNoReason": "취소 사유가 기록되지 않았습니다.",
-  "cancelStockReleased": "이 주문으로 잡아둔 재고는 모두 풀렸습니다. 문의사항이 있으면 연락 주세요."
+  "cancelStockReleased": "이 주문으로 잡아둔 재고는 모두 풀렸습니다. 문의사항이 있으면 연락 주세요.",
+  "styleNo": "품번",
+  "grandQty": "총계",
+  "unitPrice": "단가",
+  "sizeTotal": "사이즈 합계"
 }

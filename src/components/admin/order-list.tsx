@@ -83,13 +83,13 @@ export function OrderList({ orders }: { orders: Order[] }) {
     })
   }
 
-  async function handleExport() {
-    setLoading("export")
+  // 사이즈를 가로로 펼칠지 세로로 둘지 고른다. 창고마다 익숙한 형식이 다르다.
+  async function handleExport(layout: "grid" | "rows") {
+    setLoading(`export-${layout}`)
     try {
-      const params = selected.size > 0
-        ? `?ids=${Array.from(selected).join(",")}`
-        : ""
-      const res = await fetch(`/api/orders/export${params}`)
+      const qs = new URLSearchParams({ layout })
+      if (selected.size > 0) qs.set("ids", Array.from(selected).join(","))
+      const res = await fetch(`/api/orders/export?${qs}`)
       if (!res.ok) throw new Error(t("orderExportFail"))
 
       const blob = await res.blob()
@@ -205,15 +205,27 @@ export function OrderList({ orders }: { orders: Order[] }) {
           )}
           <Button
             variant="outline"
-            onClick={handleExport}
-            disabled={loading === "export"}
+            onClick={() => handleExport("grid")}
+            disabled={!!loading}
           >
             <Download className="mr-2 h-4 w-4" />
-            {loading === "export"
+            {loading === "export-grid"
               ? t("orderDownloading")
               : selected.size > 0
-                ? t("orderExportSelected", { count: selected.size })
-                : t("orderExportAll")}
+                ? t("orderExportSelectedGrid", { count: selected.size })
+                : t("orderExportAllGrid")}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExport("rows")}
+            disabled={!!loading}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {loading === "export-rows"
+              ? t("orderDownloading")
+              : selected.size > 0
+                ? t("orderExportSelectedRows", { count: selected.size })
+                : t("orderExportAllRows")}
           </Button>
         </div>
       </div>
