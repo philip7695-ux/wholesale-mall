@@ -19,11 +19,12 @@ import { ProductFilters } from "@/components/admin/product-filters"
 import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel } from "@/lib/season"
 import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { buyerPrice } from "@/lib/pricing"
+import { paginationRange, ELLIPSIS } from "@/lib/pagination"
 
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string; code?: string; sort?: string }>
+  searchParams: Promise<{ year?: string; season?: string; category?: string; brand?: string; code?: string; sort?: string; page?: string }>
 }) {
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
@@ -31,6 +32,7 @@ export default async function AdminProductsPage({
   const locale = await getLocale()
   const rates = await getAllExchangeRates()
   const { year, season, category, brand, code, sort } = await searchParams
+  const page = Math.max(1, parseInt((await searchParams).page || "1"))
 
   const [categories, brandRows, seasonRates, specialOfferRate] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -61,6 +63,17 @@ export default async function AdminProductsPage({
       ? [{ totalStock: "desc" as const }]
       : [{ seasonKey: "desc" as const }, { code: "asc" as const }]
 
+  // 조건 없이 4,550개를 전부 부르면 조회에만 2.5초가 걸리고 카드도 그만큼
+  // 그려야 한다. 아무것도 안 걸었으면 첫 장만 보여주고, 조건을 걸었으면
+  // (이미 좁혔다는 뜻이므로) 걸린 것을 다 보여준다.
+  const hasFilter = Boolean(year || season || category || brand || code)
+  const PAGE_SIZE = 20
+  const FILTERED_MAX = 600   // 조건을 걸어도 이만큼 넘으면 더 좁히도록 안내한다
+
+  const total = await prisma.product.count({ where })
+  const take = hasFilter ? FILTERED_MAX : PAGE_SIZE
+  const skip = hasFilter ? 0 : (page - 1) * PAGE_SIZE
+
   const products = await prisma.product.findMany({
     where,
     include: {
@@ -69,7 +82,12 @@ export default async function AdminProductsPage({
       variants: true,
     },
     orderBy,
+    skip,
+    take,
   })
+
+  const totalPages = hasFilter ? 1 : Math.ceil(total / PAGE_SIZE)
+  const capped = hasFilter && total > FILTERED_MAX
 
   return (
     <div className="space-y-6">
@@ -103,7 +121,7 @@ export default async function AdminProductsPage({
         }))}
         allLabel={t("filterAll")}
         resetLabel={t("filterReset")}
-        countLabel={t("filterCount", { count: products.length })}
+        countLabel={t("filterCount", { count: total })}
         searchLabel={t("search")}
         searchPlaceholder={t("codeSearchPlaceholder")}
         sorts={[
@@ -111,6 +129,12 @@ export default async function AdminProductsPage({
           { value: "stock", label: t("sortStock") },
         ]}
       />
+
+      {capped && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {t("filterCapped", { shown: products.length, total })}
+        </p>
+      )}
 
       {products.length === 0 ? (
         <Card>
@@ -228,6 +252,45 @@ export default async function AdminProductsPage({
             )
           })}
         </ProductGrid>
+      )}
+
+      {/* 조건을 걸면 걸린 것을 다 보여주므로 페이지가 필요 없다 */}
+      {!hasFilter && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 pt-4">
+          {page > 1 && (
+            <Link
+              href={`/admin/products?page=${page - 1}${sort ? `&sort=${sort}` : ""}`}
+              className="flex h-9 w-9 items-center justify-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              ‹
+            </Link>
+          )}
+          {paginationRange(page, totalPages).map((p, i) =>
+            p === ELLIPSIS ? (
+              <span key={`gap-${i}`} className="flex h-9 w-9 items-center justify-center text-sm text-muted-foreground/50">
+                {ELLIPSIS}
+              </span>
+            ) : (
+              <Link
+                key={p}
+                href={`/admin/products?page=${p}${sort ? `&sort=${sort}` : ""}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-md text-sm transition-colors ${
+                  p === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p}
+              </Link>
+            ),
+          )}
+          {page < totalPages && (
+            <Link
+              href={`/admin/products?page=${page + 1}${sort ? `&sort=${sort}` : ""}`}
+              className="flex h-9 w-9 items-center justify-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              ›
+            </Link>
+          )}
+        </div>
       )}
     </div>
   )
