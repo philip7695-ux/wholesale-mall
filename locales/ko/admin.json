@@ -417,5 +417,6 @@
   "normalPrice": "일반가",
   "specialPrice": "스페셜가",
   "dropHint": "사진을 이 영역에 끌어다 놓거나 + 를 눌러 선택하세요.",
-  "nonImageSkipped": "이미지가 아닌 파일 {count}개는 건너뛰었습니다."
+  "nonImageSkipped": "이미지가 아닌 파일 {count}개는 건너뛰었습니다.",
+  "filterCapped": "조건에 맞는 상품이 {total}개입니다. 화면에는 {shown}개만 보여줍니다. 조건을 더 좁혀주세요."
 }

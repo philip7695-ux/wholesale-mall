@@ -417,5 +417,6 @@
   "normalPrice": "Normal",
   "specialPrice": "Special",
   "dropHint": "Drag photos here, or click + to choose files.",
-  "nonImageSkipped": "Skipped {count} non-image files."
+  "nonImageSkipped": "Skipped {count} non-image files.",
+  "filterCapped": "{total} products match. Showing the first {shown}. Narrow the filter further."
 }

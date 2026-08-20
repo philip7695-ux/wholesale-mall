@@ -417,5 +417,6 @@
   "normalPrice": "通常価格",
   "specialPrice": "スペシャル価格",
   "dropHint": "写真をここにドラッグするか、+ を押して選択してください。",
-  "nonImageSkipped": "画像でないファイル{count}件をスキップしました。"
+  "nonImageSkipped": "画像でないファイル{count}件をスキップしました。",
+  "filterCapped": "条件に合う商品は{total}件です。画面には{shown}件のみ表示します。条件を絞ってください。"
 }
