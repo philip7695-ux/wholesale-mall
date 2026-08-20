@@ -68,6 +68,26 @@ export function isValidStatusTransition(from: string, to: string): boolean {
   return ti >= fi
 }
 
+/**
+ * 아직 돈이 오가기 전의 상태들.
+ *
+ * 배송지 수정, 주문 취소, 결제완료 자동 전이처럼 "입금 전이면 된다"는
+ * 판단은 모두 여기를 본다. 조정 단계를 새로 넣을 때 이 목록만 고치면
+ * 되도록 한곳에 모은다. 전에는 곳곳에 ORDER_PLACED 를 적어두어
+ * 확정 단계가 생기자 여러 화면이 조용히 멈췄다.
+ */
+export const PRE_PAYMENT_STATUSES = [
+  "ORDER_PLACED",
+  "STOCK_CHECKING",
+  "BUYER_REVIEW",
+  "CONFIRMED",
+  "INVOICE_SENT",
+] as const
+
+export function isPrePayment(status: string): boolean {
+  return (PRE_PAYMENT_STATUSES as readonly string[]).includes(status)
+}
+
 /** 상태 → 타임스탬프 필드 매핑 */
 export const STATUS_TIMESTAMP_FIELD: Record<string, string> = {
   ORDER_PLACED: "createdAt",

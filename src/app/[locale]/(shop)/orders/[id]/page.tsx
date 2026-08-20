@@ -11,7 +11,7 @@ import { formatPrice, formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
-import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
+import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD, isPrePayment } from "@/lib/order-status"
 import { OrderRevisionTable } from "@/components/order-revision-table"
 import { Textarea } from "@/components/ui/textarea"
 import { FileDown, Upload, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react"
@@ -306,27 +306,24 @@ export default function OrderDetailPage() {
           <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>
             {statusLabels[order.status]}
           </span>
-          {(order.status === "ORDER_PLACED" || order.status === "INVOICE_SENT") && (
-            <>
-              {!editMode && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={startEdit}
-                >
-                  <Pencil className="mr-1 h-3 w-3" />
-                  {t("editOrder")}
-                </Button>
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleCancel}
-                disabled={cancelling}
-              >
-                {cancelling ? t("cancelling") : t("cancelOrder")}
-              </Button>
-            </>
+          {/* 배송지 수정은 창고에 넘어가기 전에만 연다. 조정이 시작된
+              뒤에는 수량 조정 표가 그 자리를 대신한다. */}
+          {order.status === "ORDER_PLACED" && !editMode && (
+            <Button variant="outline" size="sm" onClick={startEdit}>
+              <Pencil className="mr-1 h-3 w-3" />
+              {t("editOrder")}
+            </Button>
+          )}
+          {/* 취소는 입금 전까지 언제든 된다 */}
+          {isPrePayment(order.status) && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? t("cancelling") : t("cancelOrder")}
+            </Button>
           )}
           {order.invoiceNumber && order.status !== "ORDER_PLACED" && order.status !== "CANCELLED" && (
             <Button
