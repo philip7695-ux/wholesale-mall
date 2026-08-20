@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, CheckCircle2 } from "lucide-react"
+import { formatPrice } from "@/lib/utils"
 
 export interface RevisionItem {
   id: string
@@ -35,13 +36,17 @@ export function OrderRevisionTable({
   items,
   isAdmin,
   canEdit,
-  formatPrice,
+  locale,
+  rate,
 }: {
   orderId: string
   items: RevisionItem[]
   isAdmin: boolean
   canEdit: boolean
-  formatPrice: (amount: number) => string
+  // 서버 컴포넌트에서도 쓰이므로 포맷 함수를 넘겨받을 수 없다.
+  // 함수는 클라이언트 컴포넌트 경계를 넘지 못한다.
+  locale: string
+  rate?: number
 }) {
   const router = useRouter()
   const t = useTranslations("order")
@@ -50,6 +55,7 @@ export function OrderRevisionTable({
     Object.fromEntries(items.map((i) => [i.id, String(i.quantity)])),
   )
   const [busy, setBusy] = useState(false)
+  const fp = (amount: number) => formatPrice(amount, locale, rate)
 
   const changed = items.some((i) => Number(draft[i.id]) !== i.quantity)
   const total = items.reduce((s, i) => s + i.price * (Number(draft[i.id]) || 0), 0)
@@ -139,7 +145,7 @@ export function OrderRevisionTable({
                     )}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">
-                    {formatPrice(i.price * q)}
+                    {fp(i.price * q)}
                   </td>
                 </tr>
               )
@@ -154,7 +160,7 @@ export function OrderRevisionTable({
                 {items.reduce((s, i) => s + (Number(draft[i.id]) || 0), 0)}
               </td>
               <td className="px-3 py-2 text-right font-medium tabular-nums">
-                {formatPrice(total)}
+                {fp(total)}
               </td>
             </tr>
           </tfoot>

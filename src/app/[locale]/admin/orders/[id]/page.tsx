@@ -216,7 +216,8 @@ export default async function AdminOrderDetailPage({
                 price: item.price,
                 stock: item.variant ? item.variant.stock : undefined,
               }))}
-              formatPrice={(amount) => formatPrice(amount, locale, rate)}
+              locale={locale}
+              rate={rate}
             />
           ) : (
             <div className="space-y-3">
