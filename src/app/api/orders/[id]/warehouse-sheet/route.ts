@@ -280,8 +280,15 @@ async function POST_impl(
   }
 
   const changes: { itemId: string; label: string; from: number; to: number }[] = []
-  const unmatched: string[] = []
+  // 주문에 없는데 창고가 수량을 적은 줄. 창고가 다른 상품을 끼워 넣었거나
+  // 다른 주문의 발주서를 섞었을 수 있다. 조용히 넘기면 알 방법이 없다.
+  const unmatched: { label: string; qty: number }[] = []
   const seen = new Set<string>()
+
+  // 사이즈로 인정하지 못한 열 중에 숫자가 적힌 것. 창고가 주문에 없는
+  // 사이즈를 새로 만들어 적었을 수 있다.
+  const knownCols = ["품번", "상품명", "컬러", "사이즈", "주문수량", "확인수량", "주문합계", "비고"]
+  const strayCols = new Set<string>()
 
   for (const row of body) {
     if (!Array.isArray(row) || row.length === 0) continue
@@ -289,6 +296,14 @@ async function POST_impl(
     const color = String(row[iColor] ?? "").trim()
     // 합계 줄과 빈 줄은 건너뛴다
     if (!code || code === "합계" || !color) continue
+
+    // 사이즈로 인정하지 못한 열에 숫자가 적혀 있으면 기억해 둔다
+    if (!isRows) {
+      header.forEach((h, idx) => {
+        if (!h || knownCols.includes(h) || orderSizes.has(norm(h))) return
+        if (num(row[idx])) strayCols.add(h)
+      })
+    }
 
     // 사이즈별로 (사이즈이름, 수량) 한 쌍씩 뽑는다
     const pairs: [string, unknown][] = isRows
@@ -304,7 +319,7 @@ async function POST_impl(
       if (!item) {
         // 주문에 없던 칸에 창고가 숫자를 적었을 수 있다. 0 이나 빈 칸은 조용히 넘긴다.
         const n = num(raw)
-        if (n) unmatched.push(`${code} / ${color} / ${size}`)
+        if (n) unmatched.push({ label: `${code} / ${color} / ${size}`, qty: n })
         continue
       }
       if (seen.has(item.id)) continue
@@ -332,9 +347,13 @@ async function POST_impl(
     )
   }
 
+  // 같은 줄이 여러 번 나와도 한 번만 알린다
+  const unmatchedUnique = [...new Map(unmatched.map((u) => [u.label, u])).values()]
+
   return NextResponse.json({
     changes,
-    unmatched: [...new Set(unmatched)],
+    unmatched: unmatchedUnique,
+    strayColumns: [...strayCols],
     // 파일에 아예 없던 항목. 창고가 줄을 지웠을 수 있어 그대로 두고 알린다.
     missing: order.items
       .filter((i) => !seen.has(i.id))

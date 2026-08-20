@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Loader2, Send, CheckCircle2, Upload } from "lucide-react"
+import { Loader2, Send, CheckCircle2, Upload, AlertTriangle } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { sortSizeNames } from "@/lib/product-sizes"
 
@@ -71,6 +71,12 @@ export function OrderRevisionTable({
   )
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  // 창고 회신에서 걸린 문제들. 토스트는 사라지지만 이건 손볼 때까지 남는다.
+  const [sheetIssues, setSheetIssues] = useState<{
+    unmatched: { label: string; qty: number }[]
+    strayColumns: string[]
+    missing: string[]
+  } | null>(null)
 
   const fp = (amount: number) => formatPrice(amount, locale, rate)
   const qtyOf = (item: RevisionItem) => Number(draft[item.id]) || 0
@@ -169,13 +175,17 @@ export function OrderRevisionTable({
         })
         toast.success(t("sheetImportApplied", { count: data.changes.length }))
       }
-      // 못 맞춘 줄은 조용히 넘기지 않는다. 창고가 다른 걸 적었을 수 있다.
-      if (data.unmatched?.length) {
-        toast.warning(t("sheetImportUnmatched", { list: data.unmatched.slice(0, 3).join(", ") }))
+
+      // 창고가 주문에 없는 상품을 끼워 넣었거나 열을 새로 만들었을 수 있다.
+      // 토스트로 흘려보내면 못 보고 지나친다. 표 위에 남겨 둔다.
+      const issues = {
+        unmatched: data.unmatched ?? [],
+        strayColumns: data.strayColumns ?? [],
+        missing: data.missing ?? [],
       }
-      if (data.missing?.length) {
-        toast.warning(t("sheetImportMissing", { count: data.missing.length }))
-      }
+      const any =
+        issues.unmatched.length || issues.strayColumns.length || issues.missing.length
+      setSheetIssues(any ? issues : null)
     } catch (e: any) {
       toast.error(e?.message || t("sheetImportFailed"))
     } finally {
@@ -201,6 +211,38 @@ export function OrderRevisionTable({
 
   return (
     <div className="space-y-3">
+      {sheetIssues && (
+        <div className="rounded-lg border border-amber-400/60 bg-amber-50 p-3 text-sm dark:bg-amber-950/20">
+          <p className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="h-4 w-4" />
+            {t("sheetIssuesTitle")}
+          </p>
+          <ul className="mt-1.5 space-y-1 text-amber-800 dark:text-amber-200">
+            {sheetIssues.unmatched.length > 0 && (
+              <li>
+                <span className="font-medium">{t("sheetIssueNotInOrder")}</span>{" "}
+                {sheetIssues.unmatched.map((u) => `${u.label} (${u.qty})`).join(", ")}
+              </li>
+            )}
+            {sheetIssues.strayColumns.length > 0 && (
+              <li>
+                <span className="font-medium">{t("sheetIssueStrayColumn")}</span>{" "}
+                {sheetIssues.strayColumns.join(", ")}
+              </li>
+            )}
+            {sheetIssues.missing.length > 0 && (
+              <li>
+                <span className="font-medium">{t("sheetIssueMissing")}</span>{" "}
+                {sheetIssues.missing.join(", ")}
+              </li>
+            )}
+          </ul>
+          <p className="mt-1.5 text-xs text-amber-700/80 dark:text-amber-300/80">
+            {t("sheetIssuesHint")}
+          </p>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-lg border">
         <table className="min-w-full border-collapse text-sm">
           <thead>

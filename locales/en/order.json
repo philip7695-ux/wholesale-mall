@@ -139,5 +139,10 @@
   "sheetImportNoChange": "Quantities match the order. Nothing to change.",
   "sheetImportUnmatched": "Skipped rows not in this order: {list}",
   "sheetImportMissing": "{count} items were missing from the file and left unchanged.",
-  "sheetImportFailed": "Could not read the sheet."
+  "sheetImportFailed": "Could not read the sheet.",
+  "sheetIssuesTitle": "Needs checking in the warehouse reply",
+  "sheetIssueNotInOrder": "Quantities entered for items not in this order:",
+  "sheetIssueStrayColumn": "Quantities in columns that are not recognised sizes:",
+  "sheetIssueMissing": "Missing from the file, left unchanged:",
+  "sheetIssuesHint": "None of these were applied to the table. Check with the warehouse, then enter them yourself."
 }

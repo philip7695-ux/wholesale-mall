@@ -139,5 +139,10 @@
   "sheetImportNoChange": "注文と数量が同じです。変更はありません。",
   "sheetImportUnmatched": "注文にない行は飛ばしました: {list}",
   "sheetImportMissing": "ファイルにない{count}件はそのままにしました。",
-  "sheetImportFailed": "発注書を読み込めませんでした。"
+  "sheetImportFailed": "発注書を読み込めませんでした。",
+  "sheetIssuesTitle": "倉庫の回答で確認が必要な点",
+  "sheetIssueNotInOrder": "注文にない商品に数量が記入されています:",
+  "sheetIssueStrayColumn": "サイズと判別できない列に数量が記入されています:",
+  "sheetIssueMissing": "ファイルになく、そのままにした項目:",
+  "sheetIssuesHint": "これらは表に反映していません。倉庫に確認のうえ直接入力してください。"
 }
