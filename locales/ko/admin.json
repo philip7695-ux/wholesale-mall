@@ -402,5 +402,6 @@
   "bulkClear": "선택 해제",
   "bulkDeleteConfirm": "선택한 상품을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?",
   "bulkOrderedWarning": "선택한 상품 중 {count}개는 주문된 적이 있습니다. 삭제해도 주문 이력은 남지만 상품과의 연결은 끊깁니다. 계속할까요?",
-  "bulkDone": "{count}개 처리했습니다."
+  "bulkDone": "{count}개 처리했습니다.",
+  "imageCountTitle": "등록된 사진 수"
 }
