@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server"
 import { SeasonDiscountForm } from "@/components/admin/season-discount-form"
 import { getSeasonRates } from "@/lib/pricing.server"
 import { getGradeConfig } from "@/lib/grade.server"
-import { seasonsNewestFirst } from "@/lib/season"
+import { seasonsNewestFirst, SEASON_KEYS } from "@/lib/season"
 
 export const dynamic = "force-dynamic"
 
@@ -30,6 +30,7 @@ export default async function PricingSettingsPage() {
     .map((s) => ({
       key: s.key,
       label: s.label,
+      seasonName: t(SEASON_KEYS[s.season]),
       year: s.year,
       rate: rates[s.key] ?? 0,
       productCount: countMap[s.key],
