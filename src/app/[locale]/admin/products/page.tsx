@@ -16,6 +16,8 @@ import { ProductImageStrip } from "@/components/admin/product-image-strip"
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle"
 import { ProductFilters } from "@/components/admin/product-filters"
 import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel } from "@/lib/season"
+import { getSeasonRates } from "@/lib/pricing.server"
+import { buyerPrice } from "@/lib/pricing"
 
 export default async function AdminProductsPage({
   searchParams,
@@ -29,7 +31,7 @@ export default async function AdminProductsPage({
   const rates = await getAllExchangeRates()
   const { year, season, category, brand, code } = await searchParams
 
-  const [categories, brandRows] = await Promise.all([
+  const [categories, brandRows, seasonRates] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
       where: { brand: { not: null } },
@@ -37,6 +39,7 @@ export default async function AdminProductsPage({
       select: { brand: true },
       orderBy: { brand: "asc" },
     }),
+    getSeasonRates(),
   ])
 
   // 연도·시즌은 seasonKey(코드 3~4번째 두 자리)로 거른다.
@@ -109,6 +112,11 @@ export default async function AdminProductsPage({
             const prices = product.variants.map((v: any) => v.price)
             const minPrice = prices.length > 0 ? Math.min(...prices) : 0
             const hasPriceRange = prices.length > 0 && Math.max(...prices) !== minPrice
+            // 어드민은 정상가를 다루지만, 바이어에게 얼마로 나가는지도 보여야
+            // 할인율 설정이 맞는지 확인할 수 있다. 등급 할인은 회원마다 달라
+            // 기준가(BRONZE)만 계산한다.
+            const seasonRate = seasonRates[product.seasonKey ?? ""] ?? 0
+            const wholesale = minPrice > 0 ? buyerPrice(minPrice, seasonRate, 0) : 0
             const images: string[] = product.images ?? []
             return (
               <Link key={product.id} href={`/admin/products/${product.id}/edit`}>
@@ -136,10 +144,22 @@ export default async function AdminProductsPage({
                     <p className="text-xs text-muted-foreground">
                       {translateCategory(product.category.slug, tCat, product.category.name)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
                     </p>
-                    <p className="text-sm font-medium mt-1">
-                      {minPrice > 0 ? formatPriceCross(minPrice, product.priceCurrency, locale, rates) : "-"}
-                      {hasPriceRange && "~"}
-                    </p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-sm font-medium">
+                        {wholesale > 0 ? formatPriceCross(wholesale, product.priceCurrency, locale, rates) : "-"}
+                        {hasPriceRange && "~"}
+                      </span>
+                      {seasonRate > 0 && minPrice > 0 && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          {formatPriceCross(minPrice, product.priceCurrency, locale, rates)}
+                        </span>
+                      )}
+                      {seasonRate > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          -{Math.round(seasonRate * 100)}%
+                        </span>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="mt-auto flex gap-2 pt-0">
                     <ProductActiveToggle
