@@ -56,6 +56,8 @@ export default async function AdminMembersPage() {
       role: true,
       businessName: true,
       businessNumber: true,
+      country: true,
+      adminNote: true,
       approvalStatus: true,
       buyerGrade: true,
       tradeType: true,
@@ -119,6 +121,12 @@ export default async function AdminMembersPage() {
                       {member.businessName && <p>{t("businessPrefix")}{member.businessName}</p>}
                       {member.businessNumber && <p>{t("businessNumberPrefix")}{member.businessNumber}</p>}
                       {member.phone && <p>{t("phonePrefix")}{member.phone}</p>}
+                      {member.country && <p>{t("countryPrefix")}{member.country}</p>}
+                      {member.adminNote && (
+                        <p className="whitespace-pre-wrap text-amber-700 dark:text-amber-400">
+                          {t("adminNotePrefix")}{member.adminNote}
+                        </p>
+                      )}
                       <p>{t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</p>
                       <p>{t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</p>
                     </div>

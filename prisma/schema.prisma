@@ -27,6 +27,10 @@ model User {
   tradeType       TradeType      @default(DOMESTIC)
   // 수출 회원의 결제 통화. 비어 있으면 접속 언어의 기본 통화를 쓴다.
   currency        String?
+  // 회원의 국가와 관리자 메모. 해외 바이어가 많아 어느 나라인지 한눈에
+  // 봐야 하고, 통관·거래 특이사항 같은 것을 적어둘 자리가 필요하다.
+  country         String?
+  adminNote       String?
   cartItems       CartItem[]
   orders          Order[]
 
