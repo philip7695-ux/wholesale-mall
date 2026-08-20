@@ -85,13 +85,14 @@ async function GET_impl(
     group.sizeQty[item.sizeName] = (group.sizeQty[item.sizeName] || 0) + item.quantity
   }
 
+  // 열 순서를 직접 정한다. "85", "90" 같은 숫자꼴 키를 객체에 담으면
+  // 자바스크립트가 그 키들을 앞으로 끌어올려 상품코드보다 먼저 나온다.
+  const headers = ["상품코드", "상품명", "컬러", ...allSizes, "합계", "단가", "소계"]
+
   // 피벗 테이블 rows 생성
   const rows: Record<string, string | number>[] = []
-  let no = 0
   for (const group of groupMap.values()) {
-    no++
     const row: Record<string, string | number> = {
-      "No.": no,
       "상품코드": group.productCode,
       "상품명": group.productName,
       "컬러": group.colorName,
@@ -139,11 +140,9 @@ async function GET_impl(
   XLSX.utils.book_append_sheet(wb, summaryWs, "주문요약")
 
   // 상품 상세 시트 (사이즈 가로 피벗)
-  const itemsWs = XLSX.utils.json_to_sheet(rows)
-  const headers = Object.keys(rows[0] || {})
+  const itemsWs = XLSX.utils.json_to_sheet(rows, { header: headers })
   itemsWs["!cols"] = headers.map((key) => {
-    if (["No."].includes(key)) return { wch: 5 }
-    if (["상품코드"].includes(key)) return { wch: 12 }
+    if (["상품코드"].includes(key)) return { wch: 14 }
     if (["상품명"].includes(key)) return { wch: 25 }
     if (["컬러"].includes(key)) return { wch: 12 }
     if (["단가", "소계"].includes(key)) return { wch: 12 }
