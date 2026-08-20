@@ -16,6 +16,8 @@ interface Order {
   status: string
   totalAmount: number
   createdAt: string
+  cancelReason: string | null
+  cancelledByAdmin: boolean
   items: { id: string; productName: string; quantity: number }[]
 }
 
@@ -106,6 +108,16 @@ export default function OrdersPage() {
                         {order.items[0]?.productName}
                         {order.items.length > 1 && t("moreItems", { count: order.items.length - 1 })}
                       </p>
+                      {/* 판매자가 취소했으면 이유를 바로 보여준다.
+                          주문이 말없이 사라진 것처럼 보이면 안 된다. */}
+                      {order.status === "CANCELLED" && order.cancelReason && (
+                        <p className="mt-1.5 rounded border-l-2 border-destructive bg-destructive/5 px-2 py-1 text-xs text-destructive">
+                          <span className="font-medium">
+                            {order.cancelledByAdmin ? t("cancelledBySeller") : t("cancelReason")}
+                          </span>{" "}
+                          {order.cancelReason}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>

@@ -425,5 +425,9 @@
   "statusConfirmed": "確定",
   "orderStatusStockChecking": "在庫確認中",
   "orderStatusBuyerReview": "バイヤー確認中",
-  "orderStatusConfirmed": "確定"
+  "orderStatusConfirmed": "確定",
+  "orderCancelReasonAsk": "キャンセル理由を入力してください。バイヤーに表示され、メールでも送信されます。",
+  "orderCancelReasonAskBulk": "{count}件をキャンセルします。理由を入力してください。バイヤーに表示されます。",
+  "orderCancelReasonRequired": "キャンセル理由の入力が必要です。",
+  "orderCancelledNotified": "注文をキャンセルし、バイヤーに理由を伝えました。"
 }

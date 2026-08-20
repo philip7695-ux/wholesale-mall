@@ -12,6 +12,7 @@ import { formatPrice, formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
 import { STATUS_COLOR } from "@/lib/order-status"
+import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
 
 interface OrderItem {
   id: string
@@ -109,14 +110,24 @@ export function OrderList({ orders }: { orders: Order[] }) {
     setLoading(null)
   }
 
+  // 일괄 처리도 같은 규칙을 따른다. 사유를 한 번 받아 모두에 같이 적는다.
   async function handleBulkDelete() {
-    if (!confirm(t("orderBulkDeleteConfirm", { count: selected.size }))) return
+    const reason = window.prompt(t("orderCancelReasonAskBulk", { count: selected.size }), "")
+    if (reason === null) return
+    if (!reason.trim()) {
+      toast.error(t("orderCancelReasonRequired"))
+      return
+    }
 
     setLoading("bulk-delete")
     try {
       const results = await Promise.all(
         Array.from(selected).map((id) =>
-          fetch(`/api/orders/${id}?permanent=true`, { method: "DELETE" })
+          fetch(`/api/orders/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: reason.trim() }),
+          })
         )
       )
       const failed = results.filter((r) => !r.ok).length
@@ -133,22 +144,32 @@ export function OrderList({ orders }: { orders: Order[] }) {
     setLoading(null)
   }
 
-  async function handleDelete(orderId: string, e: React.MouseEvent) {
+  // 취소되지 않은 주문은 먼저 사유와 함께 취소한다. 바이어가 사유를 봐야
+  // 주문이 말없이 사라지지 않는다. 이미 취소된 주문만 영구 삭제한다.
+  async function handleDelete(orderId: string, status: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!confirm(t("orderDeleteConfirm"))) return
-
     setLoading(orderId)
     try {
-      const res = await fetch(`/api/orders/${orderId}?permanent=true`, {
-        method: "DELETE",
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || t("orderDeleteFail"))
+      if (status === "CANCELLED") {
+        if (!confirm(t("orderDeleteConfirm"))) {
+          setLoading(null)
+          return
+        }
+        await purgeOrder(orderId)
+        toast.success(t("orderDeleted"))
+      } else {
+        const done = await cancelOrderWithReason(orderId, {
+          ask: t("orderCancelReasonAsk"),
+          required: t("orderCancelReasonRequired"),
+        })
+        if (!done) {
+          setLoading(null)
+          return
+        }
+        toast.success(t("orderCancelledNotified"))
       }
-      toast.success(t("orderDeleted"))
       setSelected((prev) => {
         const next = new Set(prev)
         next.delete(orderId)
@@ -244,7 +265,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={(e) => handleDelete(order.id, e)}
+                        onClick={(e) => handleDelete(order.id, order.status, e)}
                         disabled={loading === order.id}
                       >
                         <Trash2 className="mr-1 h-3.5 w-3.5" />

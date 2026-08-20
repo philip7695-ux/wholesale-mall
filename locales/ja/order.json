@@ -125,5 +125,9 @@
   "revisionSent": "送信しました。",
   "revisionFailed": "処理できませんでした。",
   "adminRevisionHint": "倉庫の実数に直してからバイヤーに送るか、そのまま確定してください。",
-  "buyerRevisionHint": "注文数量の範囲で減らせます。増やす場合は追加注文をご利用ください。"
+  "buyerRevisionHint": "注文数量の範囲で減らせます。増やす場合は追加注文をご利用ください。",
+  "cancelledBySeller": "販売者がキャンセルしました",
+  "cancelReason": "キャンセル理由",
+  "cancelNoReason": "キャンセル理由が記録されていません。",
+  "cancelStockReleased": "この注文で確保していた在庫はすべて解放されました。ご不明な点はご連絡ください。"
 }

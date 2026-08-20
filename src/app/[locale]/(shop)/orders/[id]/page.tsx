@@ -14,7 +14,7 @@ import { useCurrency } from "@/hooks/use-currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
 import { OrderRevisionTable } from "@/components/order-revision-table"
 import { Textarea } from "@/components/ui/textarea"
-import { FileDown, Upload, Pencil, X, CheckCircle } from "lucide-react"
+import { FileDown, Upload, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react"
 
 interface OrderDetail {
   id: string
@@ -39,6 +39,8 @@ interface OrderDetail {
   shippedAt: string | null
   deliveredAt: string | null
   cancelledAt: string | null
+  cancelReason: string | null
+  cancelledByAdmin: boolean
   items: {
     id: string
     productName: string
@@ -278,6 +280,25 @@ export default function OrderDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* 취소된 주문은 이유를 맨 위에 둔다. 판매자가 취소한 경우
+          바이어가 이유를 알 수 있는 유일한 자리다. */}
+      {order.status === "CANCELLED" && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+          <p className="flex items-center gap-1.5 font-medium text-destructive">
+            <AlertTriangle className="h-4 w-4" />
+            {order.cancelledByAdmin ? t("cancelledBySeller") : t("statusCancelled")}
+          </p>
+          {order.cancelReason ? (
+            <p className="mt-1.5 whitespace-pre-wrap text-sm text-destructive/90">
+              {order.cancelReason}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-sm text-muted-foreground">{t("cancelNoReason")}</p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">{t("cancelStockReleased")}</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("detailTitle")}</h1>
         <div className="flex items-center gap-2">

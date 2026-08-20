@@ -125,5 +125,9 @@
   "revisionSent": "전달했습니다.",
   "revisionFailed": "처리하지 못했습니다.",
   "adminRevisionHint": "창고 확인 수량으로 고친 뒤 바이어에게 보내거나 바로 확정하세요.",
-  "buyerRevisionHint": "주문 수량 안에서 줄일 수 있습니다. 늘리려면 추가 주문을 이용하세요."
+  "buyerRevisionHint": "주문 수량 안에서 줄일 수 있습니다. 늘리려면 추가 주문을 이용하세요.",
+  "cancelledBySeller": "판매자가 취소했습니다",
+  "cancelReason": "취소 사유",
+  "cancelNoReason": "취소 사유가 기록되지 않았습니다.",
+  "cancelStockReleased": "이 주문으로 잡아둔 재고는 모두 풀렸습니다. 문의사항이 있으면 연락 주세요."
 }

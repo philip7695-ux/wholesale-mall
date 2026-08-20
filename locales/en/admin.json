@@ -425,5 +425,9 @@
   "statusConfirmed": "Confirmed",
   "orderStatusStockChecking": "Checking stock",
   "orderStatusBuyerReview": "Buyer review",
-  "orderStatusConfirmed": "Confirmed"
+  "orderStatusConfirmed": "Confirmed",
+  "orderCancelReasonAsk": "Enter a cancellation reason. The buyer will see it and receive it by email.",
+  "orderCancelReasonAskBulk": "Cancelling {count} orders. Enter a reason — buyers will see it.",
+  "orderCancelReasonRequired": "A cancellation reason is required.",
+  "orderCancelledNotified": "Order cancelled and the buyer was notified."
 }

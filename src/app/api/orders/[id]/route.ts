@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkAndPromoteGrade } from "@/lib/grade.server"
 import { STATUS_TIMESTAMP_FIELD, isValidStatusTransition } from "@/lib/order-status"
-import { notifyCustomerShipped } from "@/lib/email"
+import { notifyCustomerShipped, notifyCustomerOrderCancelled } from "@/lib/email"
 import { apiRoute } from "@/lib/api-route"
 import { holdsReservation, releaseReservation, refreshProductStock } from "@/lib/order-revision"
 
@@ -55,22 +55,38 @@ async function DELETE_impl(
   const { id } = await params
   const { searchParams } = new URL(request.url)
   const permanent = searchParams.get("permanent") === "true"
+  const isAdmin = session.user.role === "ADMIN"
 
-  const order = await prisma.order.findUnique({ where: { id } })
+  // 사유는 본문으로 받는다. DELETE 에 본문이 없을 수도 있으므로 조용히 넘긴다.
+  const body = await request.json().catch(() => ({} as any))
+  const reason = typeof body?.reason === "string" ? body.reason.trim() : ""
+
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { user: { select: { name: true, email: true } } },
+  })
 
   if (!order) {
     return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
 
   // 본인 주문이거나 관리자만 가능
-  if (session.user.role !== "ADMIN" && order.userId !== session.user.id) {
+  if (!isAdmin && order.userId !== session.user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
   // 영구 삭제 (관리자 전용)
   if (permanent) {
-    if (session.user.role !== "ADMIN") {
+    if (!isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+    // 취소되지 않은 주문을 바로 지우면 바이어 쪽에서 주문이 말없이 사라진다.
+    // 먼저 사유와 함께 취소해 바이어가 확인할 수 있게 한 뒤에만 지운다.
+    if (order.status !== "CANCELLED") {
+      return NextResponse.json(
+        { error: "먼저 사유와 함께 취소한 뒤에 삭제할 수 있습니다. 바이어가 취소 사유를 확인해야 합니다." },
+        { status: 400 },
+      )
     }
 
     await prisma.$transaction(async (tx) => {
@@ -82,11 +98,23 @@ async function DELETE_impl(
     return NextResponse.json({ message: "주문이 삭제되었습니다." })
   }
 
+  if (order.status === "CANCELLED") {
+    return NextResponse.json({ error: "이미 취소된 주문입니다." }, { status: 400 })
+  }
+
   // 취소 처리
   const cancelableStatuses = ["ORDER_PLACED", "STOCK_CHECKING", "BUYER_REVIEW", "CONFIRMED", "INVOICE_SENT"]
-  if (session.user.role !== "ADMIN" && !cancelableStatuses.includes(order.status)) {
+  if (!isAdmin && !cancelableStatuses.includes(order.status)) {
     return NextResponse.json(
       { error: "입금 전 상태의 주문만 취소할 수 있습니다." },
+      { status: 400 },
+    )
+  }
+  // 관리자가 남의 주문을 취소할 때는 사유를 반드시 남긴다.
+  // 바이어가 왜 취소됐는지 알 수 있는 유일한 통로다.
+  if (isAdmin && order.userId !== session.user.id && !reason) {
+    return NextResponse.json(
+      { error: "취소 사유를 입력해주세요. 바이어에게 그대로 전달됩니다." },
       { status: 400 },
     )
   }
@@ -114,9 +142,26 @@ async function DELETE_impl(
 
     await tx.order.update({
       where: { id },
-      data: { status: "CANCELLED", cancelledAt: new Date() },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+        cancelReason: reason || null,
+        cancelledByAdmin: isAdmin && order.userId !== session.user.id,
+      },
     })
   })
+
+  // 화면에 남기는 것과 별개로 메일도 보낸다. 바이어가 주문 목록을
+  // 다시 열어보지 않아도 알 수 있어야 한다. 실패해도 취소는 유효하다.
+  const byAdmin = isAdmin && order.userId !== session.user.id
+  if (byAdmin && order.user?.email) {
+    notifyCustomerOrderCancelled(order.user.email, {
+      orderNumber: order.orderNumber,
+      customerName: order.user.name || "",
+      reason: reason || "-",
+      byAdmin: true,
+    }).catch((e) => console.error("[order cancel] email failed:", e))
+  }
 
   return NextResponse.json({ message: "주문이 취소되었습니다." })
 }

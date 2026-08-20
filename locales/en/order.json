@@ -125,5 +125,9 @@
   "revisionSent": "Sent.",
   "revisionFailed": "Could not process.",
   "adminRevisionHint": "Adjust to the warehouse count, then send to the buyer or confirm.",
-  "buyerRevisionHint": "You can reduce within the ordered quantity. To increase, place a new order."
+  "buyerRevisionHint": "You can reduce within the ordered quantity. To increase, place a new order.",
+  "cancelledBySeller": "Cancelled by the seller",
+  "cancelReason": "Reason",
+  "cancelNoReason": "No reason was recorded.",
+  "cancelStockReleased": "Any stock held for this order has been released. Contact us if you have questions."
 }
