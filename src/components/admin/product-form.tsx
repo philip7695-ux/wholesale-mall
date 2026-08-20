@@ -128,6 +128,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
 
   async function uploadFile(file: File): Promise<string> {
     // 촬영 원본은 대개 4.5MB(Vercel 요청 한도)를 넘으므로 먼저 줄인다
@@ -140,11 +141,15 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
     return data.url
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+  async function uploadFiles(files: File[]) {
+    // 이미지가 아닌 파일이 섞이면 서버에서 거부당하므로 미리 거른다
+    const images = files.filter((f) => f.type.startsWith("image/"))
+    const skipped = files.length - images.length
+    if (skipped > 0) toast.error(t("nonImageSkipped", { count: skipped }))
+    if (images.length === 0) return
+
     setUploading(true)
-    for (const file of Array.from(files)) {
+    for (const file of images) {
       try {
         const url = await uploadFile(file)
         setImages((prev) => [...prev, url])
@@ -152,8 +157,21 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
         toast.error(t("uploadFail", { name: file.name }))
       }
     }
-    e.target.value = ""
     setUploading(false)
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    await uploadFiles(Array.from(files))
+    e.target.value = ""
+  }
+
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOver(false)
+    if (uploading) return
+    await uploadFiles(Array.from(e.dataTransfer.files))
   }
 
   function removeImage(index: number) {
@@ -333,7 +351,22 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
           {/* Product Images */}
           <div className="space-y-2">
             <Label>{t("productImages")}</Label>
-            <div className="flex flex-wrap gap-3">
+            {/* 영역 어디에나 떨어뜨릴 수 있게 한다. 사진을 여러 장 올릴 때
+                버튼을 정확히 겨냥하지 않아도 되도록. */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                if (!uploading) setDragOver(true)
+              }}
+              onDragLeave={(e) => {
+                // 자식 요소로 넘어갈 때도 leave 가 뜨므로 영역 밖으로 나간 경우만 끈다
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false)
+              }}
+              onDrop={handleDrop}
+              className={`flex flex-wrap gap-3 rounded-md border-2 border-dashed p-3 transition-colors ${
+                dragOver ? "border-primary bg-primary/5" : "border-transparent"
+              }`}
+            >
               {images.map((img, i) => (
                 <div key={i} className="relative">
                   <img src={img} alt="" className="h-20 w-20 rounded-md object-contain border bg-white" />
@@ -366,9 +399,9 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 />
               </label>
             </div>
-            {images.length > 0 && (
-              <p className="text-xs text-muted-foreground">{t("imagesUploaded", { count: images.length })}</p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {images.length > 0 ? t("imagesUploaded", { count: images.length }) : t("dropHint")}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

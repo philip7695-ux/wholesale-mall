@@ -415,5 +415,7 @@
   "specialOfferDesc": "在季节折扣后的价格上再打折。季节5折的商品设为特惠并填30%，即为吊牌价的35%。",
   "specialOfferCount": "已指定 {count} 个商品",
   "normalPrice": "普通价",
-  "specialPrice": "特惠价"
+  "specialPrice": "特惠价",
+  "dropHint": "将图片拖到此处，或点击 + 选择文件。",
+  "nonImageSkipped": "已跳过 {count} 个非图片文件。"
 }
