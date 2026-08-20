@@ -113,6 +113,10 @@ async function GET_impl(request: NextRequest) {
    * 주문마다 사이즈 구성이 다르므로, 등장한 사이즈를 모두 모아 열을 만들고
    * 없는 칸은 비워 둔다. 사이즈 순서는 옷 치수 순서를 따른다.
    */
+  // 열 순서를 직접 준다. "85", "90" 같은 숫자꼴 키를 객체에 담으면
+  // 자바스크립트가 그 키들을 앞으로 끌어올려 주문번호보다 먼저 나온다.
+  let gridHeader: string[] = []
+
   function buildGrid() {
     const seen = new Set<string>()
     for (const o of orders) for (const it of o.items) seen.add(it.sizeName)
@@ -124,6 +128,16 @@ async function GET_impl(request: NextRequest) {
       if (bi === -1) return -1
       return ai - bi
     })
+
+    gridHeader = [
+      ...Object.keys(orderInfo(orders[0])),
+      "상품명",
+      "컬러",
+      ...sizeCols,
+      "수량합계",
+      "단가",
+      "금액",
+    ]
 
     const out: Record<string, unknown>[] = []
     for (const order of orders) {
@@ -153,12 +167,13 @@ async function GET_impl(request: NextRequest) {
   }
 
   const rows = layout === "grid" ? buildGrid() : rowsLayout
+  const header = layout === "grid" ? gridHeader : Object.keys(rows[0] || {})
 
   const wb = XLSX.utils.book_new()
-  const ws = XLSX.utils.json_to_sheet(rows)
+  const ws = XLSX.utils.json_to_sheet(rows, { header })
 
   // 컬럼 너비 자동 조정
-  const colWidths = Object.keys(rows[0] || {}).map((key) => {
+  const colWidths = header.map((key) => {
     const maxLen = Math.max(
       key.length * 2,
       ...rows.map((r) => String((r as Record<string, unknown>)[key] ?? "").length),

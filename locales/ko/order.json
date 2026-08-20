@@ -129,5 +129,20 @@
   "cancelledBySeller": "판매자가 취소했습니다",
   "cancelReason": "취소 사유",
   "cancelNoReason": "취소 사유가 기록되지 않았습니다.",
-  "cancelStockReleased": "이 주문으로 잡아둔 재고는 모두 풀렸습니다. 문의사항이 있으면 연락 주세요."
+  "cancelStockReleased": "이 주문으로 잡아둔 재고는 모두 풀렸습니다. 문의사항이 있으면 연락 주세요.",
+  "styleNo": "품번",
+  "grandQty": "총계",
+  "unitPrice": "단가",
+  "sizeTotal": "사이즈 합계",
+  "sheetImport": "창고 회신 불러오기",
+  "sheetImportApplied": "{count}개 항목의 수량을 채웠습니다. 확인 후 저장하세요.",
+  "sheetImportNoChange": "주문과 수량이 같습니다. 바꿀 것이 없습니다.",
+  "sheetImportUnmatched": "주문에 없는 줄은 건너뛰었습니다: {list}",
+  "sheetImportMissing": "파일에 없는 항목 {count}개는 그대로 두었습니다.",
+  "sheetImportFailed": "발주서를 읽지 못했습니다.",
+  "sheetIssuesTitle": "창고 회신에서 확인이 필요한 부분",
+  "sheetIssueNotInOrder": "주문에 없는 상품에 수량이 적혀 있습니다:",
+  "sheetIssueStrayColumn": "사이즈로 알 수 없는 열에 수량이 적혀 있습니다:",
+  "sheetIssueMissing": "파일에 없어 그대로 둔 항목:",
+  "sheetIssuesHint": "이 부분은 표에 반영되지 않았습니다. 창고에 확인한 뒤 직접 입력하세요."
 }

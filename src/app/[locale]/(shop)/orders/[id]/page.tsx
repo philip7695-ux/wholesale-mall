@@ -43,6 +43,7 @@ interface OrderDetail {
   cancelledByAdmin: boolean
   items: {
     id: string
+    variant: { product: { code: string | null } } | null
     productName: string
     colorName: string
     sizeName: string
@@ -555,6 +556,7 @@ export default function OrderDetailPage() {
                 canEdit={order.status === "BUYER_REVIEW"}
                 items={order.items.map((item) => ({
                   id: item.id,
+                  productCode: item.variant?.product?.code ?? null,
                   productName: item.productName,
                   colorName: item.colorName,
                   sizeName: item.sizeName,

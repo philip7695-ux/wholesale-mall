@@ -24,7 +24,7 @@ async function GET_impl(
       items: {
         include: {
           variant: {
-            include: { product: { select: { thumbnail: true } } },
+            include: { product: { select: { thumbnail: true, code: true } } },
           },
         },
       },

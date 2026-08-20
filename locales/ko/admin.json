@@ -429,5 +429,13 @@
   "orderCancelReasonAsk": "취소 사유를 입력해주세요. 바이어에게 그대로 전달되고 메일로도 발송됩니다.",
   "orderCancelReasonAskBulk": "선택한 {count}건을 취소합니다. 사유를 입력해주세요. 바이어에게 그대로 전달됩니다.",
   "orderCancelReasonRequired": "취소 사유를 입력해야 합니다.",
-  "orderCancelledNotified": "주문을 취소하고 바이어에게 사유를 전달했습니다."
+  "orderCancelledNotified": "주문을 취소하고 바이어에게 사유를 전달했습니다.",
+  "warehouseSheetGrid": "발주서 (사이즈 가로)",
+  "warehouseSheetRows": "발주서 (사이즈 세로)",
+  "warehouseSheetHint": "창고에 보내 실물 확인을 받으세요. 답이 오면 아래 표에서 수량을 고칩니다.",
+  "warehouseSheetFail": "발주서를 만들지 못했습니다.",
+  "orderExportAllGrid": "전체 다운로드 (가로)",
+  "orderExportAllRows": "전체 다운로드 (세로)",
+  "orderExportSelectedGrid": "{count}건 다운로드 (가로)",
+  "orderExportSelectedRows": "{count}건 다운로드 (세로)"
 }

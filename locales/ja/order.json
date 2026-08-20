@@ -129,5 +129,20 @@
   "cancelledBySeller": "販売者がキャンセルしました",
   "cancelReason": "キャンセル理由",
   "cancelNoReason": "キャンセル理由が記録されていません。",
-  "cancelStockReleased": "この注文で確保していた在庫はすべて解放されました。ご不明な点はご連絡ください。"
+  "cancelStockReleased": "この注文で確保していた在庫はすべて解放されました。ご不明な点はご連絡ください。",
+  "styleNo": "品番",
+  "grandQty": "合計",
+  "unitPrice": "単価",
+  "sizeTotal": "サイズ合計",
+  "sheetImport": "倉庫の回答を読み込む",
+  "sheetImportApplied": "{count}件の数量を入力しました。確認して保存してください。",
+  "sheetImportNoChange": "注文と数量が同じです。変更はありません。",
+  "sheetImportUnmatched": "注文にない行は飛ばしました: {list}",
+  "sheetImportMissing": "ファイルにない{count}件はそのままにしました。",
+  "sheetImportFailed": "発注書を読み込めませんでした。",
+  "sheetIssuesTitle": "倉庫の回答で確認が必要な点",
+  "sheetIssueNotInOrder": "注文にない商品に数量が記入されています:",
+  "sheetIssueStrayColumn": "サイズと判別できない列に数量が記入されています:",
+  "sheetIssueMissing": "ファイルになく、そのままにした項目:",
+  "sheetIssuesHint": "これらは表に反映していません。倉庫に確認のうえ直接入力してください。"
 }
