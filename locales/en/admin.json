@@ -415,5 +415,7 @@
   "specialOfferDesc": "Applied on top of the season discount. A 50%-off item marked special with 30% here becomes 35% of the tag price.",
   "specialOfferCount": "{count} products marked",
   "normalPrice": "Normal",
-  "specialPrice": "Special"
+  "specialPrice": "Special",
+  "dropHint": "Drag photos here, or click + to choose files.",
+  "nonImageSkipped": "Skipped {count} non-image files."
 }

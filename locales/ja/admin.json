@@ -415,5 +415,7 @@
   "specialOfferDesc": "シーズン割引後の価格からさらに割り引きます。シーズン50%の商品に30%を設定すると定価の35%になります。",
   "specialOfferCount": "指定商品 {count}件",
   "normalPrice": "通常価格",
-  "specialPrice": "スペシャル価格"
+  "specialPrice": "スペシャル価格",
+  "dropHint": "写真をここにドラッグするか、+ を押して選択してください。",
+  "nonImageSkipped": "画像でないファイル{count}件をスキップしました。"
 }

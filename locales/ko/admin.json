@@ -415,5 +415,7 @@
   "specialOfferDesc": "시즌 할인이 적용된 가격에서 한 번 더 깎습니다. 시즌 50% 상품을 스페셜에 넣고 30%를 적으면 택가의 35%가 됩니다.",
   "specialOfferCount": "지정된 상품 {count}개",
   "normalPrice": "일반가",
-  "specialPrice": "스페셜가"
+  "specialPrice": "스페셜가",
+  "dropHint": "사진을 이 영역에 끌어다 놓거나 + 를 눌러 선택하세요.",
+  "nonImageSkipped": "이미지가 아닌 파일 {count}개는 건너뛰었습니다."
 }
