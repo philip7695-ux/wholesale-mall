@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { Upload } from "lucide-react"
 
@@ -98,7 +97,7 @@ export function PaymentConfigForm({ initialConfigs }: { initialConfigs: PaymentC
         const config = configs[method]
         return (
           <Card key={method}>
-            <CardHeader className="pb-4">
+            <CardHeader className="py-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">{methodLabels[method]}</CardTitle>
                 <label className="flex items-center gap-2 text-sm">
@@ -112,39 +111,43 @@ export function PaymentConfigForm({ initialConfigs }: { initialConfigs: PaymentC
                 </label>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {method.startsWith("BANK_TRANSFER") && (
-                <div className="space-y-2">
-                  <Label>{t("paymentBankName")}</Label>
-                  <Input
-                    value={config.bankName}
-                    onChange={(e) => updateConfig(method, "bankName", e.target.value)}
-                    placeholder="국민은행, HSBC, etc."
-                  />
-                </div>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>{t("paymentAccountName")}</Label>
+            <CardContent className="space-y-3 pb-4">
+              {/* 은행명·예금주·계좌번호를 한 줄에. 계좌이체만 은행명이 있다. */}
+              <div
+                className={`grid gap-3 sm:grid-cols-2 ${
+                  method.startsWith("BANK_TRANSFER") ? "lg:grid-cols-3" : ""
+                }`}
+              >
+                {method.startsWith("BANK_TRANSFER") && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">{t("paymentBankName")}</Label>
+                    <Input
+                      value={config.bankName}
+                      onChange={(e) => updateConfig(method, "bankName", e.target.value)}
+                      placeholder="국민은행, HSBC, etc."
+                    />
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{t("paymentAccountName")}</Label>
                   <Input
                     value={config.accountName}
                     onChange={(e) => updateConfig(method, "accountName", e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("paymentAccountInfo")}</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{t("paymentAccountInfo")}</Label>
                   <Input
                     value={config.accountInfo}
                     onChange={(e) => updateConfig(method, "accountInfo", e.target.value)}
-                    placeholder={method === "BANK_TRANSFER" ? "000-000000-00-000" : "account@example.com"}
+                    placeholder={method.startsWith("BANK_TRANSFER") ? "000-000000-00-000" : "account@example.com"}
                   />
                 </div>
               </div>
 
-              {/* QR Code */}
-              <div className="space-y-2">
-                <Label>{t("paymentQrCode")}</Label>
-                <div className="flex items-center gap-4">
+              {/* QR 은 Alipay·WeChat 만 쓴다. 계좌이체엔 자리만 잡아 지저분하다. */}
+              {(method === "ALIPAY" || method === "WECHAT") && (
+                <div className="flex items-center gap-3">
                   <input
                     ref={(el) => { fileRefs.current[method] = el }}
                     type="file"
@@ -176,22 +179,18 @@ export function PaymentConfigForm({ initialConfigs }: { initialConfigs: PaymentC
                     <img
                       src={config.qrCodeUrl}
                       alt="QR Code"
-                      className="h-20 w-20 rounded border object-contain"
+                      className="h-14 w-14 rounded border object-contain"
                     />
                   )}
                 </div>
-              </div>
+              )}
 
-              {/* Memo */}
-              <div className="space-y-2">
-                <Label>{t("paymentMemo")}</Label>
-                <Textarea
-                  value={config.memo}
-                  onChange={(e) => updateConfig(method, "memo", e.target.value)}
-                  placeholder={t("paymentMemoPlaceholder")}
-                  rows={2}
-                />
-              </div>
+              {/* 추가 안내: 있을 때만 크게, 기본은 한 줄 */}
+              <Input
+                value={config.memo}
+                onChange={(e) => updateConfig(method, "memo", e.target.value)}
+                placeholder={t("paymentMemoPlaceholder")}
+              />
 
               <Button
                 onClick={() => handleSave(method)}
