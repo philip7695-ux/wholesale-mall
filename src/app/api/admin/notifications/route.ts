@@ -9,16 +9,17 @@ async function GET_impl() {
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  // 관리자가 손댈 차례인 주문:
-  //  - 조정 흐름에서 공이 관리자 쪽에 있는 상태(접수/조정중/확정대기)
+  // 관리자가 손댈 차례인 주문 — 흐름에서 공이 관리자 쪽에 있는 모든 단계:
+  //  - ORDER_PLACED: 새 주문, 재고 확인 시작
+  //  - STOCK_CHECKING: 조정 중(바이어가 되돌린 확인요청 포함)
+  //  - CONFIRMED: 인보이스 발행 대기
+  //  - PAYMENT_CONFIRMED: 출고 대기
   //  - 바이어가 입금증빙을 올려 확인을 기다리는 주문(상태 무관)
-  // 조정 왕복 중 바이어가 STOCK_CHECKING 으로 되돌리는 것이 "확인요청"이라
-  // STOCK_CHECKING 도 관리자 차례로 본다.
   const [actionOrders, pendingMembers] = await Promise.all([
     prisma.order.count({
       where: {
         OR: [
-          { status: { in: ["ORDER_PLACED", "STOCK_CHECKING", "CONFIRMED"] } },
+          { status: { in: ["ORDER_PLACED", "STOCK_CHECKING", "CONFIRMED", "PAYMENT_CONFIRMED"] } },
           { paymentConfirmations: { some: { status: "PENDING" } } },
         ],
       },
