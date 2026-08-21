@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { LanguageSelector } from "@/components/language-selector"
 import { useState } from "react"
-import { ShoppingCart, Package, ClipboardList, User, LayoutDashboard } from "lucide-react"
+import { ShoppingCart, Package, ClipboardList, User, LayoutDashboard, BookOpen } from "lucide-react"
 
 export function ShopHeader() {
   const { data: session } = useSession()
@@ -35,6 +35,7 @@ export function ShopHeader() {
               <nav className="flex flex-col gap-1">
                 {[
                   { href: "/products", label: t("productList"), icon: Package },
+                  { href: "/lookbook", label: t("lookbook"), icon: BookOpen },
                   { href: "/cart", label: t("cart"), icon: ShoppingCart },
                   { href: "/orders", label: t("orders"), icon: ClipboardList },
                   { href: "/mypage", label: t("mypage"), icon: User },
