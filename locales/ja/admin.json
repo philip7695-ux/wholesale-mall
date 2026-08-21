@@ -469,5 +469,10 @@
   "bulkDropExcel": "Excelファイルをここにドロップ",
   "bulkDropImages": "画像をここにドロップ",
   "dropImageHere": "画像をここにドロップ",
-  "paymentQrDrop": "QR画像をここにドロップ"
+  "paymentQrDrop": "QR画像をここにドロップ",
+  "paymentTestButton": "テストメール送信",
+  "paymentTestSending": "送信中…",
+  "paymentTestSent": "{to} にテストメールを送信しました。受信箱を確認してください。",
+  "paymentTestFail": "送信に失敗しました。",
+  "paymentTestNeedEmail": "先に通知メールを入力して保存してください。"
 }

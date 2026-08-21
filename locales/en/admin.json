@@ -469,5 +469,10 @@
   "bulkDropExcel": "Drop Excel file here",
   "bulkDropImages": "Drop images here",
   "dropImageHere": "Drop image here",
-  "paymentQrDrop": "Drop QR image here"
+  "paymentQrDrop": "Drop QR image here",
+  "paymentTestButton": "Send test email",
+  "paymentTestSending": "Sending…",
+  "paymentTestSent": "Sent a test email to {to}. Check the inbox.",
+  "paymentTestFail": "Failed to send.",
+  "paymentTestNeedEmail": "Enter and save a notification email first."
 }

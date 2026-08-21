@@ -188,3 +188,31 @@ export async function notifyCustomerOrderCancelled(customerEmail: string, order:
       <p>Any stock held for this order has been released. Please contact us if you have questions.</p>
     </div>`)
 }
+
+/**
+ * 메일 설정 확인용 테스트 발송. 결과를 돌려줘 관리자가 원인을 본다.
+ * (일반 send 는 실패를 조용히 삼키지만, 여기서는 이유를 보여준다.)
+ */
+export async function sendTestEmail(
+  to: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!resend) {
+    return { ok: false, error: "RESEND_API_KEY 가 설정되지 않았습니다. Vercel 환경변수를 확인하세요." }
+  }
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "[biibws] 메일 발송 테스트",
+      html: `<div style="font-family:sans-serif;max-width:600px">
+        <h2>메일이 정상적으로 발송됩니다</h2>
+        <p>이 메일을 받으셨다면 주문·인보이스·출하 알림이 이 주소로 나갑니다.</p>
+        <p style="color:#888;font-size:13px">보낸 주소: ${FROM_EMAIL}</p>
+      </div>`,
+    })
+    if (error) return { ok: false, error: `${error.name || "발송 실패"}: ${error.message || ""}`.trim() }
+    return { ok: true }
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "알 수 없는 오류" }
+  }
+}
