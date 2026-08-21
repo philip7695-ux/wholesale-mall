@@ -55,7 +55,8 @@ export default function EditMemberPage() {
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const data = {
+    const newPassword = (formData.get("newPassword") as string) || ""
+    const data: Record<string, unknown> = {
       name: formData.get("name"),
       phone: formData.get("phone"),
       businessName: formData.get("businessName"),
@@ -64,6 +65,8 @@ export default function EditMemberPage() {
       country: formData.get("country"),
       adminNote: formData.get("adminNote"),
     }
+    // 값이 있을 때만 비번을 바꾼다. 비워두면 기존 비번을 그대로 둔다.
+    if (newPassword.trim()) data.newPassword = newPassword.trim()
 
     try {
       const res = await fetch(`/api/admin/members/${memberId}`, {
@@ -184,6 +187,23 @@ export default function EditMemberPage() {
                 rows={3}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("resetPasswordTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="newPassword">{t("resetPasswordLabel")}</Label>
+            <Input
+              id="newPassword"
+              name="newPassword"
+              type="text"
+              autoComplete="off"
+              placeholder={t("resetPasswordPlaceholder")}
+            />
+            <p className="text-xs text-muted-foreground">{t("resetPasswordHint")}</p>
           </CardContent>
         </Card>
 
