@@ -15,6 +15,7 @@ const namespaces = [
   "categories",
   "colors",
   "sizeSpec",
+  "lookbook",
 ] as const
 
 export default getRequestConfig(async ({ requestLocale }) => {

@@ -69,3 +69,39 @@ export async function uploadImage(
     stream.end(buffer)
   })
 }
+
+/**
+ * 브라우저에서 Cloudinary 로 직접 올릴 때 쓰는 서명.
+ *
+ * 룩북 PDF 는 수십 MB 라 서버(Vercel 4.5MB 한도)를 거치면 실패한다.
+ * 서버는 서명만 내주고 파일은 브라우저가 Cloudinary 로 바로 올린다.
+ * API Secret 은 서명 계산에만 쓰이고 브라우저로 나가지 않는다.
+ */
+export function signUpload(params: Record<string, string | number>): {
+  signature: string
+  timestamp: number
+  apiKey: string
+  cloudName: string
+} {
+  configure()
+  const timestamp = Math.floor(Date.now() / 1000)
+  const signature = cloudinary.utils.api_sign_request(
+    { ...params, timestamp },
+    process.env.CLOUDINARY_API_SECRET as string,
+  )
+  return {
+    signature,
+    timestamp,
+    apiKey: process.env.CLOUDINARY_API_KEY as string,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME as string,
+  }
+}
+
+/** Cloudinary 리소스를 지운다. 이미지가 아닌 파일(PDF 등)은 resourceType 지정. */
+export async function deleteResource(
+  publicId: string,
+  resourceType: "image" | "raw" = "image",
+): Promise<void> {
+  configure()
+  await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+}

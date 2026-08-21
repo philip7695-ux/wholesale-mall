@@ -450,3 +450,20 @@ model GradeConfig {
 
   @@schema("mall")
 }
+
+/// 고객이 내려받는 시즌 룩북(PDF). 어드민이 올리고 로그인 회원이 받는다.
+/// 파일은 Cloudinary 에 두고 여기엔 주소만 저장한다.
+model Lookbook {
+  id        String   @id @default(cuid())
+  title     String
+  publicId  String   // Cloudinary public_id (삭제에 필요)
+  url       String   // secure_url
+  format    String?  // pdf 등
+  bytes     Int      @default(0)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("mall")
+}

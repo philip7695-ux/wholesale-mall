@@ -17,6 +17,7 @@ import {
   LogOut,
   ImageIcon,
   Tag,
+  BookOpen,
 } from "lucide-react"
 
 export function AdminSidebar() {
@@ -35,6 +36,7 @@ export function AdminSidebar() {
     { href: "/admin/settings/payment", label: t("paymentSettings"), icon: CreditCard },
     { href: "/admin/settings/pricing", label: t("pricingSettings"), icon: Tag },
     { href: "/admin/settings/appearance", label: t("appearanceSettings"), icon: ImageIcon },
+    { href: "/admin/lookbooks", label: t("lookbookMgmt"), icon: BookOpen },
   ]
 
   return (
