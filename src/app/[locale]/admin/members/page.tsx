@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { prisma } from "@/lib/prisma"
 import { Link } from "@/i18n/navigation"
 import { getTranslations, getLocale } from "next-intl/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MemberApprovalButton } from "@/components/admin/member-approval-button"
@@ -92,71 +92,64 @@ export default async function AdminMembersPage() {
             const totalSpending = member.orders.reduce((sum: number, o: any) => sum + o.totalAmount, 0)
             return (
               <Card key={member.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base">{member.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{member.email}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
+                <CardContent className="flex flex-col gap-3 py-3 lg:flex-row lg:items-center lg:justify-between">
+                  {/* 왼쪽: 신원 + 메타를 한 덩어리로 */}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-medium">{member.name}</span>
+                      <span className="text-sm text-muted-foreground">{member.email}</span>
                       <Badge variant={member.role === "ADMIN" ? "destructive" : "secondary"}>
                         {roleLabels[member.role]}
                       </Badge>
                       {member.role === "BUYER" && (
                         <>
-                          <Badge variant={gradeVariant[member.buyerGrade]}>
-                            {member.buyerGrade}
-                          </Badge>
+                          <Badge variant={gradeVariant[member.buyerGrade]}>{member.buyerGrade}</Badge>
                           <Badge variant={approvalVariant[member.approvalStatus]}>
                             {approvalLabels[member.approvalStatus]}
                           </Badge>
                         </>
                       )}
                     </div>
+                    {/* 메타는 점으로 이어 한 줄에 */}
+                    <p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                      {member.businessName && <span>{t("businessPrefix")}{member.businessName}</span>}
+                      {member.businessNumber && <span>· {member.businessNumber}</span>}
+                      {member.phone && <span>· {member.phone}</span>}
+                      {member.country && <span>· {member.country}</span>}
+                      <span>· {t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</span>
+                      <span>· {t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</span>
+                    </p>
+                    {member.adminNote && (
+                      <p className="whitespace-pre-wrap text-xs text-amber-700 dark:text-amber-400">
+                        {t("adminNotePrefix")}{member.adminNote}
+                      </p>
+                    )}
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      {member.businessName && <p>{t("businessPrefix")}{member.businessName}</p>}
-                      {member.businessNumber && <p>{t("businessNumberPrefix")}{member.businessNumber}</p>}
-                      {member.phone && <p>{t("phonePrefix")}{member.phone}</p>}
-                      {member.country && <p>{t("countryPrefix")}{member.country}</p>}
-                      {member.adminNote && (
-                        <p className="whitespace-pre-wrap text-amber-700 dark:text-amber-400">
-                          {t("adminNotePrefix")}{member.adminNote}
-                        </p>
-                      )}
-                      <p>{t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</p>
-                      <p>{t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <MemberRoleSelect
-                        memberId={member.id}
-                        currentRole={member.role}
-                        isSelf={member.id === session?.user?.id}
-                      />
-                      {member.role === "BUYER" && (
-                        <>
-                          <Button asChild variant="outline" size="sm">
-                            <Link href={`/admin/members/${member.id}/edit`}>{t("editMember")}</Link>
-                          </Button>
-                          <MemberGradeSelect
-                            memberId={member.id}
-                            currentGrade={member.buyerGrade}
-                          />
-                          <MemberTradeSelect
-                            memberId={member.id}
-                            tradeType={member.tradeType}
-                            currency={member.currency}
-                          />
-                          <MemberApprovalButton
-                            memberId={member.id}
-                            currentStatus={member.approvalStatus}
-                          />
-                        </>
-                      )}
-                    </div>
+
+                  {/* 오른쪽: 컨트롤을 가로로 눕혀 감싼다 */}
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <MemberRoleSelect
+                      memberId={member.id}
+                      currentRole={member.role}
+                      isSelf={member.id === session?.user?.id}
+                    />
+                    {member.role === "BUYER" && (
+                      <>
+                        <MemberGradeSelect memberId={member.id} currentGrade={member.buyerGrade} />
+                        <MemberTradeSelect
+                          memberId={member.id}
+                          tradeType={member.tradeType}
+                          currency={member.currency}
+                        />
+                        <MemberApprovalButton
+                          memberId={member.id}
+                          currentStatus={member.approvalStatus}
+                        />
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/admin/members/${member.id}/edit`}>{t("editMember")}</Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
