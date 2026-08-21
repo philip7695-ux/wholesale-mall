@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileText, Upload, Trash2, Loader2, Eye, EyeOff } from "lucide-react"
+import { DropZone } from "@/components/ui/drop-zone"
 
 interface Item {
   id: string
@@ -36,8 +37,18 @@ export function LookbookManager({ initial }: { initial: Item[] }) {
   const [progress, setProgress] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  async function handleUpload() {
-    const file = fileRef.current?.files?.[0]
+  function onDrop(files: File[]) {
+    if (!files[0] || !fileRef.current) return
+    const dt = new DataTransfer()
+    dt.items.add(files[0])
+    fileRef.current.files = dt.files
+    // 파일명 표시 갱신을 위해 강제 리렌더
+    setTitle((t) => t)
+    handleUpload(files[0])
+  }
+
+  async function handleUpload(dropped?: File) {
+    const file = dropped ?? fileRef.current?.files?.[0]
     if (!title.trim()) return toast.error(t("lookbookTitleRequired"))
     if (!file) return toast.error(t("lookbookFileRequired"))
     if (file.type !== "application/pdf") return toast.error(t("lookbookPdfOnly"))
@@ -118,7 +129,8 @@ export function LookbookManager({ initial }: { initial: Item[] }) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardContent className="space-y-3 py-4">
+        <CardContent className="py-4">
+         <DropZone accept="application/pdf,.pdf" disabled={busy} onFiles={onDrop} overlayText={t("lookbookDropHere")} className="space-y-3 p-2">
           <p className="text-sm font-medium">{t("lookbookUploadNew")}</p>
           <Input
             placeholder={t("lookbookTitlePlaceholder")}
@@ -134,12 +146,13 @@ export function LookbookManager({ initial }: { initial: Item[] }) {
             <span className="text-sm text-muted-foreground">
               {fileRef.current?.files?.[0]?.name || t("lookbookNoFile")}
             </span>
-            <Button size="sm" onClick={handleUpload} disabled={busy}>
+            <Button size="sm" onClick={() => handleUpload()} disabled={busy}>
               {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />}
               {progress !== null ? `${progress}%` : t("lookbookUpload")}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">{t("lookbookHint")}</p>
+         </DropZone>
         </CardContent>
       </Card>
 

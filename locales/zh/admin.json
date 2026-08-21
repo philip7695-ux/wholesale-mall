@@ -464,5 +464,10 @@
   "lookbookToggle": "切换显示",
   "lookbookDelete": "删除",
   "lookbookDeleteConfirm": "删除此画册？",
-  "lookbookDeleted": "已删除。"
+  "lookbookDeleted": "已删除。",
+  "lookbookDropHere": "将文件拖到此处",
+  "bulkDropExcel": "将Excel文件拖到此处",
+  "bulkDropImages": "将图片拖到此处",
+  "dropImageHere": "将图片拖到此处",
+  "paymentQrDrop": "将二维码图片拖到此处"
 }

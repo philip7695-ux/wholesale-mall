@@ -14,6 +14,7 @@ import { useCurrency } from "@/hooks/use-currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD, canBuyerCancel } from "@/lib/order-status"
 import { OrderRevisionTable } from "@/components/order-revision-table"
 import { Textarea } from "@/components/ui/textarea"
+import { DropZone } from "@/components/ui/drop-zone"
 import { FileDown, Upload, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react"
 
 interface OrderDetail {
@@ -186,8 +187,7 @@ export default function OrderDetailPage() {
     setInvoiceLoading(false)
   }
 
-  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function handleReceiptUpload(file: File | undefined) {
     if (!file) return
     setUploading(true)
     try {
@@ -442,7 +442,7 @@ export default function OrderDetailPage() {
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
-                      onChange={handleReceiptUpload}
+                      onChange={(e) => { handleReceiptUpload(e.target.files?.[0]); e.target.value = "" }}
                       className="hidden"
                     />
                     {receiptImage ? (
@@ -479,16 +479,23 @@ export default function OrderDetailPage() {
                         </div>
                       </div>
                     ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
+                      <DropZone
+                        accept="image/*"
                         disabled={uploading}
+                        onFiles={(f) => handleReceiptUpload(f[0])}
+                        overlayText={t("receiptImageDrop")}
                       >
-                        <Upload className="mr-1 h-4 w-4" />
-                        {uploading ? t("receiptImageUploading") : t("receiptImageUpload")}
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          <Upload className="mr-1 h-4 w-4" />
+                          {uploading ? t("receiptImageUploading") : t("receiptImageUpload")}
+                        </Button>
+                      </DropZone>
                     )}
                   </div>
                   <div className="space-y-1">

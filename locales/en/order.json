@@ -144,5 +144,7 @@
   "sheetIssueNotInOrder": "Quantities entered for items not in this order:",
   "sheetIssueStrayColumn": "Quantities in columns that are not recognised sizes:",
   "sheetIssueMissing": "Missing from the file, left unchanged:",
-  "sheetIssuesHint": "None of these were applied to the table. Check with the warehouse, then enter them yourself."
+  "sheetIssuesHint": "None of these were applied to the table. Check with the warehouse, then enter them yourself.",
+  "sheetImportDrop": "Drop the warehouse reply here",
+  "receiptImageDrop": "Drop the receipt image here"
 }

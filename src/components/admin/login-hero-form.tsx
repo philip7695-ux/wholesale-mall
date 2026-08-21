@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { DropZone } from "@/components/ui/drop-zone"
 import { useRouter } from "@/i18n/navigation"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
@@ -26,8 +27,7 @@ export function LoginHeroForm({ initial }: { initial: Config }) {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function uploadFile(file: File | undefined) {
     if (!file) return
     setUploading(true)
     try {
@@ -43,7 +43,6 @@ export function LoginHeroForm({ initial }: { initial: Config }) {
       toast.error(err?.message || t("uploadFailed"))
     } finally {
       setUploading(false)
-      e.target.value = ""
     }
   }
 
@@ -88,15 +87,17 @@ export function LoginHeroForm({ initial }: { initial: Config }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+          <DropZone accept="image/*" disabled={uploading} onFiles={(f) => uploadFile(f[0])} overlayText={t("dropImageHere")}>
+           <label>
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { uploadFile(e.target.files?.[0]); e.target.value = "" }} disabled={uploading} />
             <Button asChild variant="outline" size="sm" disabled={uploading}>
               <span className="cursor-pointer">
                 {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                 {t("changeImage")}
               </span>
             </Button>
-          </label>
+           </label>
+          </DropZone>
           {form.loginHeroUrl && (
             <Button
               variant="ghost"

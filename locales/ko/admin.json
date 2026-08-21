@@ -464,5 +464,10 @@
   "lookbookToggle": "노출 전환",
   "lookbookDelete": "삭제",
   "lookbookDeleteConfirm": "이 룩북을 삭제하시겠습니까?",
-  "lookbookDeleted": "삭제되었습니다."
+  "lookbookDeleted": "삭제되었습니다.",
+  "lookbookDropHere": "여기에 파일을 놓으세요",
+  "bulkDropExcel": "엑셀 파일을 여기에 놓으세요",
+  "bulkDropImages": "이미지를 여기에 놓으세요",
+  "dropImageHere": "이미지를 여기에 놓으세요",
+  "paymentQrDrop": "QR 이미지를 여기에 놓으세요"
 }

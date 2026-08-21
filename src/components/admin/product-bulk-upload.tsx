@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
+import { DropZone } from "@/components/ui/drop-zone"
 import { Card, CardContent } from "@/components/ui/card"
 import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCircle, Package, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -38,17 +39,16 @@ export function ProductBulkUpload() {
     window.open(`/api/products/template?type=${type}`)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0]
-    if (selected) {
-      if (!selected.name.endsWith(".xlsx") && !selected.name.endsWith(".xls")) {
-        toast.error(t("bulkExcelOnly"))
-        return
-      }
-      setFile(selected)
-      setResult(null)
+  const acceptExcel = (selected: File | undefined) => {
+    if (!selected) return
+    if (!selected.name.endsWith(".xlsx") && !selected.name.endsWith(".xls")) {
+      toast.error(t("bulkExcelOnly"))
+      return
     }
+    setFile(selected)
+    setResult(null)
   }
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => acceptExcel(e.target.files?.[0])
 
   const handleUpload = async () => {
     if (!file) return
@@ -157,17 +157,16 @@ export function ProductBulkUpload() {
     window.open("/api/admin/products/stock")
   }
 
-  const handleStockFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0]
-    if (selected) {
-      if (!selected.name.endsWith(".xlsx") && !selected.name.endsWith(".xls")) {
-        toast.error(t("bulkExcelOnly"))
-        return
-      }
-      setStockFile(selected)
-      setStockResult(null)
+  const acceptStock = (selected: File | undefined) => {
+    if (!selected) return
+    if (!selected.name.endsWith(".xlsx") && !selected.name.endsWith(".xls")) {
+      toast.error(t("bulkExcelOnly"))
+      return
     }
+    setStockFile(selected)
+    setStockResult(null)
   }
+  const handleStockFileChange = (e: React.ChangeEvent<HTMLInputElement>) => acceptStock(e.target.files?.[0])
 
   const handleStockUpload = async () => {
     if (!stockFile) return
@@ -213,14 +212,15 @@ export function ProductBulkUpload() {
   const [imageResult, setImageResult] = useState<ImageUploadResult | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files
-    if (selected && selected.length > 0) {
-      setImageFiles(Array.from(selected))
+  const acceptImages = (selected: File[]) => {
+    if (selected.length > 0) {
+      setImageFiles(selected)
       setImageResult(null)
       setImageProgress("")
     }
   }
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    acceptImages(Array.from(e.target.files ?? []))
 
   const handleImageUpload = async () => {
     if (imageFiles.length === 0) return
@@ -354,14 +354,16 @@ export function ProductBulkUpload() {
             onChange={handleFileChange}
             className="hidden"
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => inputRef.current?.click()}
-          >
-            <Upload className="mr-1 h-4 w-4" />
-            {t("bulkSelectFile")}
-          </Button>
+          <DropZone accept=".xlsx,.xls" onFiles={(f) => acceptExcel(f[0])} overlayText={t("bulkDropExcel")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="mr-1 h-4 w-4" />
+              {t("bulkSelectFile")}
+            </Button>
+          </DropZone>
 
           {file && (
             <>
@@ -466,14 +468,16 @@ export function ProductBulkUpload() {
             onChange={handleStockFileChange}
             className="hidden"
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => stockInputRef.current?.click()}
-          >
-            <Upload className="mr-1 h-4 w-4" />
-            {t("stockSelectFile")}
-          </Button>
+          <DropZone accept=".xlsx,.xls" onFiles={(f) => acceptStock(f[0])} overlayText={t("bulkDropExcel")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => stockInputRef.current?.click()}
+            >
+              <Upload className="mr-1 h-4 w-4" />
+              {t("stockSelectFile")}
+            </Button>
+          </DropZone>
 
           {stockFile && (
             <>
@@ -546,14 +550,16 @@ export function ProductBulkUpload() {
             onChange={handleImageFileChange}
             className="hidden"
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => imageInputRef.current?.click()}
-          >
-            <ImagePlus className="mr-1 h-4 w-4" />
-            {t("bulkSelectImages")}
-          </Button>
+          <DropZone accept="image/*" multiple onFiles={acceptImages} overlayText={t("bulkDropImages")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <ImagePlus className="mr-1 h-4 w-4" />
+              {t("bulkSelectImages")}
+            </Button>
+          </DropZone>
 
           {imageFiles.length > 0 && (
             <>

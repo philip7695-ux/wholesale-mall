@@ -464,5 +464,10 @@
   "lookbookToggle": "Toggle visibility",
   "lookbookDelete": "Delete",
   "lookbookDeleteConfirm": "Delete this lookbook?",
-  "lookbookDeleted": "Deleted."
+  "lookbookDeleted": "Deleted.",
+  "lookbookDropHere": "Drop file here",
+  "bulkDropExcel": "Drop Excel file here",
+  "bulkDropImages": "Drop images here",
+  "dropImageHere": "Drop image here",
+  "paymentQrDrop": "Drop QR image here"
 }
