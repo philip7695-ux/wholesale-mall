@@ -5,6 +5,15 @@ export const KIDS_LETTER_SIZES: string[] = ["F", "S", "M", "L", "XL", "XXL"]
 export const KIDS_SIZES: string[] = [...KIDS_LETTER_SIZES, ...KIDS_NUM_SIZES]
 export const ALL_SIZES: string[] = [...ADULT_SIZES, ...KIDS_SIZES]
 
+// 중복 없는 전체 사이즈 이름(엑셀 사이즈 열 감지에 쓴다)
+export const ALL_SIZE_NAMES: string[] = [...new Set(ALL_SIZES)]
+const SIZE_NAME_SET = new Set(ALL_SIZE_NAMES.map((s) => s.toUpperCase()))
+
+/** 엑셀 헤더가 사이즈 열인지(알려진 사이즈 이름인지) 판단 */
+export function isSizeColumn(header: string): boolean {
+  return SIZE_NAME_SET.has(String(header).trim().toUpperCase())
+}
+
 /**
  * 여러 상품의 사이즈를 한 표에 펼칠 때 쓰는 정렬 순서.
  * 쓰던 오더시트를 따라 숫자 사이즈를 앞에 작은 것부터, 문자 사이즈를 뒤에 둔다.
@@ -32,7 +41,7 @@ export function sortSizeNames(names: string[]): string[] {
 const BABY_NUM_SIZES = new Set(["80", "85", "90", "95", "100"])
 const KIDS_ONLY_NUM_SIZES = new Set(["110", "120", "130", "140", "150"])
 
-export type AgeGroupValue = "NEWBORN" | "BABY" | "KIDS"
+export type AgeGroupValue = "NEWBORN" | "BABY" | "KIDS" | "ADULT"
 
 /** 엑셀의 "연령대" 값을 enum 으로 정규화. 인식 못하면 null */
 export function normalizeAgeGroup(raw: string): AgeGroupValue | null {
@@ -41,6 +50,7 @@ export function normalizeAgeGroup(raw: string): AgeGroupValue | null {
   if (v.includes("NEWBORN") || v.includes("뉴본") || v.includes("신생아")) return "NEWBORN"
   if (v.includes("BABY") || v.includes("베이비") || v.includes("유아")) return "BABY"
   if (v.includes("KIDS") || v.includes("KID") || v.includes("키즈") || v.includes("아동")) return "KIDS"
+  if (v.includes("ADULT") || v.includes("성인") || v.includes("어른")) return "ADULT"
   return null
 }
 

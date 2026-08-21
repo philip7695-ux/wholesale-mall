@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { apiRoute } from "@/lib/api-route"
-import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES } from "@/lib/product-sizes"
+import { ALL_SIZE_NAMES, sortSizeNames } from "@/lib/product-sizes"
 
 async function GET_impl(request: Request) {
   const session = await auth()
@@ -99,38 +99,16 @@ export const GET = apiRoute(GET_impl, { retry: true })
 
 const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "설명", "혼용률", "원산지", "컬러명*", "컬러코드", "컬러값(HEX)", "통화", "가격*"]
 
-/**
- * 상품의 사이즈가 어느 시트에 들어갈지 정한다.
- *
- * 아동 브랜드라 대부분 아동복이다. 그런데 S/M/L/XL 은 성인 사이즈와
- * 아동 영어 사이즈에 함께 있어, 성인복을 먼저 보면 S/M/L 짜리 아동복이
- * 성인복 시트로 새어 들어간다. 그래서 아동(숫자→영어)을 먼저 보고,
- * 아동 어느 쪽에도 다 담기지 않을 때만(FREE·2XL·3XL 등) 성인복으로 본다.
- */
-function classifySizeSheet(sizeNames: string[]): "adult" | "num" | "letter" {
-  const inSet = (set: readonly string[]) => sizeNames.every((n) => set.includes(n))
-  if (inSet(KIDS_NUM_SIZES)) return "num"
-  if (inSet(KIDS_LETTER_SIZES)) return "letter"
-  if (inSet(ADULT_SIZES)) return "adult"
-  // 어느 집합에도 온전히 안 담기면(섞임) 가장 많이 덮는 곳으로. 아동을 우선한다.
-  const cover = (set: readonly string[]) => sizeNames.filter((n) => set.includes(n)).length
-  const num = cover(KIDS_NUM_SIZES), letter = cover(KIDS_LETTER_SIZES), adult = cover(ADULT_SIZES)
-  if (num >= letter && num >= adult) return "num"
-  if (letter >= adult) return "letter"
-  return "adult"
-}
+// 사이즈 열을 한 시트에 다 펼친다. 이름이 서로 겹치지 않으므로 성인/아동을
+// 나눌 필요가 없다. 업로더도 헤더에서 사이즈 열을 알아서 찾는다.
+const SIZE_COLUMNS = sortSizeNames(ALL_SIZE_NAMES)
 
-/** 업로드 템플릿과 같은 3시트 형식으로 현재 상품을 내보낸다. */
+/** 업로드 템플릿과 같은 형식(시트 하나)으로 현재 상품을 내보낸다. */
 function buildTemplateWorkbook(products: any[]): NextResponse {
-  const sheets: Record<"adult" | "num" | "letter", { cols: readonly string[]; name: string; rows: any[][] }> = {
-    adult: { cols: ADULT_SIZES, name: "성인복", rows: [] },
-    num: { cols: KIDS_NUM_SIZES, name: "아동복(숫자사이즈)", rows: [] },
-    letter: { cols: KIDS_LETTER_SIZES, name: "아동복(영어사이즈)", rows: [] },
-  }
+  const headers = [...BASE_HEADERS, ...SIZE_COLUMNS]
+  const rows: any[][] = []
 
   for (const p of products) {
-    const sizeNames = p.sizes.map((s: any) => s.name)
-    const bucket = sheets[classifySizeSheet(sizeNames)]
     for (const c of p.colors) {
       const colorVariants = p.variants.filter((v: any) => v.color.name === c.name)
       // 색상 단가는 그 색상 첫 변형 가격을 쓴다(템플릿은 색상당 한 가격)
@@ -139,29 +117,21 @@ function buildTemplateWorkbook(products: any[]): NextResponse {
         const v = colorVariants.find((x: any) => x.size.name === sizeName)
         return v ? v.stock : ""
       }
-      bucket.rows.push([
+      rows.push([
         p.code || "", p.name, p.category.name, p.ageGroup || "", p.description || "",
         p.material || "", p.origin || "", c.name, c.colorCode || "", c.hexColor || "",
         p.priceCurrency, price,
-        ...bucket.cols.map((sz) => stockOf(sz)),
+        ...SIZE_COLUMNS.map((sz) => stockOf(sz)),
       ])
     }
   }
 
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+  ws["!cols"] = headers.map((h, i) =>
+    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 28, 24, 12, 12, 10, 10, 8, 10][i] } : { wch: 6 },
+  )
   const wb = XLSX.utils.book_new()
-  for (const key of ["adult", "num", "letter"] as const) {
-    const sh = sheets[key]
-    if (sh.rows.length === 0) continue
-    const headers = [...BASE_HEADERS, ...sh.cols]
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...sh.rows])
-    ws["!cols"] = headers.map((h, i) => ({ wch: i < BASE_HEADERS.length ? [12,22,12,10,28,24,12,12,10,10,8,10][i] : 7 }))
-    XLSX.utils.book_append_sheet(wb, ws, sh.name)
-  }
-  // 상품이 하나도 없더라도 빈 성인복 시트라도 준다
-  if (wb.SheetNames.length === 0) {
-    const ws = XLSX.utils.aoa_to_sheet([[...BASE_HEADERS, ...ADULT_SIZES]])
-    XLSX.utils.book_append_sheet(wb, ws, "성인복")
-  }
+  XLSX.utils.book_append_sheet(wb, ws, "상품목록")
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
   const fileName = `상품정보_${new Date().toISOString().split("T")[0]}.xlsx`
