@@ -474,5 +474,10 @@
   "paymentTestSending": "发送中…",
   "paymentTestSent": "已向 {to} 发送测试邮件。请查看收件箱。",
   "paymentTestFail": "发送失败。",
-  "paymentTestNeedEmail": "请先填写并保存通知邮箱。"
+  "paymentTestNeedEmail": "请先填写并保存通知邮箱。",
+  "emailNotifTitle": "邮件通知",
+  "emailNotifEmail": "接收通知的管理员邮箱",
+  "emailNotifHint": "订单、发票、付款、发货通知将发送至此地址。留空则使用第一个管理员账户邮箱。",
+  "emailNotifSaved": "已保存。",
+  "emailNotifSaveFail": "保存失败。"
 }

@@ -474,5 +474,10 @@
   "paymentTestSending": "Sending…",
   "paymentTestSent": "Sent a test email to {to}. Check the inbox.",
   "paymentTestFail": "Failed to send.",
-  "paymentTestNeedEmail": "Enter and save a notification email first."
+  "paymentTestNeedEmail": "Enter and save a notification email first.",
+  "emailNotifTitle": "Email notifications",
+  "emailNotifEmail": "Admin email for notifications",
+  "emailNotifHint": "Order, invoice, payment, and shipping alerts go to this address. Blank falls back to the first admin account email.",
+  "emailNotifSaved": "Saved.",
+  "emailNotifSaveFail": "Failed to save."
 }

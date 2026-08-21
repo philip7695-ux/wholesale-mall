@@ -474,5 +474,10 @@
   "paymentTestSending": "보내는 중…",
   "paymentTestSent": "{to} 로 테스트 메일을 보냈습니다. 받은편지함을 확인하세요.",
   "paymentTestFail": "발송에 실패했습니다.",
-  "paymentTestNeedEmail": "먼저 알림 이메일을 입력하고 저장하세요."
+  "paymentTestNeedEmail": "먼저 알림 이메일을 입력하고 저장하세요.",
+  "emailNotifTitle": "메일 알림",
+  "emailNotifEmail": "알림 받을 관리자 이메일",
+  "emailNotifHint": "주문·인보이스·입금·출하 알림이 이 주소로 갑니다. 비우면 첫 관리자 계정 이메일로 갑니다.",
+  "emailNotifSaved": "저장했습니다.",
+  "emailNotifSaveFail": "저장에 실패했습니다."
 }

@@ -474,5 +474,10 @@
   "paymentTestSending": "送信中…",
   "paymentTestSent": "{to} にテストメールを送信しました。受信箱を確認してください。",
   "paymentTestFail": "送信に失敗しました。",
-  "paymentTestNeedEmail": "先に通知メールを入力して保存してください。"
+  "paymentTestNeedEmail": "先に通知メールを入力して保存してください。",
+  "emailNotifTitle": "メール通知",
+  "emailNotifEmail": "通知を受け取る管理者メール",
+  "emailNotifHint": "注文・請求・入金・出荷の通知がこの宛先に届きます。空欄なら最初の管理者アカウントのメールに届きます。",
+  "emailNotifSaved": "保存しました。",
+  "emailNotifSaveFail": "保存に失敗しました。"
 }
