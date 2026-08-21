@@ -26,5 +26,7 @@
   "soldOut": "Sold Out",
   "stockCount": "Stock {count}",
   "material": "Material",
-  "origin": "Origin"
+  "origin": "Origin",
+  "srpLabel": "Suggested min. resale",
+  "srpNote": "Please avoid selling below this (guideline)"
 }

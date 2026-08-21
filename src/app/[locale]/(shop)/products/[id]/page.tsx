@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth"
 import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
+import { isNewSeason } from "@/lib/season"
 
 export default async function ProductDetailPage({
   params,
@@ -68,6 +69,9 @@ export default async function ProductDetailPage({
     moq: raw.moq,
     colorMoq: raw.colorMoq,
     priceCurrency: raw.priceCurrency,
+    // 신상(현재+다음 시즌)에만 권장 최소 판매가를 안내한다.
+    // 시즌이 지나 재고가 되면 자동으로 안 보인다.
+    showSrp: isNewSeason(raw.seasonKey),
     category: { name: raw.category.name, slug: raw.category.slug },
     colors: raw.colors.map((c: any) => ({
       id: c.id,
@@ -86,6 +90,8 @@ export default async function ProductDetailPage({
       colorId: v.colorId,
       sizeId: v.sizeId,
       price: buyerPrice(v.price, seasonRate, gradeRate, specialRate),
+      // 권장 소비자가 = 한국 택가(정상가). 할인 전 원본을 그대로 내린다.
+      tagPrice: v.price,
       // 다른 주문이 잡아둔 수량을 뺀 판매 가능 수량을 보여준다
       stock: Math.max(v.stock - v.reserved, 0),
       color: { id: v.color.id, name: v.color.name },

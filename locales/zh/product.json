@@ -26,5 +26,7 @@
   "soldOut": "售罄",
   "stockCount": "库存 {count}",
   "material": "成分",
-  "origin": "产地"
+  "origin": "产地",
+  "srpLabel": "建议最低售价",
+  "srpNote": "请勿低于此价销售（参考）"
 }
