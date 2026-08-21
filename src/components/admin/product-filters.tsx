@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "@/i18n/navigation"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -58,17 +58,34 @@ export function ProductFilters({
     ]),
   )
 
+  // 필터를 세션에 저장해 어느 경로로 돌아오든 복원한다.
+  // (상품 수정 저장 후 목록으로 갈 때 파라미터가 없어 초기화되던 문제 해결)
+  const FKEY = "admin_product_filters"
+  useEffect(() => {
+    const current = params.toString()
+    if (current) {
+      sessionStorage.setItem(FKEY, current)
+    } else {
+      const saved = sessionStorage.getItem(FKEY)
+      if (saved) router.replace(`${pathname}?${saved}`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function submit() {
     const next = new URLSearchParams()
     for (const [k, v] of Object.entries(draft)) {
       if (v.trim()) next.set(k, v.trim())
     }
     const qs = next.toString()
+    if (qs) sessionStorage.setItem(FKEY, qs)
+    else sessionStorage.removeItem(FKEY)
     router.push(qs ? `${pathname}?${qs}` : pathname)
   }
 
   function reset() {
     setDraft(Object.fromEntries(Object.keys(draft).map((k) => [k, ""])))
+    sessionStorage.removeItem(FKEY)
     router.push(pathname)
   }
 
