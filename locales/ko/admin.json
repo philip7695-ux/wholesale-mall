@@ -445,5 +445,6 @@
   "adminNote": "관리자 메모",
   "adminNotePlaceholder": "통관·거래 특이사항 등 (바이어에게 보이지 않음)",
   "countryPrefix": "국가: ",
-  "adminNotePrefix": "메모: "
+  "adminNotePrefix": "메모: ",
+  "exportCurrentProducts": "상품정보 내려받기"
 }
