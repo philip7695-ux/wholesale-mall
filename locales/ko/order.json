@@ -146,5 +146,6 @@
   "sheetIssueMissing": "파일에 없어 그대로 둔 항목:",
   "sheetIssuesHint": "이 부분은 표에 반영되지 않았습니다. 창고에 확인한 뒤 직접 입력하세요.",
   "sheetImportDrop": "창고 회신 엑셀을 여기에 놓으세요",
-  "receiptImageDrop": "입금증 이미지를 여기에 놓으세요"
+  "receiptImageDrop": "입금증 이미지를 여기에 놓으세요",
+  "statusReview": "수량조정"
 }

@@ -8,7 +8,8 @@ import { formatPrice, formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
-import { STATUS_COLOR, canBuyerCancel } from "@/lib/order-status"
+import { canBuyerCancel } from "@/lib/order-status"
+import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 
 interface Order {
   id: string
@@ -29,14 +30,6 @@ export default function OrdersPage() {
   const { rate } = useCurrency()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-
-  const statusLabels: Record<string, string> = {
-    ORDER_PLACED: t("statusOrderPlaced"),
-    INVOICE_SENT: t("statusInvoiceSent"),
-    PAYMENT_CONFIRMED: t("statusPaymentConfirmed"),
-    SHIPPED: t("statusShipped"),
-    CANCELLED: t("statusCancelled"),
-  }
 
   function loadOrders() {
     setLoading(true)
@@ -98,8 +91,8 @@ export default function OrdersPage() {
             <Link key={order.id} href={`/orders/${order.id}`}>
               <Card className="transition-shadow hover:shadow-md">
                 <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">{order.orderNumber}</p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(order.createdAt, locale)}
@@ -119,11 +112,8 @@ export default function OrdersPage() {
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>
-                        {statusLabels[order.status]}
-                      </span>
-                      <p className="mt-1 font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
+                    <div className="shrink-0 text-right">
+                      <p className="font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
                       {/* 수정은 창고에 넘어가기 전에만, 취소는 확정 전까지 */}
                       {canBuyerCancel(order.status) && (
                         <div className="mt-2 flex justify-end gap-1">
@@ -147,6 +137,10 @@ export default function OrdersPage() {
                       )}
                     </div>
                   </div>
+                  {/* 전체 진행 흐름을 항상 그려두고 지나온 단계를 컬러로 켠다 */}
+                  {order.status !== "CANCELLED" && (
+                    <OrderStatusStepper status={order.status} size="sm" className="mt-4" />
+                  )}
                 </CardContent>
               </Card>
             </Link>
