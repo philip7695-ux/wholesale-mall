@@ -198,6 +198,7 @@ export default async function ProductsPage({
                       <div className="mt-3 space-y-1">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">
                           {translateCategory(product.category.slug, tCat, product.category.name)}
+                          <span className="ml-1.5 font-normal normal-case tracking-normal text-gray-400">· {product.code}</span>
                         </p>
                         <h3 className="text-sm text-[#1A1A1A] leading-snug line-clamp-2">
                           {product.name}
