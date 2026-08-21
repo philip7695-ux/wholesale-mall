@@ -14,18 +14,20 @@ import {
   BookOpen,
 } from "lucide-react"
 import { LanguageSelector } from "@/components/language-selector"
+import { useOrderAlerts } from "@/hooks/use-order-alerts"
 
 export function ShopSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const t = useTranslations("shop")
   const tc = useTranslations("common")
+  const orderAlerts = useOrderAlerts()
 
   const navItems = [
     { href: "/products", label: t("productList"), icon: Package },
     { href: "/lookbook", label: t("lookbook"), icon: BookOpen },
     { href: "/cart", label: t("cart"), icon: ShoppingCart },
-    { href: "/orders", label: t("orders"), icon: ClipboardList },
+    { href: "/orders", label: t("orders"), icon: ClipboardList, badge: orderAlerts },
     { href: "/mypage", label: t("mypage"), icon: User },
   ]
 
@@ -52,7 +54,12 @@ export function ShopSidebar() {
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {"badge" in item && (item.badge as number) > 0 && (
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-semibold text-white">
+                  {(item.badge as number) > 99 ? "99+" : (item.badge as number)}
+                </span>
+              )}
             </Link>
           )
         })}
