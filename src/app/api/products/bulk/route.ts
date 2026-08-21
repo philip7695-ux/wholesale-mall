@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue } from "@/lib/product-sizes"
+import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue, isSizeColumn} from "@/lib/product-sizes"
 import { seasonKeyFromCode } from "@/lib/season"
 
 // 대량 생성은 DB 왕복이 많아 오래 걸린다. 청크로 나눠 보내더라도 여유를 둔다.
@@ -168,7 +168,12 @@ function parseSheet(
   if ("사이즈*" in rows[0]) {
     parseSheetNew(rows, sheetName, failed, groups)
   } else {
-    parseSheetSizeColumns(rows, getSizeColumnsForSheet(sheetName), sheetName, failed, groups)
+    // 헤더에서 사이즈 열을 직접 찾는다. 시트 이름(성인/아동)에 기대지 않으므로
+    // 한 시트에 여러 사이즈 체계를 섞어 올려도 된다. 헤더에 사이즈 열이
+    // 하나도 없으면 예전처럼 시트 이름으로 유추한다(옛 파일 호환).
+    const detected = Object.keys(rows[0]).filter(isSizeColumn)
+    const sizeCols = detected.length > 0 ? detected : getSizeColumnsForSheet(sheetName)
+    parseSheetSizeColumns(rows, sizeCols, sheetName, failed, groups)
   }
 }
 

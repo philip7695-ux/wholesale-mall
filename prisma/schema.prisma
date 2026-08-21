@@ -353,6 +353,7 @@ enum AgeGroup {
   NEWBORN
   BABY
   KIDS
+  ADULT
 
   @@schema("mall")
 }
