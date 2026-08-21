@@ -480,5 +480,8 @@
   "emailNotifHint": "注文・請求・入金・出荷の通知がこの宛先に届きます。空欄なら最初の管理者アカウントのメールに届きます。",
   "emailNotifSaved": "保存しました。",
   "emailNotifSaveFail": "保存に失敗しました。",
-  "paymentMethodBankTransferForeign": "銀行振込 (輸出・外貨)"
+  "paymentMethodBankTransferForeign": "銀行振込 (輸出・外貨)",
+  "imageReorderHint": "ドラッグで並べ替え（先頭がメイン）",
+  "imageMoveLeft": "前へ",
+  "imageMoveRight": "後へ"
 }

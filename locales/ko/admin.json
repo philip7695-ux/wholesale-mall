@@ -480,5 +480,8 @@
   "emailNotifHint": "주문·인보이스·입금·출하 알림이 이 주소로 갑니다. 비우면 첫 관리자 계정 이메일로 갑니다.",
   "emailNotifSaved": "저장했습니다.",
   "emailNotifSaveFail": "저장에 실패했습니다.",
-  "paymentMethodBankTransferForeign": "계좌이체 (수출·외화)"
+  "paymentMethodBankTransferForeign": "계좌이체 (수출·외화)",
+  "imageReorderHint": "끌어서 순서 변경 (첫 장이 대표)",
+  "imageMoveLeft": "앞으로",
+  "imageMoveRight": "뒤로"
 }

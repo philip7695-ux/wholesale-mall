@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, X, Upload } from "lucide-react"
+import { Plus, X, Upload, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { translateCategory } from "@/lib/translate"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
@@ -130,6 +130,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [dragImg, setDragImg] = useState<number | null>(null)
 
   // 사진을 올리는 중에 화면을 벗어나면 올리던 것이 끊긴다
   useLeaveGuard(uploading, t("uploadLeaveWarning"))
@@ -180,6 +181,17 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
   function removeImage(index: number) {
     setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // 이미지 순서 = 표시 순서(첫 장이 대표). 드래그·화살표로 바꾼다.
+  function moveImage(from: number, to: number) {
+    setImages((prev) => {
+      if (to < 0 || to >= prev.length || from === to) return prev
+      const next = [...prev]
+      const [m] = next.splice(from, 1)
+      next.splice(to, 0, m)
+      return next
+    })
   }
 
   function addColor() {
@@ -360,7 +372,8 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
             <div
               onDragOver={(e) => {
                 e.preventDefault()
-                if (!uploading) setDragOver(true)
+                // 파일을 끌어올 때만 업로드 강조. 썸네일 순서변경 드래그는 제외.
+                if (!uploading && e.dataTransfer.types.includes("Files")) setDragOver(true)
               }}
               onDragLeave={(e) => {
                 // 자식 요소로 넘어갈 때도 leave 가 뜨므로 영역 밖으로 나간 경우만 끈다
@@ -372,8 +385,35 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
               }`}
             >
               {images.map((img, i) => (
-                <div key={i} className="relative">
-                  <img src={img} alt="" className="h-20 w-20 rounded-md object-contain border bg-white" />
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={(e) => {
+                    setDragImg(i)
+                    // 파일 드롭과 구분되도록 내부 드래그 표식을 심는다
+                    e.dataTransfer.setData("text/x-reorder", String(i))
+                    e.dataTransfer.effectAllowed = "move"
+                  }}
+                  onDragOver={(e) => {
+                    if (dragImg !== null) e.preventDefault()
+                  }}
+                  onDrop={(e) => {
+                    if (dragImg === null) return
+                    e.preventDefault()
+                    e.stopPropagation() // 컨테이너의 파일 드롭 핸들러로 번지지 않게
+                    moveImage(dragImg, i)
+                    setDragImg(null)
+                  }}
+                  onDragEnd={() => setDragImg(null)}
+                  className={`group relative cursor-move ${dragImg === i ? "opacity-40" : ""}`}
+                  title={t("imageReorderHint")}
+                >
+                  <img
+                    src={img}
+                    alt=""
+                    draggable={false}
+                    className="h-20 w-20 rounded-md object-contain border bg-white"
+                  />
                   {i === 0 && (
                     <span className="absolute -top-1.5 -left-1.5 rounded bg-primary px-1 text-[10px] text-primary-foreground">
                       {t("mainImage")}
@@ -386,6 +426,27 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                   >
                     <X className="h-3 w-3" />
                   </button>
+                  {/* 클릭으로도 한 칸씩 이동. 드래그가 불편할 때. */}
+                  <div className="absolute inset-x-0 bottom-0 flex justify-between px-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      disabled={i === 0}
+                      onClick={() => moveImage(i, i - 1)}
+                      className="rounded bg-black/60 px-1 text-white disabled:opacity-30"
+                      title={t("imageMoveLeft")}
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={i === images.length - 1}
+                      onClick={() => moveImage(i, i + 1)}
+                      className="rounded bg-black/60 px-1 text-white disabled:opacity-30"
+                      title={t("imageMoveRight")}
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
               ))}
               <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed hover:bg-muted transition-colors">
