@@ -11,8 +11,8 @@ import { Download, Trash2 } from "lucide-react"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
-import { STATUS_COLOR } from "@/lib/order-status"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
+import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 
 interface OrderItem {
   id: string
@@ -45,14 +45,6 @@ export function OrderList({ orders }: { orders: Order[] }) {
   const { rate } = useCurrency()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<string | null>(null)
-
-  const statusLabels: Record<string, string> = {
-    ORDER_PLACED: t("orderStatusOrderPlaced"),
-    INVOICE_SENT: t("orderStatusInvoiceSent"),
-    PAYMENT_CONFIRMED: t("orderStatusPaymentConfirmed"),
-    SHIPPED: t("orderStatusShipped"),
-    CANCELLED: t("orderStatusCancelled"),
-  }
 
   const paymentLabels: Record<string, string> = {
     PENDING: t("paymentStatusPending"),
@@ -259,7 +251,6 @@ export function OrderList({ orders }: { orders: Order[] }) {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{order.orderNumber}</span>
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[order.status] || ""}`}>{statusLabels[order.status]}</span>
                         <Badge variant="secondary">{paymentLabels[order.paymentStatus]}</Badge>
                         {order.hasPaymentRequest && (
                           <Badge variant="default" className="bg-yellow-500 text-white">{t("pendingPaymentBadge")}</Badge>
@@ -285,6 +276,8 @@ export function OrderList({ orders }: { orders: Order[] }) {
                       </Button>
                     </div>
                   </div>
+                  {/* 바이어 화면과 같은 스텝퍼. 관리자도 진행 흐름을 한눈에 본다 */}
+                  <OrderStatusStepper status={order.status} size="sm" className="mt-4" />
                 </CardContent>
               </Card>
             </Link>

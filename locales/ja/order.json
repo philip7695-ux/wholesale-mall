@@ -146,5 +146,6 @@
   "sheetIssueMissing": "ファイルになく、そのままにした項目:",
   "sheetIssuesHint": "これらは表に反映していません。倉庫に確認のうえ直接入力してください。",
   "sheetImportDrop": "倉庫の回答Excelをここにドロップ",
-  "receiptImageDrop": "入金証明画像をここにドロップ"
+  "receiptImageDrop": "入金証明画像をここにドロップ",
+  "statusReview": "数量調整"
 }

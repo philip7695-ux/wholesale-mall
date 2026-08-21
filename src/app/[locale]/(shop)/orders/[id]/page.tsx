@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useCurrency } from "@/hooks/use-currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD, canBuyerCancel } from "@/lib/order-status"
+import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 import { OrderRevisionTable } from "@/components/order-revision-table"
 import { Textarea } from "@/components/ui/textarea"
 import { DropZone } from "@/components/ui/drop-zone"
@@ -339,6 +340,15 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* 전체 진행 흐름을 한눈에. 지나온 단계는 컬러로 켜진다 */}
+      {order.status !== "CANCELLED" && (
+        <Card>
+          <CardContent className="py-5">
+            <OrderStatusStepper status={order.status} size="md" />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -12,6 +12,7 @@ import { WarehouseSheetButton } from "@/components/admin/warehouse-sheet-button"
 import { isEditable } from "@/lib/order-revision"
 import { getExchangeRate } from "@/lib/currency.server"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_DOT_COLOR, STATUS_TEXT_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
+import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 
 export default async function AdminOrderDetailPage({
   params,
@@ -81,6 +82,15 @@ export default async function AdminOrderDetailPage({
           )}
         </div>
       </div>
+
+      {/* 바이어 화면과 같은 진행 스텝퍼 */}
+      {order.status !== "CANCELLED" && (
+        <Card>
+          <CardContent className="py-5">
+            <OrderStatusStepper status={order.status} size="md" />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Order info */}
