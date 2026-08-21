@@ -23,6 +23,7 @@ import { GRADE_DISCOUNT, GRADE_MOQ_RATE, getEffectiveMoq } from "@/lib/grade"
 import { checkMoq } from "@/lib/moq"
 
 interface Variant {
+  tagPrice?: number
   id: string
   colorId: string
   sizeId: string
@@ -45,6 +46,7 @@ interface Product {
   moq: number
   colorMoq: number
   priceCurrency: string
+  showSrp?: boolean
   category: { name: string; slug: string }
   colors: { id: string; name: string; colorCode: string | null; hexColor: string | null; images: string[]; moq: number }[]
   sizes: { id: string; name: string }[]
@@ -166,6 +168,11 @@ export function ProductDetail({ product }: { product: Product }) {
 
   const prices = product.variants.map((v) => v.price)
   const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+  // 권장 최소 판매가 = 한국 택가(정상가) 중 최저. 신상에만, 그리고
+  // 도매가보다 실제로 높을 때만 보여준다(같으면 뜻이 없다).
+  const tagPrices = product.variants.map((v) => v.tagPrice ?? 0).filter((n) => n > 0)
+  const minTag = tagPrices.length > 0 ? Math.min(...tagPrices) : 0
+  const showSrp = !!product.showSrp && minTag > minPrice
   // 사이즈·컬러에 따라 가격이 갈릴 때만 "~" 를 붙인다.
   // 지금은 전 상품이 단일 가격이라 항상 붙으면 뜻 없는 기호가 된다.
   const hasPriceRange = prices.length > 0 && Math.max(...prices) !== minPrice
@@ -394,6 +401,13 @@ export function ProductDetail({ product }: { product: Product }) {
             <p className="mt-3 text-lg text-[#1A1A1A]">
               {fp(minPrice)}{hasPriceRange && "~"}
             </p>
+            {/* 신상 권장 최소 판매가(하한선). 강제 아님, 참고용. */}
+            {showSrp && (
+              <p className="mt-1 text-xs font-light text-gray-400">
+                {t("srpLabel")} {fp(minTag)}
+                <span className="ml-1 text-gray-300">· {t("srpNote")}</span>
+              </p>
+            )}
           </div>
 
           {product.description && (

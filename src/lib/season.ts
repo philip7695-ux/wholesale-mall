@@ -76,3 +76,33 @@ export function seasonsNewestFirst(): { year: string; season: string; key: strin
   }
   return out
 }
+
+/**
+ * 시즌 나이로 신상/재고를 가른다.
+ *
+ * 옷은 시즌 장사라 지난 시즌은 이미 재고다. 8월(가을 시즌)이면
+ * 여름 이하는 재고, 가을·겨울은 신상이다. 신상에만 권장 소비자가를
+ * 안내한다(수령 후 2개월 가격 유지 요청). 달력으로 자동 롤오버된다.
+ *
+ * 옷은 한두 달 앞서 나오므로 달을 시즌에 이렇게 맞춘다.
+ *   1~3월 SS · 4~6월 SU · 7~9월 FW · 10~12월 WI
+ */
+export function seasonIndex(seasonKey: string | null | undefined): number | null {
+  if (!seasonKey || !/^[3-9][1-4]$/.test(seasonKey)) return null
+  return (2020 + Number(seasonKey[0])) * 4 + Number(seasonKey[1])
+}
+
+export function currentSeasonIndex(now: Date = new Date()): number {
+  const m = now.getMonth() + 1
+  const seasonNum = m <= 3 ? 1 : m <= 6 ? 2 : m <= 9 ? 3 : 4
+  return now.getFullYear() * 4 + seasonNum
+}
+
+/** 현재 시즌 이후(현재+다음+그 이후)면 신상. 그보다 오래되면 재고. */
+export function isNewSeason(
+  seasonKey: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  const idx = seasonIndex(seasonKey)
+  return idx !== null && idx >= currentSeasonIndex(now)
+}

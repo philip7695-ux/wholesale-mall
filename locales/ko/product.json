@@ -26,5 +26,7 @@
   "soldOut": "품절",
   "stockCount": "재고 {count}",
   "material": "혼용률",
-  "origin": "원산지"
+  "origin": "원산지",
+  "srpLabel": "권장 최소 판매가",
+  "srpNote": "이 가격 미만 판매는 지양해 주세요 (참고)"
 }

@@ -26,5 +26,7 @@
   "soldOut": "品切れ",
   "stockCount": "在庫 {count}",
   "material": "混用率",
-  "origin": "原産国"
+  "origin": "原産国",
+  "srpLabel": "推奨最低販売価格",
+  "srpNote": "これ未満での販売はお控えください（参考）"
 }
