@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { DropZone } from "@/components/ui/drop-zone"
 import { useTranslations } from "next-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -153,16 +154,23 @@ export function PaymentConfigForm({ initialConfigs }: { initialConfigs: PaymentC
                       if (file) handleQrUpload(method, file)
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileRefs.current[method]?.click()}
+                  <DropZone
+                    accept="image/*"
                     disabled={uploading === method}
+                    onFiles={(f) => f[0] && handleQrUpload(method, f[0])}
+                    overlayText={t("paymentQrDrop")}
                   >
-                    <Upload className="mr-1 h-4 w-4" />
-                    {uploading === method ? "..." : t("paymentQrUpload")}
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileRefs.current[method]?.click()}
+                      disabled={uploading === method}
+                    >
+                      <Upload className="mr-1 h-4 w-4" />
+                      {uploading === method ? "..." : t("paymentQrUpload")}
+                    </Button>
+                  </DropZone>
                   {config.qrCodeUrl && (
                     <img
                       src={config.qrCodeUrl}

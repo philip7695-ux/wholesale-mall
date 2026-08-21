@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, CheckCircle2, Upload, AlertTriangle } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
+import { DropZone } from "@/components/ui/drop-zone"
 import { sortSizeNames } from "@/lib/product-sizes"
 
 export interface RevisionItem {
@@ -243,7 +244,13 @@ export function OrderRevisionTable({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border">
+      <DropZone
+        accept=".xlsx,.xls"
+        disabled={busy || !isAdmin || !canEdit}
+        onFiles={(files) => files[0] && importSheet(files[0])}
+        overlayText={t("sheetImportDrop")}
+        className="overflow-x-auto rounded-lg border"
+      >
         <table className="min-w-full border-collapse text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
@@ -388,7 +395,7 @@ export function OrderRevisionTable({
             </tr>
           </tfoot>
         </table>
-      </div>
+      </DropZone>
 
       {canEdit && (
         <div className="flex flex-wrap items-center gap-2">

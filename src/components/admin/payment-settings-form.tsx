@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { DropZone } from "@/components/ui/drop-zone"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -46,8 +47,7 @@ export function PaymentSettingsForm({
     setData((prev) => ({ ...prev, [field]: value }))
   }
 
-  async function handleQrUpload(field: "alipayQrImage" | "wechatQrImage", e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function handleQrUpload(field: "alipayQrImage" | "wechatQrImage", file: File | undefined) {
     if (!file) return
 
     setUploadingField(field)
@@ -70,7 +70,6 @@ export function PaymentSettingsForm({
       toast.error(t("paymentQrUploadFail"))
     }
     setUploadingField(null)
-    e.target.value = ""
   }
 
   async function handleSave() {
@@ -107,7 +106,8 @@ export function PaymentSettingsForm({
             </button>
           </div>
         ) : (
-          <label className="flex h-48 w-48 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed hover:border-primary">
+          <DropZone accept="image/*" disabled={isUploading} onFiles={(f) => handleQrUpload(field, f[0])}>
+           <label className="flex h-48 w-48 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed hover:border-primary">
             <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               {isUploading ? t("uploading") : t("paymentUploadQr")}
@@ -115,11 +115,12 @@ export function PaymentSettingsForm({
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleQrUpload(field, e)}
+              onChange={(e) => { handleQrUpload(field, e.target.files?.[0]); e.target.value = "" }}
               className="hidden"
               disabled={isUploading}
             />
-          </label>
+           </label>
+          </DropZone>
         )}
       </div>
     )

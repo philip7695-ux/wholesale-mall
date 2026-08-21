@@ -464,5 +464,10 @@
   "lookbookToggle": "表示切替",
   "lookbookDelete": "削除",
   "lookbookDeleteConfirm": "このルックブックを削除しますか？",
-  "lookbookDeleted": "削除しました。"
+  "lookbookDeleted": "削除しました。",
+  "lookbookDropHere": "ここにファイルをドロップ",
+  "bulkDropExcel": "Excelファイルをここにドロップ",
+  "bulkDropImages": "画像をここにドロップ",
+  "dropImageHere": "画像をここにドロップ",
+  "paymentQrDrop": "QR画像をここにドロップ"
 }

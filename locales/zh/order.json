@@ -144,5 +144,7 @@
   "sheetIssueNotInOrder": "订单中不存在的商品被填了数量：",
   "sheetIssueStrayColumn": "无法识别为尺码的列被填了数量：",
   "sheetIssueMissing": "文件中缺少、保持不变的项目：",
-  "sheetIssuesHint": "以上均未写入表格。请与仓库确认后手动填写。"
+  "sheetIssuesHint": "以上均未写入表格。请与仓库确认后手动填写。",
+  "sheetImportDrop": "将仓库回复Excel拖到此处",
+  "receiptImageDrop": "将付款凭证图片拖到此处"
 }
