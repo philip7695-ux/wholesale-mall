@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { formatPriceCross } from "@/lib/utils"
 import { translateMaterial, translateOrigin } from "@/lib/product-i18n"
-import { translateCategory, translateColor, translateSizeSpecHeader, getColorHex } from "@/lib/translate"
+import { translateCategory, translateColor, translateSizeSpecHeader } from "@/lib/translate"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
 import { GRADE_DISCOUNT, GRADE_MOQ_RATE, getEffectiveMoq } from "@/lib/grade"
@@ -481,10 +481,6 @@ export function ProductDetail({ product }: { product: Product }) {
                         : "border-gray-200 text-gray-500 hover:border-gray-400"
                     }`}
                   >
-                    <span
-                      className="inline-block h-3.5 w-3.5 rounded-full border border-gray-300"
-                      style={{ backgroundColor: getColorHex(color.name, color.hexColor) }}
-                    />
                     <span className="font-light">{translateColor(color.name, tColor)}</span>
                     {qty > 0 && (
                       <span className="bg-[#1A1A1A] text-white text-[10px] px-1.5 py-0.5">
@@ -529,11 +525,7 @@ export function ProductDetail({ product }: { product: Product }) {
           {/* 선택된 컬러의 사이즈/수량 입력 */}
           {currentColor && (
             <div className="border-t border-gray-200 pt-5">
-              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-                <span
-                  className="inline-block h-3 w-3 rounded-full border border-gray-300"
-                  style={{ backgroundColor: getColorHex(currentColor.name, currentColor.hexColor) }}
-                />
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-3">
                 {t("sizeQuantity", { colorName: translateColor(currentColor.name, tColor) })}
               </p>
               <div className="space-y-2">
@@ -586,11 +578,7 @@ export function ProductDetail({ product }: { product: Product }) {
                   if (qty === 0) return null
                   return (
                     <div key={color.id} className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-light text-gray-500">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full border border-gray-300"
-                          style={{ backgroundColor: getColorHex(color.name, color.hexColor) }}
-                        />
+                      <span className="font-light text-gray-500">
                         {translateColor(color.name, tColor)}
                       </span>
                       <span className="font-light text-gray-500">{qty}{tc("pieces")}</span>

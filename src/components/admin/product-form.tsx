@@ -512,16 +512,6 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 }}
                 className="w-24"
               />
-              <Input
-                type="color"
-                value={/^#[0-9A-Fa-f]{6}$/.test(color.hexColor) ? color.hexColor : "#000000"}
-                onChange={(e) => {
-                  const next = [...colors]
-                  next[i].hexColor = e.target.value
-                  setColors(next)
-                }}
-                className="h-10 w-14 p-1"
-              />
               {colors.length > 1 && (
                 <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(i)}>
                   <X className="h-4 w-4" />
