@@ -9,12 +9,14 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { LanguageSelector } from "@/components/language-selector"
 import { useState } from "react"
 import { ShoppingCart, Package, ClipboardList, User, LayoutDashboard, BookOpen } from "lucide-react"
+import { useOrderAlerts } from "@/hooks/use-order-alerts"
 
 export function ShopHeader() {
   const { data: session } = useSession()
   const t = useTranslations("shop")
   const tc = useTranslations("common")
   const [open, setOpen] = useState(false)
+  const orderAlerts = useOrderAlerts()
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white lg:hidden">
@@ -37,7 +39,7 @@ export function ShopHeader() {
                   { href: "/products", label: t("productList"), icon: Package },
                   { href: "/lookbook", label: t("lookbook"), icon: BookOpen },
                   { href: "/cart", label: t("cart"), icon: ShoppingCart },
-                  { href: "/orders", label: t("orders"), icon: ClipboardList },
+                  { href: "/orders", label: t("orders"), icon: ClipboardList, badge: orderAlerts },
                   { href: "/mypage", label: t("mypage"), icon: User },
                 ].map((item) => {
                   const Icon = item.icon
@@ -49,7 +51,12 @@ export function ShopHeader() {
                       className="flex items-center gap-3 rounded-none border-b border-gray-100 px-2 py-3.5 text-sm font-light tracking-wide hover:bg-gray-50"
                     >
                       <Icon className="h-4 w-4 text-gray-400" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {"badge" in item && (item.badge as number) > 0 && (
+                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-semibold text-white">
+                          {(item.badge as number) > 99 ? "99+" : (item.badge as number)}
+                        </span>
+                      )}
                     </Link>
                   )
                 })}
