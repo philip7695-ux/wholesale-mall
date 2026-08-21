@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { formatPriceCross } from "@/lib/utils"
+import { translateMaterial, translateOrigin } from "@/lib/product-i18n"
 import { translateCategory, translateColor, translateSizeSpecHeader, getColorHex } from "@/lib/translate"
 import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
@@ -405,13 +406,13 @@ export function ProductDetail({ product }: { product: Product }) {
               {product.material && (
                 <div className="flex gap-3">
                   <dt className="w-16 shrink-0 font-medium text-gray-400">{t("material")}</dt>
-                  <dd className="whitespace-pre-wrap font-light text-gray-600">{product.material}</dd>
+                  <dd className="whitespace-pre-wrap font-light text-gray-600">{translateMaterial(product.material, locale)}</dd>
                 </div>
               )}
               {product.origin && (
                 <div className="flex gap-3">
                   <dt className="w-16 shrink-0 font-medium text-gray-400">{t("origin")}</dt>
-                  <dd className="font-light text-gray-600">{product.origin}</dd>
+                  <dd className="font-light text-gray-600">{translateOrigin(product.origin, locale)}</dd>
                 </div>
               )}
             </dl>
