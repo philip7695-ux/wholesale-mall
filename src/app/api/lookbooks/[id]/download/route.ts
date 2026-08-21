@@ -5,12 +5,12 @@ import { lookbookDownloadUrl } from "@/lib/storage"
 
 export const dynamic = "force-dynamic"
 
-// 로그인한 회원만. 서명된 Cloudinary 다운로드 URL 을 돌려준다.
-// (PDF 공개 전송이 계정에서 막혀 있어 직접 링크는 401 이 난다. 서명
-//  download 엔드포인트는 그 제한을 우회한다.)
-// 리다이렉트 대신 URL 을 넘겨 클라이언트가 이동하게 한다 — 브라우저마다
-// 크로스도메인 리다이렉트 처리가 달라 이쪽이 확실하다.
-// apiRoute 래퍼는 쓰지 않는다.
+// 로그인한 회원만. 파일을 우리 서버가 받아 "다운로드"로 흘려준다.
+//
+// Cloudinary 서명 URL 로 리다이렉트만 하면 브라우저가 PDF 를 같은 창에서
+// 열어버린다. 여기서 Content-Disposition: attachment 를 우리 도메인 응답에
+// 실어 주면, 창을 떠나지 않고 바로 내려받는다. 6MB 안팎이라 버퍼링하지 않고
+// 그대로 흘려보낸다(Vercel 응답 크기 제한 회피).
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -25,8 +25,26 @@ export async function GET(
     if (!lb || !lb.isActive) {
       return NextResponse.json({ error: "찾을 수 없습니다." }, { status: 404 })
     }
-    const url = lookbookDownloadUrl(lb.publicId, `${lb.title}.${lb.format || "pdf"}`)
-    return NextResponse.json({ url })
+
+    const signed = lookbookDownloadUrl(lb.publicId)
+    const upstream = await fetch(signed)
+    if (!upstream.ok || !upstream.body) {
+      console.error("[lookbook download] upstream:", upstream.status)
+      return NextResponse.json({ error: "파일을 가져오지 못했습니다." }, { status: 502 })
+    }
+
+    const filename = `${lb.title}.${lb.format || "pdf"}`.replace(/[\r\n"]/g, "")
+    const headers = new Headers()
+    headers.set("Content-Type", upstream.headers.get("content-type") || "application/pdf")
+    headers.set(
+      "Content-Disposition",
+      `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    )
+    const len = upstream.headers.get("content-length")
+    if (len) headers.set("Content-Length", len)
+    headers.set("Cache-Control", "private, no-store")
+
+    return new NextResponse(upstream.body, { headers })
   } catch (e) {
     console.error("[lookbook download] error:", e)
     return NextResponse.json({ error: "다운로드에 실패했습니다." }, { status: 500 })
