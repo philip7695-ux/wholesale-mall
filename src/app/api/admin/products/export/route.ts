@@ -99,13 +99,20 @@ export const GET = apiRoute(GET_impl, { retry: true })
 
 const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "설명", "혼용률", "원산지", "컬러명*", "컬러코드", "컬러값(HEX)", "통화", "가격*"]
 
-/** 상품의 사이즈가 어느 사이즈 집합에 속하는지 보고 시트를 고른다. */
+/**
+ * 상품의 사이즈가 어느 시트에 들어갈지 정한다.
+ *
+ * 아동 브랜드라 대부분 아동복이다. 그런데 S/M/L/XL 은 성인 사이즈와
+ * 아동 영어 사이즈에 함께 있어, 성인복을 먼저 보면 S/M/L 짜리 아동복이
+ * 성인복 시트로 새어 들어간다. 그래서 아동(숫자→영어)을 먼저 보고,
+ * 아동 어느 쪽에도 다 담기지 않을 때만(FREE·2XL·3XL 등) 성인복으로 본다.
+ */
 function classifySizeSheet(sizeNames: string[]): "adult" | "num" | "letter" {
   const inSet = (set: readonly string[]) => sizeNames.every((n) => set.includes(n))
-  if (inSet(ADULT_SIZES)) return "adult"
   if (inSet(KIDS_NUM_SIZES)) return "num"
   if (inSet(KIDS_LETTER_SIZES)) return "letter"
-  // 섞여 있으면 더 많이 덮는 집합으로 보낸다(드문 경우)
+  if (inSet(ADULT_SIZES)) return "adult"
+  // 어느 집합에도 온전히 안 담기면(섞임) 가장 많이 덮는 곳으로. 아동을 우선한다.
   const cover = (set: readonly string[]) => sizeNames.filter((n) => set.includes(n)).length
   const num = cover(KIDS_NUM_SIZES), letter = cover(KIDS_LETTER_SIZES), adult = cover(ADULT_SIZES)
   if (num >= letter && num >= adult) return "num"
