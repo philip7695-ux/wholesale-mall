@@ -13,7 +13,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { FileDown, Package, Truck, Plus, X } from "lucide-react"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
-import { PRE_PAYMENT_STATUSES } from "@/lib/order-status"
+import { isEditable } from "@/lib/order-revision"
 import { formatPrice, formatDateTime } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
 
@@ -252,10 +252,15 @@ export function OrderStatusForm({
   }
 
   // 현재 단계에 맞는 다음 액션 결정
-  const isPrePayment = PRE_PAYMENT_STATUSES.includes(currentStatus as (typeof PRE_PAYMENT_STATUSES)[number])
   const isPaymentConfirmed = currentStatus === "PAYMENT_CONFIRMED"
   const isShipped = currentStatus === "SHIPPED"
   const isCancelled = currentStatus === "CANCELLED"
+  // 확정 전(수량 조정 가능)에는 인보이스·패킹리스트를 낼 수 없다.
+  // 수량이 아직 굳지 않았기 때문. 확정 이후에만 문서를 연다.
+  const isRevisable = isEditable(currentStatus)
+  const docsEnabled = !isRevisable && !isCancelled
+  // 결제 상태는 인보이스가 나간 뒤에만 만진다(바이어가 결제할 대상이 생김).
+  const canEditPayment = currentStatus === "INVOICE_SENT"
 
   return (
     <div className="space-y-6">
@@ -317,12 +322,12 @@ export function OrderStatusForm({
           <CardTitle>{t("orderStatusMgmt")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* 문서 다운로드 */}
+          {/* 문서 다운로드 — 확정 후에만 연다 */}
           <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={handleInvoice}
-              disabled={invoiceLoading}
+              disabled={invoiceLoading || !docsEnabled}
               className="flex-1"
             >
               <FileDown className="mr-2 h-4 w-4" />
@@ -335,16 +340,19 @@ export function OrderStatusForm({
             <Button
               variant="outline"
               onClick={handlePackingList}
-              disabled={packingLoading}
+              disabled={packingLoading || !docsEnabled}
               className="flex-1"
             >
               <Package className="mr-2 h-4 w-4" />
               {packingLoading ? t("packingListGenerating") : t("packingListDownload")}
             </Button>
           </div>
+          {isRevisable && (
+            <p className="text-xs text-muted-foreground">{t("docsAfterConfirmHint")}</p>
+          )}
 
-          {/* 결제 전 단계: 결제 상태 변경 */}
-          {isPrePayment && (
+          {/* 인보이스 발행 단계: 결제 상태 변경 */}
+          {canEditPayment && (
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{t("nextStepPayment")}</Badge>
