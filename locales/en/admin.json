@@ -480,5 +480,8 @@
   "emailNotifHint": "Order, invoice, payment, and shipping alerts go to this address. Blank falls back to the first admin account email.",
   "emailNotifSaved": "Saved.",
   "emailNotifSaveFail": "Failed to save.",
-  "paymentMethodBankTransferForeign": "Bank Transfer (Export/FX)"
+  "paymentMethodBankTransferForeign": "Bank Transfer (Export/FX)",
+  "imageReorderHint": "Drag to reorder (first is main)",
+  "imageMoveLeft": "Move left",
+  "imageMoveRight": "Move right"
 }

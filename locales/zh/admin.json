@@ -480,5 +480,8 @@
   "emailNotifHint": "订单、发票、付款、发货通知将发送至此地址。留空则使用第一个管理员账户邮箱。",
   "emailNotifSaved": "已保存。",
   "emailNotifSaveFail": "保存失败。",
-  "paymentMethodBankTransferForeign": "银行转账 (出口·外币)"
+  "paymentMethodBankTransferForeign": "银行转账 (出口·外币)",
+  "imageReorderHint": "拖动排序（第一张为主图）",
+  "imageMoveLeft": "前移",
+  "imageMoveRight": "后移"
 }
