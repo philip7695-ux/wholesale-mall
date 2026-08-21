@@ -487,5 +487,6 @@
   "resetPasswordTitle": "重置密码",
   "resetPasswordLabel": "新密码",
   "resetPasswordPlaceholder": "输入临时密码（至少8位）",
-  "resetPasswordHint": "填写并保存后将立即更改该会员的密码。留空则保持原密码。请将设置的密码直接告知会员。"
+  "resetPasswordHint": "填写并保存后将立即更改该会员的密码。留空则保持原密码。请将设置的密码直接告知会员。",
+  "docsAfterConfirmHint": "订单确认后方可生成发票和装箱单。"
 }
