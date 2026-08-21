@@ -316,7 +316,7 @@
   "storeConfigSaveFail": "会社情報の保存に失敗しました。",
   "paymentSettingsTitle": "決済方法設定",
   "paymentSettingsDesc": "各決済方法の口座情報とQRコードを設定します。",
-  "paymentMethodBankTransfer": "銀行振込",
+  "paymentMethodBankTransfer": "銀行振込 (国内・ウォン)",
   "paymentMethodAlipay": "アリペイ",
   "paymentMethodWechat": "ウィーチャットペイ",
   "paymentEnabled": "有効化",
@@ -479,5 +479,6 @@
   "emailNotifEmail": "通知を受け取る管理者メール",
   "emailNotifHint": "注文・請求・入金・出荷の通知がこの宛先に届きます。空欄なら最初の管理者アカウントのメールに届きます。",
   "emailNotifSaved": "保存しました。",
-  "emailNotifSaveFail": "保存に失敗しました。"
+  "emailNotifSaveFail": "保存に失敗しました。",
+  "paymentMethodBankTransferForeign": "銀行振込 (輸出・外貨)"
 }

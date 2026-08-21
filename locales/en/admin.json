@@ -316,7 +316,7 @@
   "storeConfigSaveFail": "Failed to save company info.",
   "paymentSettingsTitle": "Payment Method Settings",
   "paymentSettingsDesc": "Configure account information and QR codes for each payment method.",
-  "paymentMethodBankTransfer": "Bank Transfer",
+  "paymentMethodBankTransfer": "Bank Transfer (Domestic/KRW)",
   "paymentMethodAlipay": "Alipay",
   "paymentMethodWechat": "WeChat Pay",
   "paymentEnabled": "Enabled",
@@ -479,5 +479,6 @@
   "emailNotifEmail": "Admin email for notifications",
   "emailNotifHint": "Order, invoice, payment, and shipping alerts go to this address. Blank falls back to the first admin account email.",
   "emailNotifSaved": "Saved.",
-  "emailNotifSaveFail": "Failed to save."
+  "emailNotifSaveFail": "Failed to save.",
+  "paymentMethodBankTransferForeign": "Bank Transfer (Export/FX)"
 }

@@ -5,7 +5,7 @@ import { generateInvoiceNumber } from "@/lib/utils"
 import { buildInvoicePdf, type InvoiceData } from "@/lib/invoice-pdf"
 import { formatCurrency, getCurrencyForLocale } from "@/lib/currency"
 import { notifyCustomerInvoice } from "@/lib/email"
-import { getPaymentSetting } from "@/lib/payment-setting.server"
+import { getBankConfigForTrade } from "@/lib/payment-setting.server"
 
 export async function GET(
   _request: Request,
@@ -28,6 +28,7 @@ export async function GET(
           phone: true,
           businessName: true,
           businessAddress: true,
+          tradeType: true,
         },
       },
       items: true,
@@ -84,15 +85,30 @@ export async function GET(
     })
   }
 
-  // 결제수단별 결제 정보 조회
-  let paymentInfo: { method: string; accountName: string; accountInfo: string; bankName: string; memo: string } | null = null
+  // 결제수단별 결제 정보 조회.
+  // 계좌이체는 회원의 거래유형(국내/수출)에 맞는 계좌를 고른다.
+  let paymentInfo: { method: string; accountName: string; accountInfo: string; bankName: string; qrCodeUrl: string; memo: string } | null = null
   if (order.paymentMethod) {
     try {
-      const config = await prisma.paymentConfig.findUnique({
-        where: { method: order.paymentMethod },
-        select: { method: true, accountName: true, accountInfo: true, bankName: true, qrCodeUrl: true, memo: true },
-      })
-      if (config) paymentInfo = config
+      if (order.paymentMethod === "BANK_TRANSFER") {
+        const bank = await getBankConfigForTrade(order.user?.tradeType)
+        if (bank) {
+          paymentInfo = {
+            method: "BANK_TRANSFER",
+            accountName: bank.accountName,
+            accountInfo: bank.accountInfo,
+            bankName: bank.bankName,
+            qrCodeUrl: bank.qrCodeUrl,
+            memo: bank.memo,
+          }
+        }
+      } else {
+        const config = await prisma.paymentConfig.findUnique({
+          where: { method: order.paymentMethod },
+          select: { method: true, accountName: true, accountInfo: true, bankName: true, qrCodeUrl: true, memo: true },
+        })
+        if (config) paymentInfo = config
+      }
     } catch { /* table may not exist */ }
   }
 
@@ -176,20 +192,19 @@ export async function GET(
 
   // 인보이스 최초 생성 시 고객에게 이메일 발송
   if (!order.invoiceNumber && order.user) {
-    getPaymentSetting().then((setting) => {
-      notifyCustomerInvoice(order.user!.email, {
-        orderNumber: order.orderNumber,
-        invoiceNumber: invoiceNumber!,
-        totalAmount: order.totalAmount,
-        customerName: order.user!.name,
-      }, {
-        bankName: setting?.bankName,
-        accountNumber: setting?.accountNumber,
-        accountHolder: setting?.accountHolder,
-        bankNote: setting?.bankNote,
-        alipayQrImage: setting?.alipayQrImage,
-        wechatQrImage: setting?.wechatQrImage,
-      })
+    // 인보이스 PDF 와 같은 계좌 정보를 메일에도 싣는다.
+    notifyCustomerInvoice(order.user.email, {
+      orderNumber: order.orderNumber,
+      invoiceNumber: invoiceNumber!,
+      totalAmount: order.totalAmount,
+      customerName: order.user.name,
+    }, {
+      bankName: paymentInfo?.bankName,
+      accountNumber: paymentInfo?.accountInfo,
+      accountHolder: paymentInfo?.accountName,
+      bankNote: paymentInfo?.memo,
+      alipayQrImage: paymentInfo?.method === "ALIPAY" ? paymentInfo.qrCodeUrl : null,
+      wechatQrImage: paymentInfo?.method === "WECHAT" ? paymentInfo.qrCodeUrl : null,
     })
   }
 
