@@ -6,10 +6,10 @@ import { prisma } from "@/lib/prisma"
 import { withDbRetry } from "@/lib/db-retry"
 import { ProductDetail } from "@/components/shop/product-detail"
 import { auth } from "@/lib/auth"
-import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
+import { getSeasonRates, getSpecialOfferRate, getNewSeasonThreshold } from "@/lib/pricing.server"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
-import { isNewSeason } from "@/lib/season"
+import { seasonIndex, seasonKeyFromCode } from "@/lib/season"
 
 export default async function ProductDetailPage({
   params,
@@ -47,11 +47,15 @@ export default async function ProductDetailPage({
   // 목록·장바구니와 같은 도매가를 보여준다. 여기만 정상가가 나가면
   // 목록에서 본 값과 달라 신뢰를 잃는다.
   const session = await auth().catch(() => null)
-  const [seasonRates, gradeRate, specialOfferRate] = await Promise.all([
+  const [seasonRates, gradeRate, specialOfferRate, newThreshold] = await Promise.all([
     getSeasonRates(),
     getGradeDiscount(session?.user?.buyerGrade || "BRONZE").catch(() => 0),
     getSpecialOfferRate(),
+    getNewSeasonThreshold().catch(() => null),
   ])
+  // 신상 = 품번 시즌지수가 최신 2개 시즌 문턱 이상
+  const prodSeasonIdx = seasonIndex(raw.seasonKey ?? seasonKeyFromCode(raw.code))
+  const isNew = prodSeasonIdx !== null && newThreshold !== null && prodSeasonIdx >= newThreshold
   const seasonRate = seasonRateFor(raw.code, seasonRates)
   const specialRate = raw.specialOffer ? specialOfferRate : 0
 
@@ -71,7 +75,7 @@ export default async function ProductDetailPage({
     priceCurrency: raw.priceCurrency,
     // 신상(현재+다음 시즌)에만 권장 최소 판매가를 안내한다.
     // 시즌이 지나 재고가 되면 자동으로 안 보인다.
-    showSrp: isNewSeason(raw.seasonKey),
+    showSrp: isNew,
     category: { name: raw.category.name, slug: raw.category.slug },
     colors: raw.colors.map((c: any) => ({
       id: c.id,
