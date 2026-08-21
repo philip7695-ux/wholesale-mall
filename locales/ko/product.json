@@ -24,5 +24,7 @@
   "moqProductError": "전체 최소 {required}장 필요 (현재 {actual}장)",
   "moqColorError": "{colorName}: 최소 {required}장 필요 (현재 {actual}장)",
   "soldOut": "품절",
-  "stockCount": "재고 {count}"
+  "stockCount": "재고 {count}",
+  "material": "혼용률",
+  "origin": "원산지"
 }

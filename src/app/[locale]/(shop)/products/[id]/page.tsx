@@ -63,6 +63,8 @@ export default async function ProductDetailPage({
     thumbnail: raw.thumbnail,
     images: raw.images,
     sizeSpec: raw.sizeSpec,
+    material: raw.material,
+    origin: raw.origin,
     moq: raw.moq,
     colorMoq: raw.colorMoq,
     priceCurrency: raw.priceCurrency,
