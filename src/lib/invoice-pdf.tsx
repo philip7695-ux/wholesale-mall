@@ -11,7 +11,7 @@ import {
   Font,
   renderToBuffer,
 } from "@react-pdf/renderer"
-import { SELLER_INFO, HK_BANK_INFO, WISE_INFO, INVOICE_FOOTER } from "./invoice-config"
+import { SELLER_INFO, INVOICE_FOOTER } from "./invoice-config"
 
 export interface InvoiceSellerInfo {
   companyName: string
@@ -393,22 +393,9 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
               )}
             </View>
           ) : (
-            <View style={styles.twoColumn}>
-              <View style={styles.paymentColumn}>
-                <Text style={styles.paymentLabel}>HK Bank Transfer</Text>
-                <Text style={styles.paymentLine}>Bank: {HK_BANK_INFO.bankName}</Text>
-                <Text style={styles.paymentLine}>Account: {HK_BANK_INFO.accountName}</Text>
-                <Text style={styles.paymentLine}>No: {HK_BANK_INFO.accountNumber}</Text>
-                <Text style={styles.paymentLine}>SWIFT: {HK_BANK_INFO.swiftCode}</Text>
-              </View>
-              <View style={styles.paymentColumn}>
-                <Text style={styles.paymentLabel}>Wise Transfer</Text>
-                <Text style={styles.paymentLine}>Account: {WISE_INFO.accountName}</Text>
-                <Text style={styles.paymentLine}>IBAN: {WISE_INFO.iban}</Text>
-                <Text style={styles.paymentLine}>SWIFT/BIC: {WISE_INFO.swiftBic}</Text>
-                <Text style={styles.paymentLine}>Bank: {WISE_INFO.bankName}</Text>
-              </View>
-            </View>
+            <Text style={styles.paymentLine}>
+              Payment details will be provided separately.
+            </Text>
           )}
         </View>
 

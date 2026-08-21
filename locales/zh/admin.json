@@ -316,7 +316,7 @@
   "storeConfigSaveFail": "公司信息保存失败。",
   "paymentSettingsTitle": "支付方式设置",
   "paymentSettingsDesc": "配置各支付方式的账户信息和二维码。",
-  "paymentMethodBankTransfer": "银行转账",
+  "paymentMethodBankTransfer": "银行转账 (国内·韩元)",
   "paymentMethodAlipay": "支付宝",
   "paymentMethodWechat": "微信支付",
   "paymentEnabled": "启用",
@@ -479,5 +479,6 @@
   "emailNotifEmail": "接收通知的管理员邮箱",
   "emailNotifHint": "订单、发票、付款、发货通知将发送至此地址。留空则使用第一个管理员账户邮箱。",
   "emailNotifSaved": "已保存。",
-  "emailNotifSaveFail": "保存失败。"
+  "emailNotifSaveFail": "保存失败。",
+  "paymentMethodBankTransferForeign": "银行转账 (出口·外币)"
 }

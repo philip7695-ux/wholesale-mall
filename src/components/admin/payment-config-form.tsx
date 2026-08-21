@@ -21,7 +21,7 @@ interface PaymentConfigData {
   memo: string
 }
 
-const METHODS = ["BANK_TRANSFER", "ALIPAY", "WECHAT"] as const
+const METHODS = ["BANK_TRANSFER", "BANK_TRANSFER_FOREIGN", "ALIPAY", "WECHAT"] as const
 
 function getDefault(method: string): PaymentConfigData {
   return { method, enabled: false, accountName: "", accountInfo: "", bankName: "", qrCodeUrl: "", memo: "" }
@@ -43,6 +43,7 @@ export function PaymentConfigForm({ initialConfigs }: { initialConfigs: PaymentC
 
   const methodLabels: Record<string, string> = {
     BANK_TRANSFER: t("paymentMethodBankTransfer"),
+    BANK_TRANSFER_FOREIGN: t("paymentMethodBankTransferForeign"),
     ALIPAY: t("paymentMethodAlipay"),
     WECHAT: t("paymentMethodWechat"),
   }
@@ -112,7 +113,7 @@ export function PaymentConfigForm({ initialConfigs }: { initialConfigs: PaymentC
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {method === "BANK_TRANSFER" && (
+              {method.startsWith("BANK_TRANSFER") && (
                 <div className="space-y-2">
                   <Label>{t("paymentBankName")}</Label>
                   <Input
