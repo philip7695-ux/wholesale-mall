@@ -4,6 +4,7 @@ import { isWiseConfigured } from "@/lib/wise"
 import { WiseConfigForm } from "@/components/admin/wise-config-form"
 import { PaymentConfigForm } from "@/components/admin/payment-config-form"
 import { StoreConfigForm } from "@/components/admin/store-config-form"
+import { EmailNotificationCard } from "@/components/admin/email-notification-card"
 
 export const dynamic = "force-dynamic"
 
@@ -53,6 +54,9 @@ export default async function PaymentSettingsPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">{t("paymentSettings")}</h1>
+
+      {/* 알림 이메일 + 발송 테스트 */}
+      <EmailNotificationCard />
 
       {/* Store / Company Info */}
       <StoreConfigForm initialConfig={storeConfig} />
