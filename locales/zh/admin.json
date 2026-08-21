@@ -445,5 +445,6 @@
   "adminNote": "管理员备注",
   "adminNotePlaceholder": "通关、交易特殊事项等（买家不可见）",
   "countryPrefix": "国家：",
-  "adminNotePrefix": "备注："
+  "adminNotePrefix": "备注：",
+  "exportCurrentProducts": "导出商品信息"
 }

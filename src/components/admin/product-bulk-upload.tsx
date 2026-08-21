@@ -337,6 +337,15 @@ export function ProductBulkUpload() {
             <Download className="mr-1 h-4 w-4" />
             아동복 템플릿
           </Button>
+          {/* 지금 올라간 상품을 템플릿과 같은 형식으로 받아, 고쳐서 다시 올린다 */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/api/admin/products/export?format=template")}
+          >
+            <Download className="mr-1 h-4 w-4" />
+            {t("exportCurrentProducts")}
+          </Button>
 
           <input
             ref={inputRef}

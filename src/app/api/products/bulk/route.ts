@@ -20,6 +20,7 @@ type ProductGroups = Map<string, {
   category: string
   description: string
   material: string
+  origin: string
   priceCurrency: string
   variants: { colorName: string; colorCode: string; hexColor: string; sizeName: string; price: number; stock: number }[]
 }>
@@ -64,6 +65,7 @@ function parseSheetNew(
 
     const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
+    const origin = String(row["원산지"] ?? "").trim()
     const colorCode = String(row["컬러코드"] ?? "").trim()
     const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
     const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
@@ -74,12 +76,13 @@ function parseSheetNew(
     const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
 
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { code, name, ageGroup, category, description, material, priceCurrency, variants: [] })
+      groups.set(groupKey, { code, name, ageGroup, category, description, material, origin, priceCurrency, variants: [] })
     }
 
     const group = groups.get(groupKey)!
     if (description && !group.description) group.description = description
     if (material && !group.material) group.material = material
+    if (origin && !group.origin) group.origin = origin
     if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
     for (const sizeName of sizeNames) {
@@ -128,6 +131,7 @@ function parseSheetSizeColumns(
 
     const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
+    const origin = String(row["원산지"] ?? "").trim()
     const colorCode = String(row["컬러코드"] ?? "").trim()
     const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
     const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
@@ -138,12 +142,13 @@ function parseSheetSizeColumns(
     const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
 
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { code, name, ageGroup, category, description, material, priceCurrency, variants: [] })
+      groups.set(groupKey, { code, name, ageGroup, category, description, material, origin, priceCurrency, variants: [] })
     }
 
     const group = groups.get(groupKey)!
     if (description && !group.description) group.description = description
     if (material && !group.material) group.material = material
+    if (origin && !group.origin) group.origin = origin
     if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
     for (const { sizeName, stock } of sizeVariants) {
@@ -276,6 +281,7 @@ export async function POST(request: NextRequest) {
               seasonKey: seasonKeyFromCode(group.code),
               description: group.description || null,
               material: group.material || null,
+              origin: group.origin || null,
               categoryId,
               images: [],
               isActive: true,
@@ -308,6 +314,7 @@ export async function POST(request: NextRequest) {
               name: productName,
               description: group.description || null,
               material: group.material || null,
+              origin: group.origin || null,
               categoryId,
               priceCurrency: group.priceCurrency || "KRW",
               ageGroup,

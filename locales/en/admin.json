@@ -445,5 +445,6 @@
   "adminNote": "Admin note",
   "adminNotePlaceholder": "Customs, trade notes, etc. (not shown to the buyer)",
   "countryPrefix": "Country: ",
-  "adminNotePrefix": "Note: "
+  "adminNotePrefix": "Note: ",
+  "exportCurrentProducts": "Export products"
 }
