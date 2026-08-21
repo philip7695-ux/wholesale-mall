@@ -141,6 +141,7 @@ export default async function ProductsPage({
             currentCategory={category}
             currentAgeGroup={ageGroup}
             currentSeason={season}
+            currentSearch={search}
             availableSeasons={availableSeasons}
             specialOnly={specialOnly}
             hasSpecialOffers={hasSpecialOffers}

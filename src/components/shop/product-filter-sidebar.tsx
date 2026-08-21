@@ -1,6 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "@/i18n/navigation"
+import { Search } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { translateCategory } from "@/lib/translate"
 import { AGE_GROUPS, AGE_GROUP_KEYS } from "@/lib/age-group"
@@ -17,6 +19,7 @@ export function ProductFilterSidebar({
   currentCategory,
   currentAgeGroup,
   currentSeason,
+  currentSearch,
   availableSeasons,
   specialOnly,
   hasSpecialOffers,
@@ -25,11 +28,13 @@ export function ProductFilterSidebar({
   currentCategory?: string
   currentAgeGroup?: string
   currentSeason?: string
+  currentSearch?: string
   availableSeasons: string[]
   specialOnly: boolean
   hasSpecialOffers: boolean
 }) {
   const router = useRouter()
+  const [searchDraft, setSearchDraft] = useState(currentSearch ?? "")
   const t = useTranslations("shop")
   const tc = useTranslations("common")
   const tCat = useTranslations("categories")
@@ -49,6 +54,7 @@ export function ProductFilterSidebar({
     if (sea) params.set("season", sea)
     const sp = overrides.special !== undefined ? overrides.special : specialOnly
     if (sp) params.set("special", "1")
+    if (currentSearch) params.set("search", currentSearch)
     const qs = params.toString()
     return `/products${qs ? `?${qs}` : ""}`
   }
@@ -62,8 +68,35 @@ export function ProductFilterSidebar({
     else years.push({ year: s.year, seasons: [{ key: s.key, season: s.season }] })
   }
 
+  function runSearch() {
+    const params = new URLSearchParams()
+    if (searchDraft.trim()) params.set("search", searchDraft.trim())
+    if (currentCategory) params.set("category", currentCategory)
+    if (currentAgeGroup) params.set("ageGroup", currentAgeGroup)
+    if (currentSeason) params.set("season", currentSeason)
+    if (specialOnly) params.set("special", "1")
+    const qs = params.toString()
+    router.push(`/products${qs ? `?${qs}` : ""}`)
+  }
+
   return (
     <aside className="w-52 flex-shrink-0 space-y-8">
+      {/* 품번·상품명 검색. 도매 바이어는 라인시트 보고 품번으로 찾는다. */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          runSearch()
+        }}
+        className="relative"
+      >
+        <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          value={searchDraft}
+          onChange={(e) => setSearchDraft(e.target.value)}
+          placeholder={t("searchByCodeOrName")}
+          className="w-full rounded-md border border-gray-200 bg-white py-2 pl-8 pr-2 text-sm text-[#1A1A1A] placeholder:text-gray-400 focus:border-[#1A1A1A] focus:outline-none transition-colors"
+        />
+      </form>
       {/* Special offer — 카테고리가 아니라 딱지라 맨 위에 따로 둔다 */}
       {hasSpecialOffers && (
         <button
