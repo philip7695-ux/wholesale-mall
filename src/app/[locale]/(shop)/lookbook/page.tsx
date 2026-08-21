@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useTranslations } from "next-intl"
 import { FileText, Download } from "lucide-react"
+import { toast } from "sonner"
 
 interface Lookbook {
   id: string
@@ -28,6 +29,22 @@ export default function LookbookPage() {
   const [items, setItems] = useState<Lookbook[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [downloading, setDownloading] = useState<string | null>(null)
+
+  // 서명 URL 을 받아 그 주소로 이동해 파일을 받는다.
+  async function download(id: string) {
+    setDownloading(id)
+    try {
+      const res = await fetch(`/api/lookbooks/${id}/download`)
+      const data = await res.json()
+      if (!res.ok || !data.url) throw new Error(data.error)
+      window.location.href = data.url
+    } catch {
+      toast.error(t("loadError"))
+    } finally {
+      setDownloading(null)
+    }
+  }
 
   useEffect(() => {
     fetch("/api/lookbooks")
@@ -68,12 +85,15 @@ export default function LookbookPage() {
                     {lb.bytes ? ` · ${humanSize(lb.bytes)}` : ""}
                   </p>
                 </div>
-                <a href={`/api/lookbooks/${lb.id}/download`}>
-                  <Button size="sm" variant="outline">
-                    <Download className="mr-1 h-4 w-4" />
-                    {t("download")}
-                  </Button>
-                </a>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={downloading === lb.id}
+                  onClick={() => download(lb.id)}
+                >
+                  <Download className="mr-1 h-4 w-4" />
+                  {t("download")}
+                </Button>
               </CardContent>
             </Card>
           ))}
