@@ -19,5 +19,6 @@
   "currency": "원",
   "retry": "다시 시도",
   "search": "검색",
-  "all": "전체"
+  "all": "전체",
+  "clear": "지우기"
 }
