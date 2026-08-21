@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { hash } from "bcryptjs"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { apiRoute } from "@/lib/api-route"
@@ -85,6 +86,15 @@ async function PUT_impl(
     if (body[field] !== undefined) {
       data[field] = body[field]
     }
+  }
+
+  // 비밀번호 재설정. 관리자가 임시 비번을 정해 넣어주는 용도.
+  // 원본 비번은 복구할 수 없으므로(단방향 해시) 잊었을 때는 재설정만 가능하다.
+  if (body.newPassword !== undefined && body.newPassword !== "") {
+    if (typeof body.newPassword !== "string" || body.newPassword.length < 8) {
+      return NextResponse.json({ error: "비밀번호는 8자 이상이어야 합니다." }, { status: 400 })
+    }
+    data.password = await hash(body.newPassword, 12)
   }
 
   // 국내 거래는 통화가 KRW 로 고정되므로 지정값을 남겨두지 않는다

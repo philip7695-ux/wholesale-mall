@@ -483,5 +483,9 @@
   "paymentMethodBankTransferForeign": "Bank Transfer (Export/FX)",
   "imageReorderHint": "Drag to reorder (first is main)",
   "imageMoveLeft": "Move left",
-  "imageMoveRight": "Move right"
+  "imageMoveRight": "Move right",
+  "resetPasswordTitle": "Reset Password",
+  "resetPasswordLabel": "New password",
+  "resetPasswordPlaceholder": "Enter a temporary password (min 8 chars)",
+  "resetPasswordHint": "Saving with a value immediately changes this member’s password. Leave blank to keep the current one. Share the password with the member directly."
 }
