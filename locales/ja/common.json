@@ -19,5 +19,6 @@
   "currency": "円",
   "retry": "再試行",
   "search": "検索",
-  "all": "全体"
+  "all": "全体",
+  "clear": "クリア"
 }
