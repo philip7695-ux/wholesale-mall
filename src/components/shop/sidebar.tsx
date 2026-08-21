@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
   LayoutDashboard,
+  BookOpen,
 } from "lucide-react"
 import { LanguageSelector } from "@/components/language-selector"
 
@@ -22,6 +23,7 @@ export function ShopSidebar() {
 
   const navItems = [
     { href: "/products", label: t("productList"), icon: Package },
+    { href: "/lookbook", label: t("lookbook"), icon: BookOpen },
     { href: "/cart", label: t("cart"), icon: ShoppingCart },
     { href: "/orders", label: t("orders"), icon: ClipboardList },
     { href: "/mypage", label: t("mypage"), icon: User },
