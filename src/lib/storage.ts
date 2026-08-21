@@ -105,3 +105,23 @@ export async function deleteResource(
   configure()
   await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
 }
+
+/**
+ * 룩북(PDF) 다운로드용 서명 URL.
+ *
+ * Cloudinary 는 2022 년부터 PDF/ZIP 전송을 계정 기본으로 막았다(전송 시 401).
+ * 공개 delivery URL 대신 API secret 으로 서명한 download 엔드포인트를 쓰면
+ * 그 제한을 우회해 원본을 그대로 받는다. 서명에는 timestamp 가 들어가 URL 은
+ * 짧게만 유효하므로 매번 새로 만든다.
+ */
+export function lookbookDownloadUrl(publicId: string, filename?: string): string {
+  configure()
+  const attachment = filename ? filename.replace(/[^\w.\-가-힣 ]/g, "").slice(0, 80) : true
+  // Cloudinary 타입은 attachment 를 boolean 으로만 보지만 실제로는 파일명
+  // 문자열도 받는다. 다운로드 파일명을 지정하기 위해 캐스팅한다.
+  return cloudinary.utils.private_download_url(publicId, "", {
+    resource_type: "raw",
+    type: "upload",
+    attachment,
+  } as Parameters<typeof cloudinary.utils.private_download_url>[2])
+}

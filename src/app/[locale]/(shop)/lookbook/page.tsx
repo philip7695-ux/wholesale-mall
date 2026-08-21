@@ -40,12 +40,6 @@ export default function LookbookPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Cloudinary raw 파일은 fl_attachment 를 붙이면 미리보기 대신 바로 내려받는다
-  const downloadUrl = (url: string, title: string) =>
-    url.includes("/upload/")
-      ? url.replace("/upload/", `/upload/fl_attachment:${encodeURIComponent(title)}/`)
-      : url
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-light tracking-tight">{t("title")}</h1>
@@ -74,7 +68,7 @@ export default function LookbookPage() {
                     {lb.bytes ? ` · ${humanSize(lb.bytes)}` : ""}
                   </p>
                 </div>
-                <a href={downloadUrl(lb.url, lb.title)} target="_blank" rel="noopener noreferrer">
+                <a href={`/api/lookbooks/${lb.id}/download`}>
                   <Button size="sm" variant="outline">
                     <Download className="mr-1 h-4 w-4" />
                     {t("download")}
