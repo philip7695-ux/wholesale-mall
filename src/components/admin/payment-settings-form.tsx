@@ -72,6 +72,32 @@ export function PaymentSettingsForm({
     setUploadingField(null)
   }
 
+  const [testing, setTesting] = useState(false)
+
+  // 설정이 실제로 동작하는지 이 주소로 테스트 메일을 보낸다.
+  async function sendTest() {
+    const to = data.notificationEmail?.trim()
+    if (!to) {
+      toast.error(t("paymentTestNeedEmail"))
+      return
+    }
+    setTesting(true)
+    try {
+      const res = await fetch("/api/admin/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error)
+      toast.success(t("paymentTestSent", { to: d.to }))
+    } catch (e: any) {
+      toast.error(e?.message || t("paymentTestFail"))
+    } finally {
+      setTesting(false)
+    }
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -142,6 +168,9 @@ export function PaymentSettingsForm({
             placeholder={t("paymentNotificationEmailPlaceholder")}
           />
           <p className="text-xs text-muted-foreground">{t("paymentNotificationEmailHint")}</p>
+          <Button variant="outline" size="sm" onClick={sendTest} disabled={testing}>
+            {testing ? t("paymentTestSending") : t("paymentTestButton")}
+          </Button>
         </CardContent>
       </Card>
 

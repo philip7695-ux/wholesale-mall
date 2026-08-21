@@ -469,5 +469,10 @@
   "bulkDropExcel": "엑셀 파일을 여기에 놓으세요",
   "bulkDropImages": "이미지를 여기에 놓으세요",
   "dropImageHere": "이미지를 여기에 놓으세요",
-  "paymentQrDrop": "QR 이미지를 여기에 놓으세요"
+  "paymentQrDrop": "QR 이미지를 여기에 놓으세요",
+  "paymentTestButton": "테스트 메일 보내기",
+  "paymentTestSending": "보내는 중…",
+  "paymentTestSent": "{to} 로 테스트 메일을 보냈습니다. 받은편지함을 확인하세요.",
+  "paymentTestFail": "발송에 실패했습니다.",
+  "paymentTestNeedEmail": "먼저 알림 이메일을 입력하고 저장하세요."
 }

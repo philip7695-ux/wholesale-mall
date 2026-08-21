@@ -469,5 +469,10 @@
   "bulkDropExcel": "将Excel文件拖到此处",
   "bulkDropImages": "将图片拖到此处",
   "dropImageHere": "将图片拖到此处",
-  "paymentQrDrop": "将二维码图片拖到此处"
+  "paymentQrDrop": "将二维码图片拖到此处",
+  "paymentTestButton": "发送测试邮件",
+  "paymentTestSending": "发送中…",
+  "paymentTestSent": "已向 {to} 发送测试邮件。请查看收件箱。",
+  "paymentTestFail": "发送失败。",
+  "paymentTestNeedEmail": "请先填写并保存通知邮箱。"
 }
