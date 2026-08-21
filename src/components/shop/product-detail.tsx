@@ -39,6 +39,8 @@ interface Product {
   thumbnail: string | null
   images: string[]
   sizeSpec: string | null
+  material: string | null
+  origin: string | null
   moq: number
   colorMoq: number
   priceCurrency: string
@@ -395,6 +397,24 @@ export function ProductDetail({ product }: { product: Product }) {
 
           {product.description && (
             <p className="text-sm font-light text-gray-500 leading-relaxed">{product.description}</p>
+          )}
+
+          {/* 혼용률·원산지. B2B 바이어는 통관·상품 등록에 이 값이 꼭 필요하다. */}
+          {(product.material || product.origin) && (
+            <dl className="space-y-2 border-t border-gray-200 pt-5 text-sm">
+              {product.material && (
+                <div className="flex gap-3">
+                  <dt className="w-16 shrink-0 font-medium text-gray-400">{t("material")}</dt>
+                  <dd className="whitespace-pre-wrap font-light text-gray-600">{product.material}</dd>
+                </div>
+              )}
+              {product.origin && (
+                <div className="flex gap-3">
+                  <dt className="w-16 shrink-0 font-medium text-gray-400">{t("origin")}</dt>
+                  <dd className="font-light text-gray-600">{product.origin}</dd>
+                </div>
+              )}
+            </dl>
           )}
 
           {/* 사이즈 스펙 */}

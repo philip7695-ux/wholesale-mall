@@ -24,5 +24,7 @@
   "moqProductError": "最少需要{required}件 (当前{actual}件)",
   "moqColorError": "{colorName}: 最少需要{required}件 (当前{actual}件)",
   "soldOut": "售罄",
-  "stockCount": "库存 {count}"
+  "stockCount": "库存 {count}",
+  "material": "成分",
+  "origin": "产地"
 }

@@ -24,5 +24,7 @@
   "moqProductError": "Min. {required} pcs required (current {actual} pcs)",
   "moqColorError": "{colorName}: min. {required} pcs required (current {actual} pcs)",
   "soldOut": "Sold Out",
-  "stockCount": "Stock {count}"
+  "stockCount": "Stock {count}",
+  "material": "Material",
+  "origin": "Origin"
 }
