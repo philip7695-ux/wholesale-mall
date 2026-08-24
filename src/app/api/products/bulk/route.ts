@@ -298,8 +298,8 @@ export async function POST(request: NextRequest) {
             include: { colors: true, sizes: true },
           })
 
-          const colorIdMap = new Map(product.colors.map((c: any) => [c.name, c.id]))
-          const sizeIdMap = new Map(product.sizes.map((sz: any) => [sz.name, sz.id]))
+          const colorIdMap = new Map(product.colors.map((c) => [c.name, c.id]))
+          const sizeIdMap = new Map(product.sizes.map((sz) => [sz.name, sz.id]))
 
           const variantData = group.variants
             .map((v) => {
@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
             },
           })
 
-          const colorIdMap = new Map(existing.colors.map((c: any) => [c.name, c.id]))
+          const colorIdMap = new Map(existing.colors.map((c) => [c.name, c.id]))
           let colorOrder = existing.colors.length
           for (const [name, { colorCode, hexColor }] of colorsMap) {
             if (colorIdMap.has(name)) continue
@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
             colorIdMap.set(name, c.id)
           }
 
-          const sizeIdMap = new Map(existing.sizes.map((sz: any) => [sz.name, sz.id]))
+          const sizeIdMap = new Map(existing.sizes.map((sz) => [sz.name, sz.id]))
           let sizeOrderIdx = existing.sizes.length
           for (const name of sortedSizes) {
             if (sizeIdMap.has(name)) continue
@@ -364,17 +364,19 @@ export async function POST(request: NextRequest) {
           }
           updated++
         }
-      } catch (err: any) {
-        failed.push({ row: 0, error: `상품 "${group.name}" (${groupKey}) 처리 실패: ${err.message}` })
+      } catch (err) {
+        const m = err instanceof Error ? err.message : String(err)
+        failed.push({ row: 0, error: `상품 "${group.name}" (${groupKey}) 처리 실패: ${m}` })
       }
     }
 
     return NextResponse.json({ success: created + updated, created, updated, failed })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Bulk upload error:", error)
     // 관리자 전용 엔드포인트이므로 원인을 그대로 돌려준다.
     // 메시지를 감추면 대량등록 실패를 화면만 보고 진단할 수 없다.
-    const detail = [error?.code, error?.message].filter(Boolean).join(" ")
+    const err = error as { code?: string; message?: string }
+    const detail = [err?.code, err?.message].filter(Boolean).join(" ")
     return NextResponse.json(
       { error: `엑셀 업로드 처리 중 오류가 발생했습니다. ${detail}`.trim() },
       { status: 500 },

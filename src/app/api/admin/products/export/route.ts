@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { apiRoute } from "@/lib/api-route"
 import { ALL_SIZE_NAMES, sortSizeNames } from "@/lib/product-sizes"
+
+// 내보내기·템플릿에서 쓰는 상품 페이로드(관계 포함) 타입
+type ExportProduct = Prisma.ProductGetPayload<{
+  include: {
+    category: true
+    colors: true
+    sizes: true
+    variants: { include: { color: true; size: true } }
+  }
+}>
 
 async function GET_impl(request: Request) {
   const session = await auth()
@@ -28,22 +39,22 @@ async function GET_impl(request: Request) {
   }
 
   // 시트1: 상품 요약
-  const summaryRows = products.map((p: any) => ({
+  const summaryRows = products.map((p) => ({
     "상품코드": p.code || "",
     "상품명": p.name,
     "카테고리": p.category.name,
     "구분": p.ageGroup || "-",
     "통화": p.priceCurrency,
     "색상수": p.colors.length,
-    "사이즈": p.sizes.map((s: any) => s.name).join(", "),
+    "사이즈": p.sizes.map((s) => s.name).join(", "),
     "SKU수": p.variants.length,
     "최저가": p.variants.length > 0
-      ? Math.min(...p.variants.map((v: any) => v.price))
+      ? Math.min(...p.variants.map((v) => v.price))
       : 0,
     "최고가": p.variants.length > 0
-      ? Math.max(...p.variants.map((v: any) => v.price))
+      ? Math.max(...p.variants.map((v) => v.price))
       : 0,
-    "총재고": p.variants.reduce((sum: number, v: any) => sum + v.stock, 0),
+    "총재고": p.variants.reduce((sum, v) => sum + v.stock, 0),
     "소재": p.material || "",
     "MOQ": p.moq,
     "색상MOQ": p.colorMoq,
@@ -52,14 +63,14 @@ async function GET_impl(request: Request) {
   }))
 
   // 시트2: SKU 상세 (컬러/사이즈별 가격, 재고)
-  const detailRows: Record<string, any>[] = []
+  const detailRows: Record<string, string | number>[] = []
   for (const p of products) {
-    for (const v of (p as any).variants) {
+    for (const v of p.variants) {
       detailRows.push({
-        "상품코드": (p as any).code || "",
+        "상품코드": p.code || "",
         "상품명": p.name,
-        "카테고리": (p as any).category.name,
-        "통화": (p as any).priceCurrency,
+        "카테고리": p.category.name,
+        "통화": p.priceCurrency,
         "컬러명": v.color.name,
         "사이즈": v.size.name,
         "가격": v.price,
@@ -104,17 +115,17 @@ const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대"
 const SIZE_COLUMNS = sortSizeNames(ALL_SIZE_NAMES)
 
 /** 업로드 템플릿과 같은 형식(시트 하나)으로 현재 상품을 내보낸다. */
-function buildTemplateWorkbook(products: any[]): NextResponse {
+function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
   const headers = [...BASE_HEADERS, ...SIZE_COLUMNS]
-  const rows: any[][] = []
+  const rows: (string | number)[][] = []
 
   for (const p of products) {
     for (const c of p.colors) {
-      const colorVariants = p.variants.filter((v: any) => v.color.name === c.name)
+      const colorVariants = p.variants.filter((v) => v.color.name === c.name)
       // 색상 단가는 그 색상 첫 변형 가격을 쓴다(템플릿은 색상당 한 가격)
       const price = colorVariants[0]?.price ?? 0
-      const stockOf = (sizeName: string) => {
-        const v = colorVariants.find((x: any) => x.size.name === sizeName)
+      const stockOf = (sizeName: string): string | number => {
+        const v = colorVariants.find((x) => x.size.name === sizeName)
         return v ? v.stock : ""
       }
       rows.push([

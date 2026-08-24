@@ -40,20 +40,20 @@ async function GET_impl() {
   const baseHeaders = ["상품코드", "상품명", "컬러명", "가격"]
   const headers = [...baseHeaders, ...sizeColumns]
 
-  const rows: any[][] = []
+  const rows: (string | number)[][] = []
   for (const product of products) {
     for (const color of product.colors) {
-      const row: any[] = [
+      const row: (string | number)[] = [
         product.code || "",
         product.name,
         color.name,
         // 해당 컬러의 첫 번째 variant 가격
-        product.variants.find((v: any) => v.colorId === color.id)?.price ?? 0,
+        product.variants.find((v) => v.colorId === color.id)?.price ?? 0,
       ]
       // 사이즈별 재고
       for (const sizeName of sizeColumns) {
         const variant = product.variants.find(
-          (v: any) => v.colorId === color.id && v.size.name === sizeName
+          (v) => v.colorId === color.id && v.size.name === sizeName
         )
         row.push(variant ? variant.stock : "")
       }
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const color = product.colors.find((c: any) => c.name === colorName)
+      const color = product.colors.find((c) => c.name === colorName)
       if (!color) {
         failed.push({ row: rowNum, error: `컬러를 찾을 수 없습니다: ${colorName} (상품: ${product.name})` })
         continue
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
         if (isNaN(stock)) continue
 
         const variant = product.variants.find(
-          (v: any) => v.colorId === color.id && v.size.name === sizeName
+          (v) => v.colorId === color.id && v.size.name === sizeName
         )
 
         if (stock <= 0) {
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
           updated++
         } else {
           // variant가 없으면 사이즈 확인/생성 후 variant 생성
-          let size = product.sizes.find((s: any) => s.name === sizeName)
+          let size = product.sizes.find((s) => s.name === sizeName)
           if (!size) {
             size = await prisma.productSize.create({
               data: {
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
               },
             })
           }
-          const price = product.variants.find((v: any) => v.colorId === color.id)?.price ?? 0
+          const price = product.variants.find((v) => v.colorId === color.id)?.price ?? 0
           await prisma.productVariant.create({
             data: {
               productId: product.id,
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ updated, failed })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Stock update error:", error)
     return NextResponse.json({ error: "재고 업데이트 처리 중 오류가 발생했습니다." }, { status: 500 })
   }

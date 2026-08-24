@@ -119,8 +119,8 @@ export async function POST(request: Request) {
     }
 
     for (const [, groupItems] of productGroups) {
-      const product = (groupItems[0] as any).variant.product
-      if (product.moq <= 0 && product.colorMoq <= 0 && !(product.colors as any[]).some((c: any) => c.moq > 0)) {
+      const product = groupItems[0].variant.product
+      if (product.moq <= 0 && product.colorMoq <= 0 && !product.colors.some((c) => c.moq > 0)) {
         continue // MOQ 없는 상품은 건너뜀
       }
 
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
       const moqResult = checkMoq({
         productMoq: product.moq,
         colorMoq: product.colorMoq,
-        colors: (product.colors as any[]).map((c: any) => ({
+        colors: product.colors.map((c) => ({
           colorId: c.id,
           colorName: c.name,
           moq: c.moq,
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
       getSeasonRates(),
       getSpecialOfferRate(),
     ])
-    const unitPrice = (item: any) =>
+    const unitPrice = (item: (typeof cartItems)[number]) =>
       buyerPrice(
         item.variant.price,
         seasonRateFor(item.variant.product.code, seasonRates),
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
         item.variant.product.specialOffer ? specialOfferRate : 0,
       )
 
-    const itemsTotal = cartItems.reduce((sum: any, item: any) => {
+    const itemsTotal = cartItems.reduce((sum, item) => {
       const priceCurrency = item.variant.product.priceCurrency || "KRW"
       return sum + convertCurrency(unitPrice(item) * item.quantity, priceCurrency, customerCurrency, allRates)
     }, 0)
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
     // 도매가는 부가세 별도다. 국내 거래면 공급가액에 10% 를 더해 청구한다.
     const { supplyAmount, vatAmount, totalAmount } = applyVat(itemsTotal, vatRate)
 
-    const orderItemsData = cartItems.map((item: any) => {
+    const orderItemsData = cartItems.map((item) => {
       const priceCurrency = item.variant.product.priceCurrency || "KRW"
       const convertedPrice = Math.round(convertCurrency(unitPrice(item), priceCurrency, customerCurrency, allRates) * 100) / 100
       return {
@@ -204,7 +204,7 @@ export async function POST(request: Request) {
         // 주문 시점에는 실재고를 빼지 않고 예약만 잡는다.
         // 창고 확인과 바이어 확인이 오간 뒤 확정될 때 실제로 뺀다.
         // 판매 가능 = stock - reserved 이므로 그만큼만 잡을 수 있다.
-        for (const item of cartItems as any[]) {
+        for (const item of cartItems) {
           const res = await tx.$executeRaw`
             update mall."ProductVariant"
             set reserved = reserved + ${item.quantity}, "updatedAt" = now()
@@ -219,7 +219,7 @@ export async function POST(request: Request) {
 
         // 이번 주문으로 다 팔린 상품은 목록에서 뒤로 가야 한다.
         // 관련 상품만 다시 계산한다(전체를 훑을 이유가 없다).
-        const touched = [...new Set((cartItems as any[]).map((i) => i.variant.productId))]
+        const touched = [...new Set(cartItems.map((i) => i.variant.productId))]
         await tx.$executeRaw`
           update mall."Product" p set
             "inStock" = exists (
@@ -258,9 +258,9 @@ export async function POST(request: Request) {
               include: { items: true },
             })
             break
-          } catch (e: any) {
+          } catch (e) {
             // P2002 = unique 제약 위반(주문번호 충돌). 그 외 에러는 즉시 전파
-            if (e?.code === "P2002" && attempt < 4) continue
+            if ((e as { code?: string }).code === "P2002" && attempt < 4) continue
             throw e
           }
         }
@@ -269,9 +269,10 @@ export async function POST(request: Request) {
         await tx.cartItem.deleteMany({ where: { userId: session.user.id } })
         return created
       })
-    } catch (e: any) {
-      if (typeof e?.message === "string" && e.message.startsWith(OUT_OF_STOCK)) {
-        const item = e.message.slice(OUT_OF_STOCK.length + 1)
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      if (message.startsWith(OUT_OF_STOCK)) {
+        const item = message.slice(OUT_OF_STOCK.length + 1)
         return NextResponse.json(
           { error: `재고가 부족합니다: ${item}` },
           { status: 409 },

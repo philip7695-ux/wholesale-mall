@@ -25,11 +25,19 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
-        token.approvalStatus = (user as any).approvalStatus
-        token.buyerGrade = (user as any).buyerGrade
-        token.tradeType = (user as any).tradeType
-        token.currency = (user as any).currency
+        // authorize() 가 돌려주는 커스텀 필드. 기본 User 타입엔 없어 형태를 명시한다.
+        const u = user as {
+          role?: string
+          approvalStatus?: string
+          buyerGrade?: string
+          tradeType?: string | null
+          currency?: string | null
+        }
+        token.role = u.role
+        token.approvalStatus = u.approvalStatus
+        token.buyerGrade = u.buyerGrade
+        token.tradeType = u.tradeType
+        token.currency = u.currency
       }
       return token
     },
