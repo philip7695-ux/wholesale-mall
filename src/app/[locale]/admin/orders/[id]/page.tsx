@@ -28,7 +28,7 @@ export default async function AdminOrderDetailPage({
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true, phone: true, businessName: true } },
+      user: { select: { name: true, email: true, phone: true, businessName: true, tradeType: true } },
       items: {
         include: {
           variant: {
@@ -48,6 +48,23 @@ export default async function AdminOrderDetailPage({
   })
 
   if (!order) notFound()
+
+  // 인보이스 결제수단 모듈: 설정된(계좌/QR 채워진) 수단만 고를 수 있게 한다.
+  const payConfigs = await prisma.paymentConfig.findMany({
+    select: { method: true, accountInfo: true, qrCodeUrl: true },
+  }).catch(() => [] as { method: string; accountInfo: string; qrCodeUrl: string }[])
+  const availablePaymentMethods = ["BANK_TRANSFER", "BANK_TRANSFER_FOREIGN", "ALIPAY", "WECHAT"].filter((m) => {
+    const c = payConfigs.find((p) => p.method === m)
+    if (!c) return false
+    return m === "ALIPAY" || m === "WECHAT"
+      ? (c.qrCodeUrl?.trim() || c.accountInfo?.trim())
+      : c.accountInfo?.trim()
+  })
+  // 기본값: 수출 회원이고 외화계좌가 있으면 외화, 아니면 원화 계좌.
+  const defaultInvoicePaymentMethod =
+    order.user?.tradeType === "EXPORT" && availablePaymentMethods.includes("BANK_TRANSFER_FOREIGN")
+      ? "BANK_TRANSFER_FOREIGN"
+      : availablePaymentMethods[0] || "BANK_TRANSFER"
 
   const statusLabels: Record<string, string> = {
     ORDER_PLACED: t("orderStatusOrderPlaced"),
@@ -214,6 +231,9 @@ export default async function AdminOrderDetailPage({
         currentTrackingNumbers={order.trackingNumbers}
         currentShippingCarrier={order.shippingCarrier}
         invoiceNumber={order.invoiceNumber}
+        currentVatRate={order.vatRate}
+        defaultInvoicePaymentMethod={defaultInvoicePaymentMethod}
+        availablePaymentMethods={availablePaymentMethods}
         paymentConfirmation={
           order.paymentConfirmations[0]
             ? {
