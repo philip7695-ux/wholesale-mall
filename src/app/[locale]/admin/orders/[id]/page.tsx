@@ -126,95 +126,33 @@ export default async function AdminOrderDetailPage({
           </CardContent>
         </Card>
 
-        {/* Status management */}
-        <OrderStatusForm
-          orderId={order.id}
-          currentStatus={order.status}
-          currentPaymentStatus={order.paymentStatus}
-          currentTrackingNumbers={order.trackingNumbers}
-          currentShippingCarrier={order.shippingCarrier}
-          invoiceNumber={order.invoiceNumber}
-          paymentConfirmation={
-            order.paymentConfirmations[0]
-              ? {
-                  ...order.paymentConfirmations[0],
-                  transferDate: order.paymentConfirmations[0].transferDate.toISOString(),
-                  createdAt: order.paymentConfirmations[0].createdAt.toISOString(),
-                }
-              : null
-          }
-        />
-      </div>
-
-      {/* Status Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{to("statusTimeline")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {timelineSteps.map((step) => (
-              <div key={step.status} className="flex items-center gap-3">
-                <div className={`h-3 w-3 rounded-full shrink-0 ${step.timestamp ? (STATUS_DOT_COLOR[step.status] || "bg-gray-300") : "bg-gray-200"}`} />
-                <span className={`text-sm font-medium ${step.timestamp ? (STATUS_TEXT_COLOR[step.status] || "") : "text-muted-foreground"}`}>
-                  {step.label}
-                </span>
-                {step.timestamp && (
-                  <span className={`text-xs ${STATUS_TEXT_COLOR[step.status] || "text-muted-foreground"}`}>
-                    {formatDateTime(step.timestamp, locale)}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tracking Info */}
-      {order.trackingNumber && (
+        {/* 배송 정보 — 참고용, 주문 정보 옆에 둔다 */}
         <Card>
           <CardHeader>
-            <CardTitle>{to("trackingInfo")}</CardTitle>
+            <CardTitle>{to("shippingInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{to("shippingCarrier")}</span>
-              <span>{order.shippingCarrier || "-"}</span>
+              <span className="text-muted-foreground">{to("receiver")}</span>
+              <span>{order.recipientName || "-"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{to("trackingNumber")}</span>
-              <span>{order.trackingNumber}</span>
+              <span className="text-muted-foreground">{to("contact")}</span>
+              <span>{order.recipientPhone || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{to("address")}</span>
+              <span>{order.shippingAddress || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{to("shippingMemo")}</span>
+              <span>{order.shippingMemo || "-"}</span>
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Shipping */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{to("shippingInfo")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{to("receiver")}</span>
-            <span>{order.recipientName || "-"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{to("contact")}</span>
-            <span>{order.recipientPhone || "-"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{to("address")}</span>
-            <span>{order.shippingAddress || "-"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{to("shippingMemo")}</span>
-            <span>{order.shippingMemo || "-"}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Items */}
+      {/* 1) 바로 할 일: 주문 상품 조정·확정 (주문 오면 첫 업무) */}
       <Card>
         <CardHeader>
           <CardTitle>{to("orderProducts")}</CardTitle>
@@ -267,6 +205,68 @@ export default async function AdminOrderDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* 2) 다음 단계: 상태 관리 (인보이스·결제·배송) */}
+      <OrderStatusForm
+        orderId={order.id}
+        currentStatus={order.status}
+        currentPaymentStatus={order.paymentStatus}
+        currentTrackingNumbers={order.trackingNumbers}
+        currentShippingCarrier={order.shippingCarrier}
+        invoiceNumber={order.invoiceNumber}
+        paymentConfirmation={
+          order.paymentConfirmations[0]
+            ? {
+                ...order.paymentConfirmations[0],
+                transferDate: order.paymentConfirmations[0].transferDate.toISOString(),
+                createdAt: order.paymentConfirmations[0].createdAt.toISOString(),
+              }
+            : null
+        }
+      />
+
+      {/* 진행 이력 (타임스탬프) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{to("statusTimeline")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {timelineSteps.map((step) => (
+              <div key={step.status} className="flex items-center gap-3">
+                <div className={`h-3 w-3 rounded-full shrink-0 ${step.timestamp ? (STATUS_DOT_COLOR[step.status] || "bg-gray-300") : "bg-gray-200"}`} />
+                <span className={`text-sm font-medium ${step.timestamp ? (STATUS_TEXT_COLOR[step.status] || "") : "text-muted-foreground"}`}>
+                  {step.label}
+                </span>
+                {step.timestamp && (
+                  <span className={`text-xs ${STATUS_TEXT_COLOR[step.status] || "text-muted-foreground"}`}>
+                    {formatDateTime(step.timestamp, locale)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tracking Info (legacy 단일 송장) */}
+      {order.trackingNumber && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{to("trackingInfo")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{to("shippingCarrier")}</span>
+              <span>{order.shippingCarrier || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{to("trackingNumber")}</span>
+              <span>{order.trackingNumber}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
