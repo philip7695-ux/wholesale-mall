@@ -180,6 +180,10 @@ model Order {
   status               OrderStatus    @default(ORDER_PLACED)
   totalAmount          Float
   paymentMethod        PaymentMethod?
+  // 인보이스에 실을 결제수단(관리자가 발행 시 고른다). 회원 거래유형이
+  // 기본값을 주지만, 중국 출고처럼 예외는 여기서 덮어쓴다.
+  // 값: BANK_TRANSFER | BANK_TRANSFER_FOREIGN | ALIPAY | WECHAT
+  invoicePaymentMethod String?
   paymentStatus        PaymentStatus  @default(PENDING)
   paymentKey           String?
   recipientName        String?

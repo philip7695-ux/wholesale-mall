@@ -26,6 +26,7 @@ interface OrderDetail {
   totalAmount: number
   gradeDiscount: number
   paymentMethod: string | null
+  invoicePaymentMethod: string | null
   paymentStatus: string
   recipientName: string | null
   recipientPhone: string | null
@@ -237,17 +238,19 @@ export default function OrderDetailPage() {
       fetch(`/api/orders/${params.id}`).then((res) => res.json()),
       fetch(`/api/orders/${params.id}/payment-confirmation`).then((res) => res.json()),
       fetch("/api/payment-config").then((res) => res.json()),
-    ]).then(([orderData, confirmData, paymentConfigs]) => {
+      // 이 주문의 결제 정보(인보이스에 실린 계좌와 동일). 관리자가 발행 시
+      // 고른 수단을 그대로 보여줘 인보이스와 어긋나지 않게 한다.
+      fetch(`/api/orders/${params.id}/payment-info`).then((res) => res.json()),
+    ]).then(([orderData, confirmData, paymentConfigs, paymentInfo]) => {
       setOrder(orderData)
       if (confirmData && confirmData.id) {
         setPaymentConfirmation(confirmData)
       }
       if (Array.isArray(paymentConfigs)) {
         setEnabledMethods(paymentConfigs.map((c: PaymentConfigInfo) => c.method))
-        if (orderData.paymentMethod) {
-          const matched = paymentConfigs.find((c: PaymentConfigInfo) => c.method === orderData.paymentMethod)
-          if (matched) setPaymentConfig(matched)
-        }
+      }
+      if (paymentInfo && paymentInfo.accountInfo) {
+        setPaymentConfig(paymentInfo)
       }
     }).finally(() => setLoading(false))
   }, [params.id])
@@ -365,12 +368,14 @@ export default function OrderDetailPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("paymentMethod")}</span>
-            <span>{
-              order.paymentMethod === "BANK_TRANSFER" ? t("bankTransfer")
-              : order.paymentMethod === "ALIPAY" ? t("alipay")
-              : order.paymentMethod === "WECHAT" ? t("wechat")
-              : order.paymentMethod
-            }</span>
+            <span>{(() => {
+              // 관리자가 인보이스에 실은 수단을 우선 표시(원화·외화 모두 계좌이체)
+              const m = order.invoicePaymentMethod || order.paymentMethod
+              return m === "ALIPAY" ? t("alipay")
+                : m === "WECHAT" ? t("wechat")
+                : m?.startsWith("BANK_TRANSFER") ? t("bankTransfer")
+                : m
+            })()}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("paymentStatus")}</span>

@@ -488,5 +488,11 @@
   "resetPasswordLabel": "새 비밀번호",
   "resetPasswordPlaceholder": "임시 비밀번호 입력 (8자 이상)",
   "resetPasswordHint": "값을 입력해 저장하면 이 회원의 비밀번호가 즉시 바뀝니다. 비워두면 기존 비밀번호가 유지됩니다. 정한 비밀번호를 회원에게 직접 전달하세요.",
-  "docsAfterConfirmHint": "주문을 확정한 뒤에 인보이스·패킹리스트를 발행할 수 있습니다."
+  "docsAfterConfirmHint": "주문을 확정한 뒤에 인보이스·패킹리스트를 발행할 수 있습니다.",
+  "invoiceComposeTitle": "인보이스 발행 옵션",
+  "invoiceVatInclude": "부가세 포함",
+  "invoiceVatRate": "세율",
+  "invoicePaymentModule": "결제 정보",
+  "invoiceIssue": "발행",
+  "invoiceComposeCancel": "취소"
 }

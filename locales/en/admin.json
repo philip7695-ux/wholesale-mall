@@ -488,5 +488,11 @@
   "resetPasswordLabel": "New password",
   "resetPasswordPlaceholder": "Enter a temporary password (min 8 chars)",
   "resetPasswordHint": "Saving with a value immediately changes this member’s password. Leave blank to keep the current one. Share the password with the member directly.",
-  "docsAfterConfirmHint": "Invoice and packing list become available after the order is confirmed."
+  "docsAfterConfirmHint": "Invoice and packing list become available after the order is confirmed.",
+  "invoiceComposeTitle": "Invoice options",
+  "invoiceVatInclude": "Include VAT",
+  "invoiceVatRate": "Rate",
+  "invoicePaymentModule": "Payment info",
+  "invoiceIssue": "Issue",
+  "invoiceComposeCancel": "Cancel"
 }

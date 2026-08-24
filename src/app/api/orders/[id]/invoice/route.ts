@@ -5,7 +5,7 @@ import { generateInvoiceNumber } from "@/lib/utils"
 import { buildInvoicePdf, type InvoiceData } from "@/lib/invoice-pdf"
 import { formatCurrency, getCurrencyForLocale } from "@/lib/currency"
 import { notifyCustomerInvoice } from "@/lib/email"
-import { getBankConfigForTrade } from "@/lib/payment-setting.server"
+import { resolveOrderPaymentInfo } from "@/lib/payment-setting.server"
 import { isEditable } from "@/lib/order-revision"
 
 export async function GET(
@@ -94,32 +94,9 @@ export async function GET(
     })
   }
 
-  // 결제수단별 결제 정보 조회.
-  // 계좌이체는 회원의 거래유형(국내/수출)에 맞는 계좌를 고른다.
-  let paymentInfo: { method: string; accountName: string; accountInfo: string; bankName: string; qrCodeUrl: string; memo: string } | null = null
-  if (order.paymentMethod) {
-    try {
-      if (order.paymentMethod === "BANK_TRANSFER") {
-        const bank = await getBankConfigForTrade(order.user?.tradeType)
-        if (bank) {
-          paymentInfo = {
-            method: "BANK_TRANSFER",
-            accountName: bank.accountName,
-            accountInfo: bank.accountInfo,
-            bankName: bank.bankName,
-            qrCodeUrl: bank.qrCodeUrl,
-            memo: bank.memo,
-          }
-        }
-      } else {
-        const config = await prisma.paymentConfig.findUnique({
-          where: { method: order.paymentMethod },
-          select: { method: true, accountName: true, accountInfo: true, bankName: true, qrCodeUrl: true, memo: true },
-        })
-        if (config) paymentInfo = config
-      }
-    } catch { /* table may not exist */ }
-  }
+  // 인보이스에 실을 결제 정보. 발행 시 고른 수단(없으면 거래유형 폴백).
+  // 바이어 결제 화면과 같은 헬퍼를 써 두 곳이 항상 일치한다.
+  const paymentInfo = await resolveOrderPaymentInfo(order)
 
   // Build invoice data
   const currency = order.currency || "KRW"

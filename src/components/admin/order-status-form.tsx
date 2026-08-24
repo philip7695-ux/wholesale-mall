@@ -35,6 +35,9 @@ export function OrderStatusForm({
   currentShippingCarrier,
   invoiceNumber,
   paymentConfirmation,
+  currentVatRate = 0,
+  defaultInvoicePaymentMethod = "BANK_TRANSFER",
+  availablePaymentMethods = ["BANK_TRANSFER", "BANK_TRANSFER_FOREIGN", "ALIPAY", "WECHAT"],
 }: {
   orderId: string
   currentStatus: string
@@ -43,12 +46,23 @@ export function OrderStatusForm({
   currentShippingCarrier?: string | null
   invoiceNumber?: string | null
   paymentConfirmation?: PaymentConfirmationData | null
+  currentVatRate?: number
+  defaultInvoicePaymentMethod?: string
+  availablePaymentMethods?: string[]
 }) {
   const router = useRouter()
   const t = useTranslations("admin")
   const locale = useLocale()
   const { rate } = useCurrency()
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
+  // 인보이스 발행 조립 패널 상태
+  const [composing, setComposing] = useState(false)
+  const [issuing, setIssuing] = useState(false)
+  const [vatEnabled, setVatEnabled] = useState(currentVatRate > 0)
+  const [vatPercent, setVatPercent] = useState(
+    currentVatRate > 0 ? String(Math.round(currentVatRate * 100)) : "10",
+  )
+  const [invPayMethod, setInvPayMethod] = useState(defaultInvoicePaymentMethod)
   // 박스가 여럿이면 운송장 번호도 여럿. 빈 칸 하나로 시작해 늘려간다.
   const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
     currentTrackingNumbers && currentTrackingNumbers.length > 0
@@ -105,6 +119,36 @@ export function OrderStatusForm({
       toast.error(t("packingListDownloadFail"))
     }
     setPackingLoading(false)
+  }
+
+  // 조립 옵션을 저장한 뒤 인보이스를 발행한다.
+  async function issueInvoice() {
+    setIssuing(true)
+    try {
+      const vatRate = vatEnabled ? (Number(vatPercent) || 0) / 100 : 0
+      const res = await fetch(`/api/orders/${orderId}/invoice-options`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vatRate, invoicePaymentMethod: invPayMethod }),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        throw new Error(d.error)
+      }
+      // 옵션이 저장된 상태로 실제 발행(PDF 다운로드 + 상태 전이 + 메일)
+      await handleInvoice()
+      setComposing(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("invoiceDownloadFail"))
+    }
+    setIssuing(false)
+  }
+
+  const paymentMethodLabels: Record<string, string> = {
+    BANK_TRANSFER: t("paymentMethodBankTransfer"),
+    BANK_TRANSFER_FOREIGN: t("paymentMethodBankTransferForeign"),
+    ALIPAY: t("paymentMethodAlipay"),
+    WECHAT: t("paymentMethodWechat"),
   }
 
   const orderStatuses = [
@@ -326,7 +370,7 @@ export function OrderStatusForm({
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={handleInvoice}
+              onClick={() => (invoiceNumber ? handleInvoice() : setComposing((v) => !v))}
               disabled={invoiceLoading || !docsEnabled}
               className="flex-1"
             >
@@ -349,6 +393,76 @@ export function OrderStatusForm({
           </div>
           {isRevisable && (
             <p className="text-xs text-muted-foreground">{t("docsAfterConfirmHint")}</p>
+          )}
+
+          {/* 인보이스 조립 패널 — 발행 전, 부가세·결제수단을 골라 넣는다 */}
+          {composing && !invoiceNumber && docsEnabled && (
+            <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <p className="text-sm font-medium">{t("invoiceComposeTitle")}</p>
+
+              {/* 부가세 모듈 */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={vatEnabled}
+                    onChange={(e) => setVatEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded"
+                  />
+                  {t("invoiceVatInclude")}
+                </label>
+                {vatEnabled && (
+                  <div className="flex items-center gap-2 pl-6">
+                    <Label className="text-xs text-muted-foreground">{t("invoiceVatRate")}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={vatPercent}
+                      onChange={(e) => setVatPercent(e.target.value)}
+                      className="h-8 w-20"
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 결제수단 모듈 */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t("invoicePaymentModule")}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {availablePaymentMethods.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setInvPayMethod(m)}
+                      className={`rounded-md border px-3 py-2 text-sm transition-colors ${
+                        invPayMethod === m
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-input hover:bg-accent"
+                      }`}
+                    >
+                      {paymentMethodLabels[m] || m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setComposing(false)}
+                  disabled={issuing}
+                  className="flex-1"
+                >
+                  {t("invoiceComposeCancel")}
+                </Button>
+                <Button onClick={issueInvoice} disabled={issuing || invoiceLoading} className="flex-1">
+                  <FileDown className="mr-2 h-4 w-4" />
+                  {issuing || invoiceLoading ? t("invoiceGenerating") : t("invoiceIssue")}
+                </Button>
+              </div>
+            </div>
           )}
 
           {/* 인보이스 발행 단계: 결제 상태 변경 */}
