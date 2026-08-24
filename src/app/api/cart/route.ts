@@ -46,7 +46,7 @@ export async function GET() {
     ])
     // 담지 않은 변형도 같은 규칙으로 값을 매겨야 빈 칸에 수량을 넣었을 때
     // 가격이 달라지지 않는다.
-    const priceOf = (product: any, raw: number) =>
+    const priceOf = (product: { code: string | null; specialOffer: boolean }, raw: number) =>
       buyerPrice(
         raw,
         seasonRateFor(product.code, seasonRates),
@@ -54,7 +54,7 @@ export async function GET() {
         product.specialOffer ? specialOfferRate : 0,
       )
 
-    const priced = items.map((item: any) => ({
+    const priced = items.map((item) => ({
       ...item,
       variant: {
         ...item.variant,
@@ -62,7 +62,7 @@ export async function GET() {
         price: priceOf(item.variant.product, item.variant.price),
         product: {
           ...item.variant.product,
-          variants: item.variant.product.variants.map((v: any) => ({
+          variants: item.variant.product.variants.map((v) => ({
             ...v,
             price: priceOf(item.variant.product, v.price),
           })),
@@ -70,7 +70,7 @@ export async function GET() {
       },
     }))
     return NextResponse.json(priced)
-  } catch (err: any) {
+  } catch (err) {
     // 예외를 그대로 두면 본문 없는 500 이 나가고 클라이언트의 res.json() 이
     // "Unexpected end of JSON input" 으로 터진다. 항상 JSON 으로 응답한다.
     console.error("[GET /api/cart] DB error:", err)
