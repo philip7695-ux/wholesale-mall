@@ -15,10 +15,14 @@ const GRID_OPTIONS = [
 export function ShopProductGrid({ children }: { children: React.ReactNode }) {
   const [cols, setCols] = useState(4)
 
+  // 저장된 열 수를 마운트 후에 읽어 반영한다. SSR 은 기본값으로 그리고
+  // 클라이언트에서 갱신하는 정석 패턴이라(하이드레이션 불일치 없음)
+  // set-state-in-effect 규칙만 이 자리에서 예외로 둔다.
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       const n = parseInt(saved)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (GRID_OPTIONS.some((o) => o.cols === n)) setCols(n)
     }
   }, [])

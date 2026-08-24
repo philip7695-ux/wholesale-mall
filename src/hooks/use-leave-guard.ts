@@ -15,11 +15,14 @@ import { useEffect, useRef } from "react"
  *     (Next 의 클라이언트 이동은 beforeunload 가 뜨지 않는다)
  */
 export function useLeaveGuard(active: boolean, message: string) {
-  // 리스너를 다시 붙이지 않고도 최신 값을 보도록 참조로 들고 있는다
+  // 리스너를 다시 붙이지 않고도 최신 값을 보도록 참조로 들고 있는다.
+  // ref 쓰기는 렌더 중이 아니라 커밋 후(effect)에 해야 안전하다.
   const activeRef = useRef(active)
   const messageRef = useRef(message)
-  activeRef.current = active
-  messageRef.current = message
+  useEffect(() => {
+    activeRef.current = active
+    messageRef.current = message
+  })
 
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {
