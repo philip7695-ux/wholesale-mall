@@ -12,10 +12,9 @@ export function useOrderAlerts(): number {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    if (status !== "authenticated") {
-      setCount(0)
-      return
-    }
+    // 비로그인 상태면 폴링하지 않는다. (동기 setState 로 초기화하지 않고
+    // 다음 인증 시 fetch 결과가 값을 채운다.)
+    if (status !== "authenticated") return
     let alive = true
     const load = () =>
       fetch("/api/orders/notifications")
