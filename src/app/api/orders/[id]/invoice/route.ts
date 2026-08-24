@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateInvoiceNumber } from "@/lib/utils"
 import { buildInvoicePdf, type InvoiceData } from "@/lib/invoice-pdf"
-import { formatCurrency, getCurrencyForLocale } from "@/lib/currency"
+import { convertCurrency } from "@/lib/currency"
+import { getAllExchangeRates } from "@/lib/currency.server"
 import { notifyCustomerInvoice } from "@/lib/email"
 import { resolveOrderPaymentInfo } from "@/lib/payment-setting.server"
 import { isEditable } from "@/lib/order-revision"
@@ -99,8 +100,13 @@ export async function GET(
   const paymentInfo = await resolveOrderPaymentInfo(order)
 
   // Build invoice data
-  const currency = order.currency || "KRW"
-  const exchangeRate = order.exchangeRate || 1
+  // 인보이스 표시 통화: 발행 시 고른 값(invoiceCurrency)이 우선, 없으면 주문 통화.
+  // 주문에 저장된 금액은 base 통화(order.currency)이고, 표시만 목표 통화로
+  // 환산한다. 데이터는 그대로 두고 인보이스만 그 통화로 나가게 한다.
+  const baseCurrency = order.currency || "KRW"
+  const currency = order.invoiceCurrency || baseCurrency
+  const rates = await getAllExchangeRates()
+  const exchangeRate = currency === "KRW" ? 1 : (rates[currency] || order.exchangeRate || 1)
 
   // PDF 폰트에 특수 통화 기호 글리프가 없으므로 ASCII 안전 기호로 매핑
   const CURRENCY_SYMBOL: Record<string, string> = {
@@ -109,13 +115,13 @@ export async function GET(
     CNY: "CNY",
     JPY: "JPY",
   }
-  const formatAmount = (amountKRW: number) => {
-    const converted = currency === "KRW" || exchangeRate <= 1
-      ? amountKRW
-      : Math.round(amountKRW / exchangeRate * 100) / 100
+  const formatAmount = (amount: number) => {
+    // base 통화 금액을 인보이스 통화로 환산(예: KRW → CNY)
+    const converted = convertCurrency(amount, baseCurrency, currency, rates)
+    const zeroDp = currency === "KRW" || currency === "JPY"
     const formatted = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: currency === "KRW" || currency === "JPY" ? 0 : 2,
-      maximumFractionDigits: currency === "KRW" || currency === "JPY" ? 0 : 2,
+      minimumFractionDigits: zeroDp ? 0 : 2,
+      maximumFractionDigits: zeroDp ? 0 : 2,
     }).format(converted)
     return `${CURRENCY_SYMBOL[currency] ?? currency} ${formatted}`
   }
@@ -184,6 +190,7 @@ export async function GET(
       invoiceNumber: invoiceNumber!,
       totalAmount: order.totalAmount,
       customerName: order.user.name,
+      amountText: formatAmount(order.totalAmount),
     }, {
       bankName: paymentInfo?.bankName,
       accountNumber: paymentInfo?.accountInfo,

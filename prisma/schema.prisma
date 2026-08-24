@@ -184,6 +184,10 @@ model Order {
   // 기본값을 주지만, 중국 출고처럼 예외는 여기서 덮어쓴다.
   // 값: BANK_TRANSFER | BANK_TRANSFER_FOREIGN | ALIPAY | WECHAT
   invoicePaymentMethod String?
+  // 인보이스 결제 통화(발행 시 고른다). null 이면 주문 통화를 쓴다.
+  // 수출 건이라도 위안화·한화로 결제받는 경우 여기서 통화를 지정한다.
+  // 주문의 base 금액은 그대로 두고 인보이스만 이 통화로 환산해 보여준다.
+  invoiceCurrency      String?
   paymentStatus        PaymentStatus  @default(PENDING)
   paymentKey           String?
   recipientName        String?
