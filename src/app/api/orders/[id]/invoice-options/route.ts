@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { apiRoute } from "@/lib/api-route"
 import { applyVat } from "@/lib/trade"
+import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 const PAYMENT_METHODS = ["BANK_TRANSFER", "BANK_TRANSFER_FOREIGN", "ALIPAY", "WECHAT"] as const
 
@@ -27,12 +28,16 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
   const body = await request.json()
   const vatRate = Number(body.vatRate)
   const invoicePaymentMethod = body.invoicePaymentMethod as string | undefined
+  const invoiceCurrency = body.invoiceCurrency as string | undefined
 
   if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 1) {
     return NextResponse.json({ error: "세율이 올바르지 않습니다." }, { status: 400 })
   }
   if (invoicePaymentMethod && !PAYMENT_METHODS.includes(invoicePaymentMethod as (typeof PAYMENT_METHODS)[number])) {
     return NextResponse.json({ error: "결제수단이 올바르지 않습니다." }, { status: 400 })
+  }
+  if (invoiceCurrency && !SUPPORTED_CURRENCIES.includes(invoiceCurrency as (typeof SUPPORTED_CURRENCIES)[number])) {
+    return NextResponse.json({ error: "통화가 올바르지 않습니다." }, { status: 400 })
   }
 
   const order = await prisma.order.findUnique({
@@ -62,6 +67,8 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
       supplyAmount,
       totalAmount,
       ...(invoicePaymentMethod ? { invoicePaymentMethod } : {}),
+      // 통화는 base 금액을 바꾸지 않고 인보이스 표시 통화만 지정한다.
+      ...(invoiceCurrency ? { invoiceCurrency } : {}),
     },
   })
 

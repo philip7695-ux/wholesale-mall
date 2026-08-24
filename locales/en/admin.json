@@ -494,5 +494,6 @@
   "invoiceVatRate": "Rate",
   "invoicePaymentModule": "Payment info",
   "invoiceIssue": "Issue",
-  "invoiceComposeCancel": "Cancel"
+  "invoiceComposeCancel": "Cancel",
+  "invoiceCurrencyModule": "Currency"
 }

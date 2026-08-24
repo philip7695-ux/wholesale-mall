@@ -494,5 +494,6 @@
   "invoiceVatRate": "세율",
   "invoicePaymentModule": "결제 정보",
   "invoiceIssue": "발행",
-  "invoiceComposeCancel": "취소"
+  "invoiceComposeCancel": "취소",
+  "invoiceCurrencyModule": "결제 통화"
 }

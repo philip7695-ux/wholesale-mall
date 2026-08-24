@@ -38,6 +38,8 @@ export function OrderStatusForm({
   currentVatRate = 0,
   defaultInvoicePaymentMethod = "BANK_TRANSFER",
   availablePaymentMethods = ["BANK_TRANSFER", "BANK_TRANSFER_FOREIGN", "ALIPAY", "WECHAT"],
+  currentCurrency = "KRW",
+  currentInvoiceCurrency = null,
 }: {
   orderId: string
   currentStatus: string
@@ -49,6 +51,8 @@ export function OrderStatusForm({
   currentVatRate?: number
   defaultInvoicePaymentMethod?: string
   availablePaymentMethods?: string[]
+  currentCurrency?: string
+  currentInvoiceCurrency?: string | null
 }) {
   const router = useRouter()
   const t = useTranslations("admin")
@@ -63,6 +67,16 @@ export function OrderStatusForm({
     currentVatRate > 0 ? String(Math.round(currentVatRate * 100)) : "10",
   )
   const [invPayMethod, setInvPayMethod] = useState(defaultInvoicePaymentMethod)
+  const [invCurrency, setInvCurrency] = useState(currentInvoiceCurrency || currentCurrency)
+
+  // 결제수단을 고르면 통화가 자연스럽게 따라간다(알리페이·위챗→CNY 등).
+  // 이후 통화 버튼으로 따로 바꿀 수도 있다.
+  function chooseMethod(m: string) {
+    setInvPayMethod(m)
+    if (m === "ALIPAY" || m === "WECHAT") setInvCurrency("CNY")
+    else if (m === "BANK_TRANSFER") setInvCurrency("KRW")
+    else if (m === "BANK_TRANSFER_FOREIGN") setInvCurrency("USD")
+  }
   // 박스가 여럿이면 운송장 번호도 여럿. 빈 칸 하나로 시작해 늘려간다.
   const [trackingNumbers, setTrackingNumbers] = useState<string[]>(
     currentTrackingNumbers && currentTrackingNumbers.length > 0
@@ -129,7 +143,7 @@ export function OrderStatusForm({
       const res = await fetch(`/api/orders/${orderId}/invoice-options`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vatRate, invoicePaymentMethod: invPayMethod }),
+        body: JSON.stringify({ vatRate, invoicePaymentMethod: invPayMethod, invoiceCurrency: invCurrency }),
       })
       if (!res.ok) {
         const d = await res.json()
@@ -435,7 +449,7 @@ export function OrderStatusForm({
                     <button
                       key={m}
                       type="button"
-                      onClick={() => setInvPayMethod(m)}
+                      onClick={() => chooseMethod(m)}
                       className={`rounded-md border px-3 py-2 text-sm transition-colors ${
                         invPayMethod === m
                           ? "border-primary bg-primary text-primary-foreground"
@@ -443,6 +457,27 @@ export function OrderStatusForm({
                       }`}
                     >
                       {paymentMethodLabels[m] || m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 결제 통화 모듈 — 수출 건이라도 위안화·한화로 받을 수 있다 */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t("invoiceCurrencyModule")}</Label>
+                <div className="flex gap-2">
+                  {["KRW", "USD", "CNY"].map((cur) => (
+                    <button
+                      key={cur}
+                      type="button"
+                      onClick={() => setInvCurrency(cur)}
+                      className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
+                        invCurrency === cur
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-input hover:bg-accent"
+                      }`}
+                    >
+                      {cur}
                     </button>
                   ))}
                 </div>

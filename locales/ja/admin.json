@@ -494,5 +494,6 @@
   "invoiceVatRate": "税率",
   "invoicePaymentModule": "決済情報",
   "invoiceIssue": "発行",
-  "invoiceComposeCancel": "キャンセル"
+  "invoiceComposeCancel": "キャンセル",
+  "invoiceCurrencyModule": "決済通貨"
 }

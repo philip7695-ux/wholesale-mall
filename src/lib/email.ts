@@ -47,6 +47,8 @@ export async function notifyCustomerInvoice(customerEmail: string, order: {
   invoiceNumber: string
   totalAmount: number
   customerName: string
+  // 인보이스 결제 통화로 이미 포맷된 금액(예: "CNY 1,352"). 있으면 이걸 쓴다.
+  amountText?: string
 }, paymentInfo: {
   bankName?: string | null
   accountNumber?: string | null
@@ -92,7 +94,7 @@ export async function notifyCustomerInvoice(customerEmail: string, order: {
       <table style="border-collapse:collapse;width:100%">
         <tr><td style="padding:8px;color:#666">Order No.</td><td style="padding:8px">${order.orderNumber}</td></tr>
         <tr><td style="padding:8px;color:#666">Invoice No.</td><td style="padding:8px;font-weight:bold">${order.invoiceNumber}</td></tr>
-        <tr><td style="padding:8px;color:#666">Amount</td><td style="padding:8px;font-weight:bold">₩${order.totalAmount.toLocaleString()}</td></tr>
+        <tr><td style="padding:8px;color:#666">Amount</td><td style="padding:8px;font-weight:bold">${order.amountText ?? `₩${order.totalAmount.toLocaleString()}`}</td></tr>
       </table>
       ${paymentHtml}
       <p style="margin-top:16px;color:#666">After payment, please submit your payment confirmation through your order page.</p>

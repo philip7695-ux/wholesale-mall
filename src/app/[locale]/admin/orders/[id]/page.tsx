@@ -234,6 +234,8 @@ export default async function AdminOrderDetailPage({
         currentVatRate={order.vatRate}
         defaultInvoicePaymentMethod={defaultInvoicePaymentMethod}
         availablePaymentMethods={availablePaymentMethods}
+        currentCurrency={order.currency}
+        currentInvoiceCurrency={order.invoiceCurrency}
         paymentConfirmation={
           order.paymentConfirmations[0]
             ? {
