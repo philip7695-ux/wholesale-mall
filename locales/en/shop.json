@@ -30,5 +30,14 @@
   "specialOffer": "Special Offer",
   "adult": "Adult",
   "lookbook": "Lookbook",
-  "searchByCodeOrName": "Search by code or name"
+  "searchByCodeOrName": "Search by code or name",
+  "orderSheetHint": "Order in bulk via Excel",
+  "orderSheetDownload": "Download sheet",
+  "orderSheetUpload": "Upload sheet",
+  "orderSheetDownloaded": "Order sheet downloaded. Fill in quantities and upload it back.",
+  "orderSheetUploaded": "Added {count} items to your cart.",
+  "orderSheetUnresolved": "{count} rows were skipped (product not found).",
+  "orderSheetDropHint": "Drop order sheet (.xlsx)",
+  "orderSheetDownloadFail": "Could not download the order sheet.",
+  "orderSheetUploadFail": "Could not upload the order sheet."
 }

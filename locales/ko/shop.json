@@ -44,5 +44,14 @@
   "specialOffer": "스페셜 오퍼",
   "adult": "성인",
   "lookbook": "룩북",
-  "searchByCodeOrName": "품번 또는 상품명 검색"
+  "searchByCodeOrName": "품번 또는 상품명 검색",
+  "orderSheetHint": "엑셀로 한 번에 주문",
+  "orderSheetDownload": "주문서 받기",
+  "orderSheetUpload": "주문서 올리기",
+  "orderSheetDownloaded": "주문서를 내려받았어요. 수량을 채워 다시 올려주세요.",
+  "orderSheetUploaded": "{count}개 항목을 장바구니에 담았어요.",
+  "orderSheetUnresolved": "{count}개 행은 상품을 찾지 못해 건너뛰었어요.",
+  "orderSheetDropHint": "주문서(.xlsx) 드롭",
+  "orderSheetDownloadFail": "주문서를 받지 못했어요.",
+  "orderSheetUploadFail": "주문서를 올리지 못했어요."
 }

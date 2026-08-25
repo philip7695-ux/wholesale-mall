@@ -30,5 +30,14 @@
   "specialOffer": "特惠",
   "adult": "成人",
   "lookbook": "画册",
-  "searchByCodeOrName": "按货号或名称搜索"
+  "searchByCodeOrName": "按货号或名称搜索",
+  "orderSheetHint": "用Excel批量下单",
+  "orderSheetDownload": "下载订单表",
+  "orderSheetUpload": "上传订单表",
+  "orderSheetDownloaded": "订单表已下载。填写数量后重新上传。",
+  "orderSheetUploaded": "已将{count}项加入购物车。",
+  "orderSheetUnresolved": "{count}行因未找到商品已跳过。",
+  "orderSheetDropHint": "拖入订单表(.xlsx)",
+  "orderSheetDownloadFail": "无法下载订单表。",
+  "orderSheetUploadFail": "无法上传订单表。"
 }
