@@ -7,9 +7,10 @@ import { ProductSearch } from "@/components/shop/product-search"
 import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
-import { isAgeGroup } from "@/lib/age-group"
+import { buildProductWhere } from "@/lib/product-filter"
 import { seasonsNewestFirst } from "@/lib/season"
 import { ProductPrice } from "@/components/shop/product-price"
+import { OrderSheetBar } from "@/components/shop/order-sheet-bar"
 import { ShopProductGrid } from "@/components/shop/product-grid"
 import { paginationRange, ELLIPSIS } from "@/lib/pagination"
 import { auth } from "@/lib/auth"
@@ -38,32 +39,8 @@ export default async function ProductsPage({
   // 홀세일 몰은 카탈로그 성격이므로 재고 0 도 노출한다.
   // 주문 차단은 상세 화면(품절 표시 + 수량 입력 비활성)과
   // 주문 API 의 재고 검증이 담당한다.
-  const where: Record<string, unknown> = {
-    isActive: true,
-  }
-  if (category) where.category = { slug: category }
-  // 스페셜 오퍼는 카테고리가 아니라 딱지다. 켜면 그것만 보고,
-  // 꺼도 해당 상품은 원래 카테고리에 그대로 남는다.
-  if (specialOnly) where.specialOffer = true
-  // 뉴본이 빠져 있어 84개 상품이 필터로 걸러지지 않았다
-  if (isAgeGroup(ageGroup)) where.ageGroup = ageGroup
-  // 시즌과 검색은 둘 다 OR 묶음이라 where.OR 에 각각 넣으면 뒤엣것이
-  // 앞엣것을 덮는다. AND 로 묶어 둘 다 걸리게 한다.
-  const and: Record<string, unknown>[] = []
-  // 시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌)
-  if (season && /^[3-6][1-4]?$/.test(season)) {
-    // 연도만("6") 고르면 그 해 전체가 걸린다
-    where.seasonKey = season.length === 2 ? season : { startsWith: season }
-  }
-  if (search) {
-    and.push({
-      OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { code: { contains: search, mode: "insensitive" } },
-      ],
-    })
-  }
-  if (and.length) where.AND = and
+  // 필터 조건은 엑셀 주문서 다운로드와 공유한다(lib/product-filter)
+  const where = buildProductWhere({ category, season, ageGroup, search, specialOnly })
 
   // 상품이 없는 시즌은 필터에 띄우지 않는다.
   // 코드를 전부 끌어오면 4,000행이 넘으므로 DB 에서 접두어만 집계한다.
@@ -159,6 +136,17 @@ export default async function ProductsPage({
               currentAgeGroup={ageGroup}
             />
           </div>
+
+          {/* 엑셀 일괄 주문: 지금 필터된 상품을 주문서로 받아 수량 채워 업로드 */}
+          <OrderSheetBar
+            filters={{
+              category,
+              season,
+              ageGroup,
+              search,
+              special: specialOnly ? "1" : undefined,
+            }}
+          />
 
           {products.length === 0 ? (
             <p className="py-20 text-center text-gray-400 font-light">{t("noProducts")}</p>

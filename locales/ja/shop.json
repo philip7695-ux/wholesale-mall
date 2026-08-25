@@ -30,5 +30,14 @@
   "specialOffer": "スペシャルオファー",
   "adult": "大人",
   "lookbook": "ルックブック",
-  "searchByCodeOrName": "品番・商品名で検索"
+  "searchByCodeOrName": "品番・商品名で検索",
+  "orderSheetHint": "エクセルで一括注文",
+  "orderSheetDownload": "注文書を取得",
+  "orderSheetUpload": "注文書をアップ",
+  "orderSheetDownloaded": "注文書をダウンロードしました。数量を記入して再アップロードしてください。",
+  "orderSheetUploaded": "{count}件をカートに追加しました。",
+  "orderSheetUnresolved": "{count}行は商品が見つからずスキップしました。",
+  "orderSheetDropHint": "注文書(.xlsx)をドロップ",
+  "orderSheetDownloadFail": "注文書を取得できませんでした。",
+  "orderSheetUploadFail": "注文書をアップロードできませんでした。"
 }
