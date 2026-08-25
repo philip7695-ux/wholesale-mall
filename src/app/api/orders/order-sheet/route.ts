@@ -13,8 +13,6 @@ import { sortSizeNames } from "@/lib/product-sizes"
 // 커지고 생성이 느려져 오류가 나기 쉽다.
 const STYLE_LIMIT = 300
 
-const HEADER = ["이미지", "품번", "상품명", "컬러", "사이즈", "단가(도매)", "수량", "variantId"] as const
-
 // Cloudinary 원본은 크므로 작은 썸네일로 변환해 가져온다(파일 크기·속도).
 function thumbUrl(url: string): string {
   if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
@@ -86,67 +84,91 @@ export async function GET(request: Request) {
     }),
   )
 
+  // 통합 사이즈 컬럼: 필터된 전 상품의 사이즈를 합쳐 정렬해 가로로 편다.
+  // 스타일×컬러 한 줄에 사이즈별 수량(사이즈런)을 채우는 그리드 양식.
+  const sizeColumns = sortSizeNames([
+    ...new Set(products.flatMap((p) => p.sizes.map((s) => s.name))),
+  ])
+
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet("주문서", {
-    views: [{ state: "frozen", ySplit: 1 }],
+    // 품번·상품명·컬러(1~4열)까지 고정해 사이즈가 많아도 좌측이 안 밀린다.
+    views: [{ state: "frozen", xSplit: 4, ySplit: 1 }],
   })
+
+  const border = {
+    top: { style: "thin" as const, color: { argb: "FFE0E0E0" } },
+    left: { style: "thin" as const, color: { argb: "FFE0E0E0" } },
+    bottom: { style: "thin" as const, color: { argb: "FFE0E0E0" } },
+    right: { style: "thin" as const, color: { argb: "FFE0E0E0" } },
+  }
+
+  // 열: 이미지 | 품번 | 상품명 | 컬러 | <사이즈...> | 단가
+  const IMG = 1, CODE = 2, NAME = 3, COLOR = 4
+  const firstSizeCol = 5
+  const priceCol = firstSizeCol + sizeColumns.length
   ws.columns = [
-    { header: HEADER[0], width: 11 },
-    { header: HEADER[1], width: 16 },
-    { header: HEADER[2], width: 30 },
-    { header: HEADER[3], width: 14 },
-    { header: HEADER[4], width: 8 },
-    { header: HEADER[5], width: 12 },
-    { header: HEADER[6], width: 9 },
-    { header: HEADER[7], width: 24 },
+    { width: 11 }, // 이미지
+    { width: 16 }, // 품번
+    { width: 28 }, // 상품명
+    { width: 14 }, // 컬러
+    ...sizeColumns.map(() => ({ width: 6 })),
+    { width: 12 }, // 단가
   ]
-  // 머리글 스타일
+
   const head = ws.getRow(1)
+  head.getCell(IMG).value = "이미지"
+  head.getCell(CODE).value = "품번"
+  head.getCell(NAME).value = "상품명"
+  head.getCell(COLOR).value = "컬러"
+  sizeColumns.forEach((s, i) => (head.getCell(firstSizeCol + i).value = s))
+  head.getCell(priceCol).value = "단가(도매)"
   head.height = 20
   head.eachCell((cell) => {
     cell.font = { bold: true, size: 10 }
     cell.alignment = { horizontal: "center", vertical: "middle" }
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } }
+    cell.border = border
   })
-  // variantId 는 매칭용이라 숨긴다(바이어가 지우면 안 됨)
-  ws.getColumn(8).hidden = true
 
   let rowIdx = 2
   products.forEach((p, pi) => {
-    const sizeOrder = sortSizeNames(p.sizes.map((s) => s.name))
-    const sortedVariants = [...p.variants].sort(
-      (a, b) =>
-        a.color.sortOrder - b.color.sortOrder ||
-        sizeOrder.indexOf(a.size.name) - sizeOrder.indexOf(b.size.name),
-    )
+    const seasonRate = seasonRateFor(p.code, seasonRates)
+    // 색상별로 한 줄. 색상 정렬은 sortOrder.
+    const colors = [...p.colors].sort((a, b) => a.sortOrder - b.sortOrder)
     const styleStartRow = rowIdx
-    for (const v of sortedVariants) {
+    for (const color of colors) {
+      const colorVariants = p.variants.filter((v) => v.colorId === color.id)
+      if (colorVariants.length === 0) continue
       const wholesale = buyerPrice(
-        v.price,
-        seasonRateFor(p.code, seasonRates),
+        colorVariants[0].price,
+        seasonRate,
         gradeRate,
         p.specialOffer ? specialOfferRate : 0,
       )
       const row = ws.getRow(rowIdx)
-      row.getCell(2).value = p.code
-      row.getCell(3).value = p.name
-      row.getCell(4).value = v.color.name
-      row.getCell(5).value = v.size.name
-      row.getCell(6).value = wholesale
-      row.getCell(6).numFmt = "#,##0"
-      // 수량 칸: 바이어가 채우는 자리. 옅게 칠해 표시한다.
-      const qtyCell = row.getCell(7)
-      qtyCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF9E6" } }
-      qtyCell.alignment = { horizontal: "center" }
-      row.getCell(8).value = v.id
+      row.getCell(CODE).value = p.code
+      row.getCell(NAME).value = p.name
+      row.getCell(COLOR).value = color.name
+      row.getCell(priceCol).value = wholesale
+      row.getCell(priceCol).numFmt = "#,##0"
       row.height = 18
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: "thin", color: { argb: "FFE0E0E0" } },
-          left: { style: "thin", color: { argb: "FFE0E0E0" } },
-          bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-          right: { style: "thin", color: { argb: "FFE0E0E0" } },
+      // 사이즈 칸: 해당 색상에 그 사이즈가 있으면 채울 칸(노랑), 없으면 막음(회색 -)
+      sizeColumns.forEach((sizeName, i) => {
+        const cell = row.getCell(firstSizeCol + i)
+        const has = colorVariants.some((v) => v.size.name === sizeName)
+        cell.alignment = { horizontal: "center" }
+        if (has) {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF9E6" } }
+        } else {
+          cell.value = "-"
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } }
+          cell.font = { color: { argb: "FFBBBBBB" } }
         }
+      })
+      row.eachCell((cell) => {
+        if (!cell.border) cell.border = border
+        else cell.border = border
       })
       rowIdx++
     }
@@ -195,12 +217,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "엑셀 파일을 읽을 수 없습니다." }, { status: 400 })
   }
 
-  // "수량"이 있는 줄을 머리글로 본다(양식 위에 안내문이 있어도 견딘다).
+  // "품번"이 있는 줄을 머리글로 본다(가로·세로 양식 공통, 위에 안내문이 있어도 견딤).
   const headerIdx = rows.findIndex(
-    (r) => Array.isArray(r) && r.some((c) => String(c ?? "").trim() === "수량"),
+    (r) => Array.isArray(r) && r.some((c) => String(c ?? "").trim() === "품번"),
   )
   if (headerIdx < 0) {
-    return NextResponse.json({ error: "‘수량’ 열을 찾을 수 없습니다. 받은 양식 그대로 올려주세요." }, { status: 400 })
+    return NextResponse.json({ error: "‘품번’ 열을 찾을 수 없습니다. 받은 양식 그대로 올려주세요." }, { status: 400 })
   }
   const header = (rows[headerIdx] as unknown[]).map((c) => String(c ?? "").trim())
   const idx = (name: string) => header.indexOf(name)
@@ -210,6 +232,10 @@ export async function POST(request: Request) {
   const iColor = idx("컬러")
   const iSize = idx("사이즈")
 
+  // 가로(그리드) 양식의 사이즈 컬럼 = 알려진 라벨을 뺀 나머지 열
+  const KNOWN = new Set(["이미지", "품번", "상품명", "컬러", "단가", "단가(도매)", "수량", "variantId", ""])
+  const sizeCols = header.map((h, i) => ({ h, i })).filter((x) => !KNOWN.has(x.h))
+
   // variantId 로 바로 잡히는 것과, 품번+컬러+사이즈로 찾아야 하는 것 분리
   const byVariant = new Map<string, number>()
   const needMatch: { code: string; color: string; size: string; qty: number }[] = []
@@ -218,22 +244,30 @@ export async function POST(request: Request) {
   for (let r = headerIdx + 1; r < rows.length; r++) {
     const row = rows[r] as unknown[]
     if (!row) continue
-    const qty = Math.floor(Number(row[iQty]))
-    if (!Number.isFinite(qty) || qty <= 0) continue
-
-    const vid = iVid >= 0 ? String(row[iVid] ?? "").trim() : ""
     const code = iCode >= 0 ? String(row[iCode] ?? "").trim() : ""
-    if (code) styleKeys.add(code)
+    const color = iColor >= 0 ? String(row[iColor] ?? "").trim() : ""
 
-    if (vid) {
-      byVariant.set(vid, (byVariant.get(vid) || 0) + qty)
-    } else if (code && iColor >= 0 && iSize >= 0) {
-      needMatch.push({
-        code,
-        color: String(row[iColor] ?? "").trim(),
-        size: String(row[iSize] ?? "").trim(),
-        qty,
-      })
+    if (iQty >= 0) {
+      // 세로(long) 양식 호환: 수량 열 하나
+      const qty = Math.floor(Number(row[iQty]))
+      if (!Number.isFinite(qty) || qty <= 0) continue
+      const vid = iVid >= 0 ? String(row[iVid] ?? "").trim() : ""
+      if (code) styleKeys.add(code)
+      if (vid) byVariant.set(vid, (byVariant.get(vid) || 0) + qty)
+      else if (code && iColor >= 0 && iSize >= 0) {
+        needMatch.push({ code, color, size: String(row[iSize] ?? "").trim(), qty })
+      }
+    } else {
+      // 가로(grid) 양식: 사이즈 컬럼마다 수량을 읽는다(사이즈런)
+      if (!code) continue
+      let rowHas = false
+      for (const { h, i } of sizeCols) {
+        const qty = Math.floor(Number(row[i]))
+        if (!Number.isFinite(qty) || qty <= 0) continue
+        needMatch.push({ code, color, size: h, qty })
+        rowHas = true
+      }
+      if (rowHas) styleKeys.add(code)
     }
   }
 
