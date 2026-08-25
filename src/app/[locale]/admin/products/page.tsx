@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Download, ImageIcon } from "lucide-react"
 import { formatPriceCross } from "@/lib/utils"
 import { translateCategory } from "@/lib/translate"
+import { sortSizeNames } from "@/lib/product-sizes"
 import { DeleteProductButton } from "@/components/admin/delete-product-button"
 import { ProductBulkUpload } from "@/components/admin/product-bulk-upload"
 import { getAllExchangeRates } from "@/lib/currency.server"
@@ -80,6 +81,7 @@ export default async function AdminProductsPage({
       category: true,
       colors: true,
       variants: true,
+      sizes: true,
     },
     orderBy,
     skip,
@@ -164,6 +166,14 @@ export default async function AdminProductsPage({
             const prices = product.variants.map((v: any) => v.price)
             const minPrice = prices.length > 0 ? Math.min(...prices) : 0
             const hasPriceRange = prices.length > 0 && Math.max(...prices) !== minPrice
+            // 사이즈 레인지: 사이즈를 정렬해 최소~최대로 보여준다(한 개면 그대로)
+            const sortedSizes = sortSizeNames(product.sizes.map((s: any) => s.name))
+            const sizeRange =
+              sortedSizes.length === 0
+                ? ""
+                : sortedSizes.length === 1
+                  ? sortedSizes[0]
+                  : `${sortedSizes[0]}~${sortedSizes[sortedSizes.length - 1]}`
             // 어드민은 정상가를 다루지만, 바이어에게 얼마로 나가는지도 보여야
             // 할인율 설정이 맞는지 확인할 수 있다. 등급 할인은 회원마다 달라
             // 기준가(BRONZE)만 계산한다.
@@ -204,6 +214,7 @@ export default async function AdminProductsPage({
                     <CardTitle className="text-sm font-semibold line-clamp-1">{product.name}</CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {translateCategory(product.category.slug, tCat, product.category.name)} | {product.colors.length}{t("colors")} | {product.variants.length}{t("skus")}
+                      {sizeRange && <> | {sizeRange}</>}
                     </p>
                     {/* 재고가 많은 상품을 골라 스페셜 오퍼로 묶기 위한 표시 */}
                     <p className="text-xs">
