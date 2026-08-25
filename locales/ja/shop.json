@@ -39,5 +39,6 @@
   "orderSheetUnresolved": "{count}行は商品が見つからずスキップしました。",
   "orderSheetDropHint": "注文書(.xlsx)をドロップ",
   "orderSheetDownloadFail": "注文書を取得できませんでした。",
-  "orderSheetUploadFail": "注文書をアップロードできませんでした。"
+  "orderSheetUploadFail": "注文書をアップロードできませんでした。",
+  "orderSheetTrimmed": "在庫を超えた{count}点は在庫分のみ追加しました。"
 }
