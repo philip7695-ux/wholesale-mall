@@ -13,6 +13,29 @@ import { sortSizeNames } from "@/lib/product-sizes"
 // 커지고 생성이 느려져 오류가 나기 쉽다.
 const STYLE_LIMIT = 300
 
+// 엑셀 헤더 라벨(언어별). 값(품번·컬러·사이즈)은 매칭 키라 번역하지 않고,
+// 사람이 읽는 헤더만 바이어 언어로 낸다.
+const LABELS: Record<string, { image: string; code: string; name: string; color: string; price: string; sheet: string; file: string }> = {
+  ko: { image: "이미지", code: "품번", name: "상품명", color: "컬러", price: "단가(도매)", sheet: "주문서", file: "주문서" },
+  en: { image: "Image", code: "Style No.", name: "Product", color: "Color", price: "Unit Price", sheet: "Order Sheet", file: "order-sheet" },
+  ja: { image: "画像", code: "品番", name: "商品名", color: "カラー", price: "単価", sheet: "注文書", file: "order-sheet" },
+  zh: { image: "图片", code: "货号", name: "商品名", color: "颜色", price: "单价", sheet: "订单表", file: "order-sheet" },
+}
+// 업로드는 어떤 언어로 받은 파일이든 인식해야 한다. 각 필드의 모든 언어
+// 라벨을 모아 매칭한다.
+const anyLabel = (field: "image" | "code" | "name" | "color" | "price") =>
+  new Set(Object.values(LABELS).map((l) => l[field]))
+const CODE_LABELS = anyLabel("code")
+// 사이즈 컬럼 판별용: 알려진(라벨) 열을 뺀 나머지가 사이즈
+const KNOWN_LABELS = new Set<string>([
+  ...anyLabel("image"),
+  ...anyLabel("code"),
+  ...anyLabel("name"),
+  ...anyLabel("color"),
+  ...anyLabel("price"),
+  "단가", "수량", "Qty", "数量", "variantId", "",
+])
+
 // Cloudinary 원본은 크므로 작은 썸네일로 변환해 가져온다(파일 크기·속도).
 function thumbUrl(url: string): string {
   if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
@@ -29,6 +52,9 @@ export async function GET(request: Request) {
   }
 
   const sp = new URL(request.url).searchParams
+  // 주문서는 영어로 통합한다(B2B 수출 표준). 업로드는 예전 한국어 파일도
+  // 인식하도록 다국어 라벨을 계속 받아준다.
+  const L = LABELS.en
   const where = buildProductWhere({
     category: sp.get("category") || undefined,
     season: sp.get("season") || undefined,
@@ -91,7 +117,7 @@ export async function GET(request: Request) {
   ])
 
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet("주문서", {
+  const ws = wb.addWorksheet(L.sheet, {
     // 품번·상품명·컬러(1~4열)까지 고정해 사이즈가 많아도 좌측이 안 밀린다.
     views: [{ state: "frozen", xSplit: 4, ySplit: 1 }],
   })
@@ -117,12 +143,12 @@ export async function GET(request: Request) {
   ]
 
   const head = ws.getRow(1)
-  head.getCell(IMG).value = "이미지"
-  head.getCell(CODE).value = "품번"
-  head.getCell(NAME).value = "상품명"
-  head.getCell(COLOR).value = "컬러"
+  head.getCell(IMG).value = L.image
+  head.getCell(CODE).value = L.code
+  head.getCell(NAME).value = L.name
+  head.getCell(COLOR).value = L.color
   sizeColumns.forEach((s, i) => (head.getCell(firstSizeCol + i).value = s))
-  head.getCell(priceCol).value = "단가(도매)"
+  head.getCell(priceCol).value = L.price
   head.height = 20
   head.eachCell((cell) => {
     cell.font = { bold: true, size: 10 }
@@ -185,7 +211,7 @@ export async function GET(request: Request) {
   })
 
   const buf = (await wb.xlsx.writeBuffer()) as ArrayBuffer
-  const fileName = `주문서_${new Date().toISOString().split("T")[0]}.xlsx`
+  const fileName = `${L.file}_${new Date().toISOString().split("T")[0]}.xlsx`
   return new NextResponse(buf, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -218,23 +244,23 @@ export async function POST(request: Request) {
   }
 
   // "품번"이 있는 줄을 머리글로 본다(가로·세로 양식 공통, 위에 안내문이 있어도 견딤).
+  // 영어로 통합했지만 예전 한국어 파일도 인식하도록 모든 언어 라벨을 받아준다.
   const headerIdx = rows.findIndex(
-    (r) => Array.isArray(r) && r.some((c) => String(c ?? "").trim() === "품번"),
+    (r) => Array.isArray(r) && r.some((c) => CODE_LABELS.has(String(c ?? "").trim())),
   )
   if (headerIdx < 0) {
-    return NextResponse.json({ error: "‘품번’ 열을 찾을 수 없습니다. 받은 양식 그대로 올려주세요." }, { status: 400 })
+    return NextResponse.json({ error: "‘Style No.’(품번) column not found. Please upload the sheet as-is." }, { status: 400 })
   }
   const header = (rows[headerIdx] as unknown[]).map((c) => String(c ?? "").trim())
-  const idx = (name: string) => header.indexOf(name)
-  const iVid = idx("variantId")
-  const iQty = idx("수량")
-  const iCode = idx("품번")
-  const iColor = idx("컬러")
-  const iSize = idx("사이즈")
+  const findIdx = (set: Set<string>) => header.findIndex((h) => set.has(h))
+  const iVid = header.indexOf("variantId")
+  const iQty = findIdx(new Set(["수량", "Qty", "数量"]))
+  const iCode = findIdx(CODE_LABELS)
+  const iColor = findIdx(anyLabel("color"))
+  const iSize = findIdx(new Set(["사이즈", "Size", "サイズ", "尺码"]))
 
   // 가로(그리드) 양식의 사이즈 컬럼 = 알려진 라벨을 뺀 나머지 열
-  const KNOWN = new Set(["이미지", "품번", "상품명", "컬러", "단가", "단가(도매)", "수량", "variantId", ""])
-  const sizeCols = header.map((h, i) => ({ h, i })).filter((x) => !KNOWN.has(x.h))
+  const sizeCols = header.map((h, i) => ({ h, i })).filter((x) => !KNOWN_LABELS.has(x.h))
 
   // variantId 로 바로 잡히는 것과, 품번+컬러+사이즈로 찾아야 하는 것 분리
   const byVariant = new Map<string, number>()
