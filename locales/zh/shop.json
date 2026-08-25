@@ -39,5 +39,6 @@
   "orderSheetUnresolved": "{count}行因未找到商品已跳过。",
   "orderSheetDropHint": "拖入订单表(.xlsx)",
   "orderSheetDownloadFail": "无法下载订单表。",
-  "orderSheetUploadFail": "无法上传订单表。"
+  "orderSheetUploadFail": "无法上传订单表。",
+  "orderSheetTrimmed": "超出库存的{count}件已按库存数量加入。"
 }

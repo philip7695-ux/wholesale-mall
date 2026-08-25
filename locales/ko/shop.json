@@ -53,5 +53,6 @@
   "orderSheetUnresolved": "{count}개 행은 상품을 찾지 못해 건너뛰었어요.",
   "orderSheetDropHint": "주문서(.xlsx) 드롭",
   "orderSheetDownloadFail": "주문서를 받지 못했어요.",
-  "orderSheetUploadFail": "주문서를 올리지 못했어요."
+  "orderSheetUploadFail": "주문서를 올리지 못했어요.",
+  "orderSheetTrimmed": "재고를 넘은 {count}개는 재고만큼만 담았어요."
 }

@@ -329,24 +329,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "수량이 입력된 행이 없습니다." }, { status: 400 })
   }
 
-  // 유효한 변형만 장바구니에 담는다(누적 upsert). 비활성/삭제된 건 건너뛴다.
-  const validVariants = await prisma.productVariant.findMany({
-    where: { id: { in: [...byVariant.keys()] } },
-    select: { id: true, product: { select: { isActive: true } } },
-  })
-  const validSet = new Set(validVariants.filter((v) => v.product.isActive).map((v) => v.id))
+  const ids = [...byVariant.keys()]
+  // 변형의 재고·예약과, 이 바이어의 기존 장바구니 수량을 함께 읽는다.
+  const [variants, existingItems] = await Promise.all([
+    prisma.productVariant.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, stock: true, reserved: true, product: { select: { isActive: true } } },
+    }),
+    prisma.cartItem.findMany({
+      where: { userId: session.user.id, variantId: { in: ids } },
+      select: { variantId: true, quantity: true },
+    }),
+  ])
+  const vById = new Map(variants.map((v) => [v.id, v]))
+  const existingQty = new Map(existingItems.map((c) => [c.variantId, c.quantity]))
 
+  // 몰 재고는 참고값이라 초과분은 잘라서 담는다(재고−예약 상한).
+  // 최종 장바구니 수량 = min(기존 + 요청, 판매가능). 잘린 만큼 알린다.
   let added = 0
   let skipped = 0
-  for (const [variantId, quantity] of byVariant) {
-    if (!validSet.has(variantId)) {
+  let trimmed = 0 // 재고 초과로 잘린 총 수량
+  for (const [variantId, requested] of byVariant) {
+    const v = vById.get(variantId)
+    if (!v || !v.product.isActive) {
       skipped++
+      continue
+    }
+    const available = Math.max(0, v.stock - v.reserved)
+    const existing = existingQty.get(variantId) ?? 0
+    const desired = existing + requested
+    const capped = Math.min(desired, available)
+    if (capped < desired) trimmed += desired - capped
+    if (capped <= 0) {
+      // 재고가 0이면 담지 않는다(있던 것도 유지)
+      if (existing === 0) skipped++
       continue
     }
     await prisma.cartItem.upsert({
       where: { userId_variantId: { userId: session.user.id, variantId } },
-      update: { quantity: { increment: quantity } },
-      create: { userId: session.user.id, variantId, quantity },
+      update: { quantity: capped },
+      create: { userId: session.user.id, variantId, quantity: capped },
     })
     added++
   }
@@ -355,6 +377,7 @@ export async function POST(request: Request) {
     added,
     styles: styleKeys.size,
     skipped,
+    trimmed,
     unresolved: unresolved.slice(0, 20),
     unresolvedCount: unresolved.length,
   })

@@ -39,5 +39,6 @@
   "orderSheetUnresolved": "{count} rows were skipped (product not found).",
   "orderSheetDropHint": "Drop order sheet (.xlsx)",
   "orderSheetDownloadFail": "Could not download the order sheet.",
-  "orderSheetUploadFail": "Could not upload the order sheet."
+  "orderSheetUploadFail": "Could not upload the order sheet.",
+  "orderSheetTrimmed": "{count} units exceeded stock and were capped to available."
 }
