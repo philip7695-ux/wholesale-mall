@@ -147,5 +147,8 @@
   "sheetIssuesHint": "이 부분은 표에 반영되지 않았습니다. 창고에 확인한 뒤 직접 입력하세요.",
   "sheetImportDrop": "창고 회신 엑셀을 여기에 놓으세요",
   "receiptImageDrop": "입금증 이미지를 여기에 놓으세요",
-  "statusReview": "수량조정"
+  "statusReview": "수량조정",
+  "deleteConfirm": "이 주문 내역을 삭제할까요? 되돌릴 수 없어요.",
+  "deleteSuccess": "주문 내역을 삭제했어요.",
+  "deleteFail": "삭제하지 못했어요."
 }

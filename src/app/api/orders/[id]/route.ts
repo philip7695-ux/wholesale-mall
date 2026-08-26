@@ -75,16 +75,14 @@ async function DELETE_impl(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  // 영구 삭제 (관리자 전용)
+  // 영구 삭제. 취소된 주문만 지울 수 있다(소유·본인 검증은 위에서 끝났다).
+  // 관리자는 어떤 취소 주문이든, 바이어는 자기 취소 주문을 내역에서 치운다.
   if (permanent) {
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
     // 취소되지 않은 주문을 바로 지우면 바이어 쪽에서 주문이 말없이 사라진다.
-    // 먼저 사유와 함께 취소해 바이어가 확인할 수 있게 한 뒤에만 지운다.
+    // 먼저 취소를 거쳐 확인할 수 있게 한 뒤에만 지운다.
     if (order.status !== "CANCELLED") {
       return NextResponse.json(
-        { error: "먼저 사유와 함께 취소한 뒤에 삭제할 수 있습니다. 바이어가 취소 사유를 확인해야 합니다." },
+        { error: "취소된 주문만 삭제할 수 있습니다." },
         { status: 400 },
       )
     }

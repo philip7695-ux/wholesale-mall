@@ -147,5 +147,8 @@
   "sheetIssuesHint": "これらは表に反映していません。倉庫に確認のうえ直接入力してください。",
   "sheetImportDrop": "倉庫の回答Excelをここにドロップ",
   "receiptImageDrop": "入金証明画像をここにドロップ",
-  "statusReview": "数量調整"
+  "statusReview": "数量調整",
+  "deleteConfirm": "この注文履歴を削除しますか？元に戻せません。",
+  "deleteSuccess": "注文履歴を削除しました。",
+  "deleteFail": "削除できませんでした。"
 }
