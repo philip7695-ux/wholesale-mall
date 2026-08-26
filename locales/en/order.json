@@ -147,5 +147,8 @@
   "sheetIssuesHint": "None of these were applied to the table. Check with the warehouse, then enter them yourself.",
   "sheetImportDrop": "Drop the warehouse reply here",
   "receiptImageDrop": "Drop the receipt image here",
-  "statusReview": "Review"
+  "statusReview": "Review",
+  "deleteConfirm": "Delete this order from your history? This cannot be undone.",
+  "deleteSuccess": "Order removed from your history.",
+  "deleteFail": "Could not delete."
 }

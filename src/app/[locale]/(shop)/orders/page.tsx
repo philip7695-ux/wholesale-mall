@@ -56,6 +56,22 @@ export default function OrdersPage() {
     }
   }
 
+  // 취소된 주문을 내역에서 영구 삭제(치우기)
+  async function handleDelete(orderId: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm(t("deleteConfirm"))) return
+    try {
+      const res = await fetch(`/api/orders/${orderId}?permanent=true`, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success(t("deleteSuccess"))
+      loadOrders()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("deleteFail"))
+    }
+  }
+
   async function handleEdit(orderId: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
@@ -93,7 +109,14 @@ export default function OrdersPage() {
                 <CardContent className="py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="font-medium">{order.orderNumber}</p>
+                      <p className="flex items-center gap-2 font-medium">
+                        {order.orderNumber}
+                        {order.status === "CANCELLED" && (
+                          <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
+                            {t("statusCancelled")}
+                          </span>
+                        )}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(order.createdAt, locale)}
                       </p>
@@ -132,6 +155,18 @@ export default function OrdersPage() {
                             onClick={(e) => handleCancel(order.id, e)}
                           >
                             {tc("cancel")}
+                          </Button>
+                        </div>
+                      )}
+                      {/* 취소된 주문은 내역에서 삭제(치우기)할 수 있다 */}
+                      {order.status === "CANCELLED" && (
+                        <div className="mt-2 flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => handleDelete(order.id, e)}
+                          >
+                            {tc("delete")}
                           </Button>
                         </div>
                       )}
