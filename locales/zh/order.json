@@ -150,5 +150,6 @@
   "statusReview": "数量调整",
   "deleteConfirm": "要从记录中删除此订单吗？无法撤销。",
   "deleteSuccess": "已从记录中删除订单。",
-  "deleteFail": "删除失败。"
+  "deleteFail": "删除失败。",
+  "awaitingBuyerReview": "等待买家确认。买家回复后可再次编辑和确定。"
 }

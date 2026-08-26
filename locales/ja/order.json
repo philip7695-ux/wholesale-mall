@@ -150,5 +150,6 @@
   "statusReview": "数量調整",
   "deleteConfirm": "この注文履歴を削除しますか？元に戻せません。",
   "deleteSuccess": "注文履歴を削除しました。",
-  "deleteFail": "削除できませんでした。"
+  "deleteFail": "削除できませんでした。",
+  "awaitingBuyerReview": "バイヤーの確認待ちです。返信されたら再度編集・確定できます。"
 }

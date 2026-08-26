@@ -150,5 +150,6 @@
   "statusReview": "Review",
   "deleteConfirm": "Delete this order from your history? This cannot be undone.",
   "deleteSuccess": "Order removed from your history.",
-  "deleteFail": "Could not delete."
+  "deleteFail": "Could not delete.",
+  "awaitingBuyerReview": "Waiting for the buyer to review. You can edit and confirm again once they respond."
 }
