@@ -233,8 +233,8 @@ export default function OrderDetailPage() {
     setSubmitting(false)
   }
 
-  useEffect(() => {
-    Promise.all([
+  function loadAll() {
+    return Promise.all([
       fetch(`/api/orders/${params.id}`).then((res) => res.json()),
       fetch(`/api/orders/${params.id}/payment-confirmation`).then((res) => res.json()),
       fetch("/api/payment-config").then((res) => res.json()),
@@ -253,6 +253,11 @@ export default function OrderDetailPage() {
         setPaymentConfig(paymentInfo)
       }
     }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
   if (loading) {
@@ -582,6 +587,7 @@ export default function OrderDetailPage() {
                 orderId={order.id}
                 isAdmin={false}
                 canEdit={order.status === "BUYER_REVIEW"}
+                onDone={loadAll}
                 items={order.items.map((item) => ({
                   id: item.id,
                   productCode: item.variant?.product?.code ?? null,
