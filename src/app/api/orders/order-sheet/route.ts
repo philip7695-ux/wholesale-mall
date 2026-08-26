@@ -160,12 +160,16 @@ export async function GET(request: Request) {
   let rowIdx = 2
   products.forEach((p, pi) => {
     const seasonRate = seasonRateFor(p.code, seasonRates)
+    // 재고 없는 상품은 주문받지 않으므로, 판매가능(재고−예약>0)한 변형만
+    // 채울 칸으로 낸다. 색상 전체가 품절이면 그 줄은 건너뛴다.
+    const sellable = (v: { stock: number; reserved: number }) => v.stock - v.reserved > 0
     // 색상별로 한 줄. 색상 정렬은 sortOrder.
     const colors = [...p.colors].sort((a, b) => a.sortOrder - b.sortOrder)
     const styleStartRow = rowIdx
+    let styleHasRow = false
     for (const color of colors) {
       const colorVariants = p.variants.filter((v) => v.colorId === color.id)
-      if (colorVariants.length === 0) continue
+      if (!colorVariants.some(sellable)) continue // 색상 전체 품절 → 제외
       const wholesale = buyerPrice(
         colorVariants[0].price,
         seasonRate,
@@ -182,9 +186,11 @@ export async function GET(request: Request) {
       // 사이즈 칸: 해당 색상에 그 사이즈가 있으면 채울 칸(노랑), 없으면 막음(회색 -)
       sizeColumns.forEach((sizeName, i) => {
         const cell = row.getCell(firstSizeCol + i)
-        const has = colorVariants.some((v) => v.size.name === sizeName)
+        // 그 색상에 해당 사이즈가 있고 판매가능할 때만 채울 칸. 아니면 막음.
+        const variant = colorVariants.find((v) => v.size.name === sizeName)
+        const canOrder = !!variant && sellable(variant)
         cell.alignment = { horizontal: "center" }
-        if (has) {
+        if (canOrder) {
           cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF9E6" } }
         } else {
           cell.value = "-"
@@ -196,11 +202,12 @@ export async function GET(request: Request) {
         if (!cell.border) cell.border = border
         else cell.border = border
       })
+      styleHasRow = true
       rowIdx++
     }
-    // 대표 이미지: 스타일의 첫 행에 얹는다
+    // 대표 이미지: 판매가능한 줄이 있을 때만, 스타일의 첫 행에 얹는다
     const t = thumbs[pi]
-    if (t) {
+    if (t && styleHasRow) {
       const imgId = wb.addImage({ buffer: t.buffer as unknown as ExcelJS.Buffer, extension: t.extension })
       ws.getRow(styleStartRow).height = 56
       ws.addImage(imgId, {
@@ -329,25 +336,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "수량이 입력된 행이 없습니다." }, { status: 400 })
   }
 
-  // 유효한(활성) 변형만 장바구니에 담는다. 몰 재고는 참고값이라 초과분을
-  // 자르지 않고 요청 수량 그대로 담는다. 실제 수량은 창고 확인 단계에서 조정된다.
-  const validVariants = await prisma.productVariant.findMany({
-    where: { id: { in: [...byVariant.keys()] } },
-    select: { id: true, product: { select: { isActive: true } } },
-  })
-  const validSet = new Set(validVariants.filter((v) => v.product.isActive).map((v) => v.id))
+  const ids = [...byVariant.keys()]
+  // 변형의 재고·예약과, 이 바이어의 기존 장바구니 수량을 함께 읽는다.
+  const [variants, existingItems] = await Promise.all([
+    prisma.productVariant.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, stock: true, reserved: true, product: { select: { isActive: true } } },
+    }),
+    prisma.cartItem.findMany({
+      where: { userId: session.user.id, variantId: { in: ids } },
+      select: { variantId: true, quantity: true },
+    }),
+  ])
+  const vById = new Map(variants.map((v) => [v.id, v]))
+  const existingQty = new Map(existingItems.map((c) => [c.variantId, c.quantity]))
 
+  // 재고 없는 상품은 주문받지 않는다. 판매가능(재고−예약)을 넘는 수량은
+  // 잘라서 담고, 잘린 만큼 알린다. (다운로드↔업로드 사이 재고 변동 대비 안전망)
   let added = 0
   let skipped = 0
-  for (const [variantId, quantity] of byVariant) {
-    if (!validSet.has(variantId)) {
+  let trimmed = 0
+  for (const [variantId, requested] of byVariant) {
+    const v = vById.get(variantId)
+    if (!v || !v.product.isActive) {
       skipped++
+      continue
+    }
+    const available = Math.max(0, v.stock - v.reserved)
+    const existing = existingQty.get(variantId) ?? 0
+    const desired = existing + requested
+    const capped = Math.min(desired, available)
+    if (capped < desired) trimmed += desired - capped
+    if (capped <= 0) {
+      if (existing === 0) skipped++
       continue
     }
     await prisma.cartItem.upsert({
       where: { userId_variantId: { userId: session.user.id, variantId } },
-      update: { quantity: { increment: quantity } },
-      create: { userId: session.user.id, variantId, quantity },
+      update: { quantity: capped },
+      create: { userId: session.user.id, variantId, quantity: capped },
     })
     added++
   }
@@ -356,6 +383,7 @@ export async function POST(request: Request) {
     added,
     styles: styleKeys.size,
     skipped,
+    trimmed,
     unresolved: unresolved.slice(0, 20),
     unresolvedCount: unresolved.length,
   })
