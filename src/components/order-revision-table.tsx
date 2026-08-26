@@ -54,6 +54,7 @@ export function OrderRevisionTable({
   canEdit,
   locale,
   rate,
+  onDone,
 }: {
   orderId: string
   items: RevisionItem[]
@@ -63,6 +64,9 @@ export function OrderRevisionTable({
   // 함수는 클라이언트 컴포넌트 경계를 넘지 못한다.
   locale: string
   rate?: number
+  // 클라이언트 부모(바이어 상세)가 조정 후 주문을 다시 불러오도록.
+  // 서버 컴포넌트(어드민 상세)는 router.refresh() 로 갱신되므로 없어도 된다.
+  onDone?: () => void
 }) {
   const router = useRouter()
   const t = useTranslations("order")
@@ -144,6 +148,7 @@ export function OrderRevisionTable({
       if (!res.ok) throw new Error((await res.json()).error)
       toast.success(next ? t("revisionSent") : t("revisionSaved"))
       router.refresh()
+      onDone?.()
     } catch (e: any) {
       toast.error(e?.message || t("revisionFailed"))
     } finally {
@@ -206,6 +211,7 @@ export function OrderRevisionTable({
       if (!res.ok) throw new Error((await res.json()).error)
       toast.success(t("orderConfirmed"))
       router.refresh()
+      onDone?.()
     } catch (e: any) {
       toast.error(e?.message || t("revisionFailed"))
     } finally {
@@ -447,11 +453,11 @@ export function OrderRevisionTable({
           </span>
         </div>
       )}
-      {/* 바이어 차례엔 어드민 버튼을 잠그고 대기 중임을 알린다 */}
-      {isAdmin && !canEdit && (
+      {/* 상대 차례엔 버튼을 잠그고 누구를 기다리는지 알린다(양쪽 대칭) */}
+      {!canEdit && (
         <div className="flex items-center gap-2 rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-700">
           <Clock className="h-4 w-4" />
-          {t("awaitingBuyerReview")}
+          {isAdmin ? t("awaitingBuyerReview") : t("awaitingSellerReview")}
         </div>
       )}
     </div>
