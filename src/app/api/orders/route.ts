@@ -204,17 +204,16 @@ export async function POST(request: Request) {
         // 주문 시점에는 실재고를 빼지 않고 예약만 잡는다.
         // 창고 확인과 바이어 확인이 오간 뒤 확정될 때 실제로 뺀다.
         // 판매 가능 = stock - reserved 이므로 그만큼만 잡을 수 있다.
+        // 몰 재고는 주 1회 갱신되는 참고값이라(창고가 실수량을 따로 안다)
+        // 참고 재고를 넘겨도 주문을 막지 않는다. 실제 수량은 창고 확인·
+        // 수량조정 단계에서 정해지고, 확정 시 실재고가 0 아래로 내려가지
+        // 않게 막는다(commitReservation). 예약이 재고를 넘어서면 다른
+        // 바이어에게는 판매가능 0(품절)으로 보인다.
         for (const item of cartItems) {
-          const res = await tx.$executeRaw`
+          await tx.$executeRaw`
             update mall."ProductVariant"
             set reserved = reserved + ${item.quantity}, "updatedAt" = now()
-            where id = ${item.variant.id} and stock - reserved >= ${item.quantity}`
-          const ok = res > 0
-          if (!ok) {
-            throw new Error(
-              `${OUT_OF_STOCK}:${item.variant.product.name} (${item.variant.color.name}/${item.variant.size.name})`,
-            )
-          }
+            where id = ${item.variant.id}`
         }
 
         // 이번 주문으로 다 팔린 상품은 목록에서 뒤로 가야 한다.

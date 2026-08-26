@@ -60,9 +60,6 @@ export function OrderSheetBar({ filters }: { filters: Record<string, string | un
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || t("orderSheetUploadFail"))
       toast.success(t("orderSheetUploaded", { count: d.added }))
-      if (d.trimmed > 0) {
-        toast.warning(t("orderSheetTrimmed", { count: d.trimmed }))
-      }
       if (d.unresolvedCount > 0) {
         toast.warning(t("orderSheetUnresolved", { count: d.unresolvedCount }))
       }
