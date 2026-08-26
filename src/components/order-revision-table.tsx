@@ -70,7 +70,10 @@ export function OrderRevisionTable({
   const [draft, setDraft] = useState<Record<string, string>>(
     Object.fromEntries(items.map((i) => [i.id, String(i.quantity)])),
   )
-  const [busy, setBusy] = useState(false)
+  // 어느 동작이 진행 중인지 추적한다. 누른 버튼에만 스피너를 돌려
+  // "이게 넘어간 건지" 바로 알 수 있게 한다.
+  const [pending, setPending] = useState<null | "save" | "buyer" | "seller" | "confirm" | "import">(null)
+  const busy = pending !== null
   const fileRef = useRef<HTMLInputElement>(null)
   // 창고 회신에서 걸린 문제들. 토스트는 사라지지만 이건 손볼 때까지 남는다.
   const [sheetIssues, setSheetIssues] = useState<{
@@ -128,7 +131,7 @@ export function OrderRevisionTable({
   }
 
   async function submit(next?: "STOCK_CHECKING" | "BUYER_REVIEW") {
-    setBusy(true)
+    setPending(next === "BUYER_REVIEW" ? "buyer" : next === "STOCK_CHECKING" ? "seller" : "save")
     try {
       const res = await fetch(`/api/orders/${orderId}/items`, {
         method: "PUT",
@@ -144,7 +147,7 @@ export function OrderRevisionTable({
     } catch (e: any) {
       toast.error(e?.message || t("revisionFailed"))
     } finally {
-      setBusy(false)
+      setPending(null)
     }
   }
 
@@ -155,7 +158,7 @@ export function OrderRevisionTable({
    * 저장 버튼을 누른다. 남이 만진 파일의 오타가 그대로 반영되면 곤란하다.
    */
   async function importSheet(file: File) {
-    setBusy(true)
+    setPending("import")
     try {
       const fd = new FormData()
       fd.append("file", file)
@@ -190,14 +193,14 @@ export function OrderRevisionTable({
     } catch (e: any) {
       toast.error(e?.message || t("sheetImportFailed"))
     } finally {
-      setBusy(false)
+      setPending(null)
       if (fileRef.current) fileRef.current.value = ""
     }
   }
 
   async function confirm() {
     if (!window.confirm(t("confirmOrderWarning"))) return
-    setBusy(true)
+    setPending("confirm")
     try {
       const res = await fetch(`/api/orders/${orderId}/confirm`, { method: "POST" })
       if (!res.ok) throw new Error((await res.json()).error)
@@ -206,7 +209,7 @@ export function OrderRevisionTable({
     } catch (e: any) {
       toast.error(e?.message || t("revisionFailed"))
     } finally {
-      setBusy(false)
+      setPending(null)
     }
   }
 
@@ -417,25 +420,25 @@ export function OrderRevisionTable({
                 onClick={() => fileRef.current?.click()}
                 disabled={busy}
               >
-                <Upload className="mr-1 h-3 w-3" />
+                {pending === "import" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Upload className="mr-1 h-3 w-3" />}
                 {t("sheetImport")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => submit()} disabled={busy || !changed}>
-                {busy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                {pending === "save" && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                 {tc("save")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => submit("BUYER_REVIEW")} disabled={busy}>
-                <Send className="mr-1 h-3 w-3" />
+                {pending === "buyer" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Send className="mr-1 h-3 w-3" />}
                 {t("sendToBuyer")}
               </Button>
               <Button size="sm" onClick={confirm} disabled={busy}>
-                <CheckCircle2 className="mr-1 h-3 w-3" />
+                {pending === "confirm" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
                 {t("confirmOrder")}
               </Button>
             </>
           ) : (
             <Button size="sm" onClick={() => submit("STOCK_CHECKING")} disabled={busy}>
-              <Send className="mr-1 h-3 w-3" />
+              {pending === "seller" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Send className="mr-1 h-3 w-3" />}
               {t("sendToSeller")}
             </Button>
           )}

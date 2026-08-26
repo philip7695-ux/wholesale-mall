@@ -199,6 +199,9 @@ model Order {
   trackingNumber       String?
   trackingNumbers      String[]       @default([])
   shippingCarrier      String?
+  // 바이어가 조정안을 확인해 되돌린 시각. 관리자가 새로 보내면 초기화한다.
+  // 이 값이 있으면 "바이어 확인 완료"라 관리자가 확정 타이밍을 안다.
+  buyerReviewedAt      DateTime?
   confirmedAt          DateTime?
   invoiceSentAt        DateTime?
   awaitingPaymentAt    DateTime?
