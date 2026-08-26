@@ -40,13 +40,32 @@ export function OrderSheetBar({ filters }: { filters: Record<string, string | un
     return p.toString()
   }
 
+  // 서버는 에러 코드+숫자만 준다. 사용자 언어로 번역해 보여준다.
+  function errMessage(
+    d: { code?: string; count?: number; limit?: number; error?: string } | null | undefined,
+    fallback: string,
+  ) {
+    const keys: Record<string, string> = {
+      noProducts: "orderSheetErrNoProducts",
+      tooManyStyles: "orderSheetErrTooMany",
+      noFile: "orderSheetErrNoFile",
+      readFail: "orderSheetErrReadFail",
+      noHeader: "orderSheetErrNoHeader",
+      noQty: "orderSheetErrNoQty",
+    }
+    if (d?.code && keys[d.code]) {
+      return t(keys[d.code], { count: d.count ?? 0, limit: d.limit ?? 0 })
+    }
+    return d?.error || fallback
+  }
+
   async function download() {
     setDownloading(true)
     try {
       const res = await fetch(`/api/orders/order-sheet?${query()}`)
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        throw new Error(d.error || t("orderSheetDownloadFail"))
+        throw new Error(errMessage(d, t("orderSheetDownloadFail")))
       }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -73,7 +92,7 @@ export function OrderSheetBar({ filters }: { filters: Record<string, string | un
       fd.append("file", file)
       const res = await fetch("/api/orders/order-sheet", { method: "POST", body: fd })
       const d = await res.json()
-      if (!res.ok) throw new Error(d.error || t("orderSheetUploadFail"))
+      if (!res.ok) throw new Error(errMessage(d, t("orderSheetUploadFail")))
       // 결과(담긴 수 + 재고 부족 조정 목록)를 패널로 보여준다.
       setResult({
         added: d.added ?? 0,

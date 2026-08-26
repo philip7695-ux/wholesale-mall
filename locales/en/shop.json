@@ -46,5 +46,11 @@
   "orderSheetClose": "Close",
   "orderSheetAdjustHeader": "{count} items capped to available stock (ordered → available)",
   "orderSheetExcluded": "excluded",
-  "orderSheetAndMore": "and {count} more"
+  "orderSheetAndMore": "and {count} more",
+  "orderSheetErrNoProducts": "No products match the filter.",
+  "orderSheetErrTooMany": "The filter returns {count} styles. You can download up to {limit} at a time. Please narrow the filter.",
+  "orderSheetErrNoFile": "No file provided.",
+  "orderSheetErrReadFail": "Could not read the Excel file.",
+  "orderSheetErrNoHeader": "Could not find the ‘Style No.’ column. Please upload the sheet as-is.",
+  "orderSheetErrNoQty": "No rows with a quantity were found."
 }
