@@ -39,3 +39,24 @@ export function buildProductWhere(params: ProductFilterParams): Record<string, u
   if (and.length) where.AND = and
   return where
 }
+
+/**
+ * 엑셀 주문서 팝업용 다중선택 필터. 연도·연령대·카테고리를 각각 여러 개
+ * 고를 수 있다(중복선택). 빈 배열은 그 항목에 제한을 두지 않는다(=전체).
+ */
+export function buildProductWhereMulti(params: {
+  categories?: string[]
+  years?: string[]
+  ageGroups?: string[]
+  specialOnly?: boolean
+}): Record<string, unknown> {
+  const where: Record<string, unknown> = { isActive: true }
+  if (params.categories?.length) where.category = { slug: { in: params.categories } }
+  if (params.ageGroups?.length) where.ageGroup = { in: params.ageGroups }
+  if (params.specialOnly) where.specialOffer = true
+  // 연도는 상품코드 시즌키의 첫 자리(연도 digit). 여러 해면 OR 로 묶는다.
+  if (params.years?.length) {
+    where.OR = params.years.map((y) => ({ seasonKey: { startsWith: y } }))
+  }
+  return where
+}

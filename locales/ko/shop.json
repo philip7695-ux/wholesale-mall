@@ -66,5 +66,8 @@
   "orderSheetErrNoFile": "파일이 없어요.",
   "orderSheetErrReadFail": "엑셀 파일을 읽을 수 없어요.",
   "orderSheetErrNoHeader": "‘품번’ 열을 찾을 수 없어요. 받은 양식 그대로 올려주세요.",
-  "orderSheetErrNoQty": "수량이 입력된 행이 없어요."
+  "orderSheetErrNoQty": "수량이 입력된 행이 없어요.",
+  "orderSheetPickerTitle": "주문서 받기 — 조건 선택",
+  "orderSheetSelectAll": "전체",
+  "orderSheetPickerHint": "연도·연령대·카테고리를 중복 선택할 수 있어요. 아무것도 안 고르면 전체가 대상이에요. (한 번에 최대 600개 스타일)"
 }

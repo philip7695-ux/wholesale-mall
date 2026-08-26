@@ -8,6 +8,7 @@ import { ProductFilterSidebar } from "@/components/shop/product-filter-sidebar"
 import { getTranslations, getLocale } from "next-intl/server"
 import { translateCategory } from "@/lib/translate"
 import { buildProductWhere } from "@/lib/product-filter"
+import { AGE_GROUPS } from "@/lib/age-group"
 import { seasonsNewestFirst } from "@/lib/season"
 import { ProductPrice } from "@/components/shop/product-price"
 import { OrderSheetBar } from "@/components/shop/order-sheet-bar"
@@ -139,13 +140,14 @@ export default async function ProductsPage({
 
           {/* 엑셀 일괄 주문: 지금 필터된 상품을 주문서로 받아 수량 채워 업로드 */}
           <OrderSheetBar
-            filters={{
-              category,
-              season,
-              ageGroup,
-              search,
-              special: specialOnly ? "1" : undefined,
-            }}
+            years={[...new Set(availableSeasons.map((s: string) => s[0]))]
+              .sort((a, b) => Number(b) - Number(a))
+              .map((d) => ({ value: d, label: String(2020 + Number(d)) }))}
+            ageGroups={[...AGE_GROUPS]}
+            categories={categories.map((c: any) => ({
+              value: c.slug,
+              label: translateCategory(c.slug, tCat, c.name),
+            }))}
           />
 
           {products.length === 0 ? (

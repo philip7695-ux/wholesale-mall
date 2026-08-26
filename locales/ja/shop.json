@@ -52,5 +52,8 @@
   "orderSheetErrNoFile": "ファイルがありません。",
   "orderSheetErrReadFail": "Excelファイルを読み込めません。",
   "orderSheetErrNoHeader": "「品番」列が見つかりません。受け取った様式のままアップロードしてください。",
-  "orderSheetErrNoQty": "数量が入力された行がありません。"
+  "orderSheetErrNoQty": "数量が入力された行がありません。",
+  "orderSheetPickerTitle": "注文書を取得 — 条件を選択",
+  "orderSheetSelectAll": "すべて",
+  "orderSheetPickerHint": "年度・年齢・カテゴリを複数選択できます。未選択なら全体が対象です。（一度に最大600スタイル）"
 }
