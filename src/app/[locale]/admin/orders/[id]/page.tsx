@@ -13,6 +13,7 @@ import { isEditable } from "@/lib/order-revision"
 import { getExchangeRate } from "@/lib/currency.server"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_DOT_COLOR, STATUS_TEXT_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
 import { OrderStatusStepper } from "@/components/order/order-status-stepper"
+import { CheckCircle2 } from "lucide-react"
 
 export default async function AdminOrderDetailPage({
   params,
@@ -107,6 +108,15 @@ export default async function AdminOrderDetailPage({
             <OrderStatusStepper status={order.status} size="md" />
           </CardContent>
         </Card>
+      )}
+
+      {/* 바이어가 조정안을 확인해 되돌렸으면 알린다. 관리자가 확정 타이밍을 안다. */}
+      {order.buyerReviewedAt && isEditable(order.status) && (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+          <span className="font-medium">{t("buyerReviewedBanner")}</span>
+          <span className="text-emerald-600">· {formatDateTime(order.buyerReviewedAt, locale)}</span>
+        </div>
       )}
 
       <div className="grid gap-6 md:grid-cols-2">

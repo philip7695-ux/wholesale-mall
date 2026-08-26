@@ -495,5 +495,6 @@
   "invoicePaymentModule": "決済情報",
   "invoiceIssue": "発行",
   "invoiceComposeCancel": "キャンセル",
-  "invoiceCurrencyModule": "決済通貨"
+  "invoiceCurrencyModule": "決済通貨",
+  "buyerReviewedBanner": "バイヤーが調整案を確認しました — 確認して確定してください。"
 }

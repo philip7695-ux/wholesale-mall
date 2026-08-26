@@ -495,5 +495,6 @@
   "invoicePaymentModule": "Payment info",
   "invoiceIssue": "Issue",
   "invoiceComposeCancel": "Cancel",
-  "invoiceCurrencyModule": "Currency"
+  "invoiceCurrencyModule": "Currency",
+  "buyerReviewedBanner": "The buyer has reviewed the adjustment — review and confirm."
 }

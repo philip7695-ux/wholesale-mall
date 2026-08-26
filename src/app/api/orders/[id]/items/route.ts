@@ -112,6 +112,10 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
         vatAmount,
         totalAmount,
         ...(next ? { status: next } : {}),
+        // 바이어가 되돌리면(확인 요청) "확인 완료" 시각을 남긴다.
+        // 관리자가 새로 보내면(BUYER_REVIEW) 다음 라운드를 위해 지운다.
+        ...(!isAdmin && next === "STOCK_CHECKING" ? { buyerReviewedAt: new Date() } : {}),
+        ...(isAdmin && next === "BUYER_REVIEW" ? { buyerReviewedAt: null } : {}),
       },
       include: { items: true },
     })
