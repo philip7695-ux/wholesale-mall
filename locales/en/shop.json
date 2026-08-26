@@ -52,5 +52,8 @@
   "orderSheetErrNoFile": "No file provided.",
   "orderSheetErrReadFail": "Could not read the Excel file.",
   "orderSheetErrNoHeader": "Could not find the ‘Style No.’ column. Please upload the sheet as-is.",
-  "orderSheetErrNoQty": "No rows with a quantity were found."
+  "orderSheetErrNoQty": "No rows with a quantity were found.",
+  "orderSheetPickerTitle": "Download order sheet — choose filters",
+  "orderSheetSelectAll": "All",
+  "orderSheetPickerHint": "Pick multiple years, age groups, and categories. Leave empty to include everything. (Up to 600 styles at a time.)"
 }

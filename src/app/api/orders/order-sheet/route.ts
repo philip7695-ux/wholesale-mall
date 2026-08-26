@@ -3,15 +3,15 @@ import ExcelJS from "exceljs"
 import * as XLSX from "xlsx"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { buildProductWhere } from "@/lib/product-filter"
+import { buildProductWhereMulti } from "@/lib/product-filter"
 import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 import { sortSizeNames } from "@/lib/product-sizes"
 
-// 한 번에 받을 수 있는 최대 스타일 수. 한 시즌이 대략 400개라 400 으로 둔다.
-// 너무 많으면 이미지 삽입으로 파일이 커지고 생성이 느려질 수 있다.
-const STYLE_LIMIT = 400
+// 한 번에 받을 수 있는 최대 스타일 수. 한 시즌 ≈300개라 두 시즌 정도인
+// 600 으로 둔다. 너무 많으면 이미지 삽입으로 파일이 커지고 느려진다.
+const STYLE_LIMIT = 600
 
 // 엑셀 헤더 라벨(언어별). 값(품번·컬러·사이즈)은 매칭 키라 번역하지 않고,
 // 사람이 읽는 헤더만 바이어 언어로 낸다.
@@ -55,11 +55,13 @@ export async function GET(request: Request) {
   // 주문서는 영어로 통합한다(B2B 수출 표준). 업로드는 예전 한국어 파일도
   // 인식하도록 다국어 라벨을 계속 받아준다.
   const L = LABELS.en
-  const where = buildProductWhere({
-    category: sp.get("category") || undefined,
-    season: sp.get("season") || undefined,
-    ageGroup: sp.get("ageGroup") || undefined,
-    search: sp.get("search") || undefined,
+  // 팝업 다중선택: 연도·연령대·카테고리를 콤마로 여러 개 받는다.
+  const arr = (k: string) =>
+    (sp.get(k) || "").split(",").map((s) => s.trim()).filter(Boolean)
+  const where = buildProductWhereMulti({
+    categories: arr("categories"),
+    years: arr("years"),
+    ageGroups: arr("ageGroups"),
     specialOnly: sp.get("special") === "1",
   })
 
@@ -95,25 +97,31 @@ export async function GET(request: Request) {
     getSpecialOfferRate(),
   ])
 
-  // 대표 이미지(누끼컷) 썸네일을 병렬로 가져온다. 실패는 건너뛴다.
-  const thumbs = await Promise.all(
-    products.map(async (p) => {
-      if (!p.thumbnail) return null
-      try {
-        const res = await fetch(thumbUrl(p.thumbnail))
-        if (!res.ok) return null
-        const ct = res.headers.get("content-type") || ""
-        const extension: "jpeg" | "png" | "gif" = ct.includes("png")
-          ? "png"
-          : ct.includes("gif")
-            ? "gif"
-            : "jpeg"
-        return { buffer: Buffer.from(await res.arrayBuffer()), extension }
-      } catch {
-        return null
-      }
-    }),
-  )
+  // 대표 이미지(누끼컷) 썸네일을 가져온다. 실패는 건너뛴다.
+  // 수백 개를 한꺼번에 요청하면 소켓이 터지므로 배치로 나눠 받는다.
+  const fetchThumb = async (url: string | null) => {
+    if (!url) return null
+    try {
+      const res = await fetch(thumbUrl(url))
+      if (!res.ok) return null
+      const ct = res.headers.get("content-type") || ""
+      const extension: "jpeg" | "png" | "gif" = ct.includes("png")
+        ? "png"
+        : ct.includes("gif")
+          ? "gif"
+          : "jpeg"
+      return { buffer: Buffer.from(await res.arrayBuffer()), extension }
+    } catch {
+      return null
+    }
+  }
+  const thumbs: Awaited<ReturnType<typeof fetchThumb>>[] = []
+  const BATCH = 24
+  for (let i = 0; i < products.length; i += BATCH) {
+    const chunk = products.slice(i, i + BATCH)
+    const got = await Promise.all(chunk.map((p) => fetchThumb(p.thumbnail)))
+    thumbs.push(...got)
+  }
 
   // 통합 사이즈 컬럼: 필터된 전 상품의 사이즈를 합쳐 정렬해 가로로 편다.
   // 스타일×컬러 한 줄에 사이즈별 수량(사이즈런)을 채우는 그리드 양식.

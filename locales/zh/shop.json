@@ -52,5 +52,8 @@
   "orderSheetErrNoFile": "没有文件。",
   "orderSheetErrReadFail": "无法读取Excel文件。",
   "orderSheetErrNoHeader": "找不到‘货号’列。请按原样上传订单表。",
-  "orderSheetErrNoQty": "没有填写数量的行。"
+  "orderSheetErrNoQty": "没有填写数量的行。",
+  "orderSheetPickerTitle": "下载订单表 — 选择条件",
+  "orderSheetSelectAll": "全部",
+  "orderSheetPickerHint": "可多选年份、年龄段和分类。不选则包含全部。（一次最多600个款式）"
 }
