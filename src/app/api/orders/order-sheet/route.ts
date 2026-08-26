@@ -65,11 +65,16 @@ export async function GET(request: Request) {
 
   const count = await prisma.product.count({ where })
   if (count === 0) {
-    return NextResponse.json({ error: "필터에 해당하는 상품이 없습니다." }, { status: 400 })
+    return NextResponse.json({ error: "필터에 해당하는 상품이 없습니다.", code: "noProducts" }, { status: 400 })
   }
   if (count > STYLE_LIMIT) {
     return NextResponse.json(
-      { error: `필터 결과가 ${count}개 스타일입니다. 한 번에 최대 ${STYLE_LIMIT}개까지만 받을 수 있어요. 필터를 더 좁혀주세요.` },
+      {
+        error: `필터 결과가 ${count}개 스타일입니다. 한 번에 최대 ${STYLE_LIMIT}개까지만 받을 수 있어요. 필터를 더 좁혀주세요.`,
+        code: "tooManyStyles",
+        count,
+        limit: STYLE_LIMIT,
+      },
       { status: 400 },
     )
   }
@@ -233,7 +238,7 @@ export async function POST(request: Request) {
   const form = await request.formData()
   const file = form.get("file")
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
+    return NextResponse.json({ error: "파일이 없습니다.", code: "noFile" }, { status: 400 })
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
@@ -243,7 +248,7 @@ export async function POST(request: Request) {
     const ws = wb.Sheets[wb.SheetNames[0]]
     rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false }) as unknown[][]
   } catch {
-    return NextResponse.json({ error: "엑셀 파일을 읽을 수 없습니다." }, { status: 400 })
+    return NextResponse.json({ error: "엑셀 파일을 읽을 수 없습니다.", code: "readFail" }, { status: 400 })
   }
 
   // "품번"이 있는 줄을 머리글로 본다(가로·세로 양식 공통, 위에 안내문이 있어도 견딤).
@@ -252,7 +257,7 @@ export async function POST(request: Request) {
     (r) => Array.isArray(r) && r.some((c) => CODE_LABELS.has(String(c ?? "").trim())),
   )
   if (headerIdx < 0) {
-    return NextResponse.json({ error: "‘Style No.’(품번) column not found. Please upload the sheet as-is." }, { status: 400 })
+    return NextResponse.json({ error: "Style No. column not found.", code: "noHeader" }, { status: 400 })
   }
   const header = (rows[headerIdx] as unknown[]).map((c) => String(c ?? "").trim())
   const findIdx = (set: Set<string>) => header.findIndex((h) => set.has(h))
@@ -302,7 +307,7 @@ export async function POST(request: Request) {
 
   if (styleKeys.size > STYLE_LIMIT) {
     return NextResponse.json(
-      { error: `${styleKeys.size}개 스타일이 들어 있습니다. 한 번에 최대 ${STYLE_LIMIT}개까지만 주문할 수 있어요.` },
+      { error: `${styleKeys.size}개 스타일이 들어 있습니다. 한 번에 최대 ${STYLE_LIMIT}개까지만 주문할 수 있어요.`, code: "tooManyStyles", count: styleKeys.size, limit: STYLE_LIMIT },
       { status: 400 },
     )
   }
@@ -329,7 +334,7 @@ export async function POST(request: Request) {
   }
 
   if (byVariant.size === 0) {
-    return NextResponse.json({ error: "수량이 입력된 행이 없습니다." }, { status: 400 })
+    return NextResponse.json({ error: "수량이 입력된 행이 없습니다.", code: "noQty" }, { status: 400 })
   }
 
   const ids = [...byVariant.keys()]

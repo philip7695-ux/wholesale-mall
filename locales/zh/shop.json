@@ -46,5 +46,11 @@
   "orderSheetClose": "关闭",
   "orderSheetAdjustHeader": "因库存不足调整的{count}项 (下单量 → 库存量)",
   "orderSheetExcluded": "已排除",
-  "orderSheetAndMore": "还有{count}项"
+  "orderSheetAndMore": "还有{count}项",
+  "orderSheetErrNoProducts": "没有符合筛选条件的商品。",
+  "orderSheetErrTooMany": "筛选结果为{count}个款式。一次最多可下载{limit}个，请缩小筛选范围。",
+  "orderSheetErrNoFile": "没有文件。",
+  "orderSheetErrReadFail": "无法读取Excel文件。",
+  "orderSheetErrNoHeader": "找不到‘货号’列。请按原样上传订单表。",
+  "orderSheetErrNoQty": "没有填写数量的行。"
 }

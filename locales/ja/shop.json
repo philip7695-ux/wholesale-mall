@@ -46,5 +46,11 @@
   "orderSheetClose": "閉じる",
   "orderSheetAdjustHeader": "在庫不足で調整された{count}件 (注文数 → 在庫数)",
   "orderSheetExcluded": "除外",
-  "orderSheetAndMore": "他{count}件"
+  "orderSheetAndMore": "他{count}件",
+  "orderSheetErrNoProducts": "フィルターに該当する商品がありません。",
+  "orderSheetErrTooMany": "フィルター結果が{count}スタイルです。一度に最大{limit}件まで取得できます。フィルターを絞ってください。",
+  "orderSheetErrNoFile": "ファイルがありません。",
+  "orderSheetErrReadFail": "Excelファイルを読み込めません。",
+  "orderSheetErrNoHeader": "「品番」列が見つかりません。受け取った様式のままアップロードしてください。",
+  "orderSheetErrNoQty": "数量が入力された行がありません。"
 }

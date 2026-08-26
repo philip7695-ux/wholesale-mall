@@ -60,5 +60,11 @@
   "orderSheetClose": "닫기",
   "orderSheetAdjustHeader": "재고가 부족해 조정된 항목 {count}건 (주문량 → 재고량)",
   "orderSheetExcluded": "제외",
-  "orderSheetAndMore": "외 {count}건 더"
+  "orderSheetAndMore": "외 {count}건 더",
+  "orderSheetErrNoProducts": "필터에 해당하는 상품이 없어요.",
+  "orderSheetErrTooMany": "필터 결과가 {count}개 스타일이에요. 한 번에 최대 {limit}개까지만 받을 수 있어요. 필터를 더 좁혀주세요.",
+  "orderSheetErrNoFile": "파일이 없어요.",
+  "orderSheetErrReadFail": "엑셀 파일을 읽을 수 없어요.",
+  "orderSheetErrNoHeader": "‘품번’ 열을 찾을 수 없어요. 받은 양식 그대로 올려주세요.",
+  "orderSheetErrNoQty": "수량이 입력된 행이 없어요."
 }
