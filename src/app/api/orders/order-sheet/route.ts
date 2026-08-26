@@ -9,9 +9,9 @@ import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 import { sortSizeNames } from "@/lib/product-sizes"
 
-// 한 번에 받을 수 있는 최대 스타일 수. 너무 많으면 이미지 삽입으로 파일이
-// 커지고 생성이 느려져 오류가 나기 쉽다.
-const STYLE_LIMIT = 300
+// 한 번에 받을 수 있는 최대 스타일 수. 한 시즌이 대략 400개라 400 으로 둔다.
+// 너무 많으면 이미지 삽입으로 파일이 커지고 생성이 느려질 수 있다.
+const STYLE_LIMIT = 400
 
 // 엑셀 헤더 라벨(언어별). 값(품번·컬러·사이즈)은 매칭 키라 번역하지 않고,
 // 사람이 읽는 헤더만 바이어 언어로 낸다.
@@ -160,16 +160,14 @@ export async function GET(request: Request) {
   let rowIdx = 2
   products.forEach((p, pi) => {
     const seasonRate = seasonRateFor(p.code, seasonRates)
-    // 재고 없는 상품은 주문받지 않으므로, 판매가능(재고−예약>0)한 변형만
-    // 채울 칸으로 낸다. 색상 전체가 품절이면 그 줄은 건너뛴다.
-    const sellable = (v: { stock: number; reserved: number }) => v.stock - v.reserved > 0
-    // 색상별로 한 줄. 색상 정렬은 sortOrder.
+    // 색상별로 한 줄. 색상 정렬은 sortOrder. 재고 여부와 무관하게 다 채울
+    // 수 있게 낸다(업로드 시 재고만큼 조정된다).
     const colors = [...p.colors].sort((a, b) => a.sortOrder - b.sortOrder)
     const styleStartRow = rowIdx
     let styleHasRow = false
     for (const color of colors) {
       const colorVariants = p.variants.filter((v) => v.colorId === color.id)
-      if (!colorVariants.some(sellable)) continue // 색상 전체 품절 → 제외
+      if (colorVariants.length === 0) continue
       const wholesale = buyerPrice(
         colorVariants[0].price,
         seasonRate,
@@ -186,11 +184,9 @@ export async function GET(request: Request) {
       // 사이즈 칸: 해당 색상에 그 사이즈가 있으면 채울 칸(노랑), 없으면 막음(회색 -)
       sizeColumns.forEach((sizeName, i) => {
         const cell = row.getCell(firstSizeCol + i)
-        // 그 색상에 해당 사이즈가 있고 판매가능할 때만 채울 칸. 아니면 막음.
-        const variant = colorVariants.find((v) => v.size.name === sizeName)
-        const canOrder = !!variant && sellable(variant)
+        const has = colorVariants.some((v) => v.size.name === sizeName)
         cell.alignment = { horizontal: "center" }
-        if (canOrder) {
+        if (has) {
           cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF9E6" } }
         } else {
           cell.value = "-"
@@ -337,11 +333,16 @@ export async function POST(request: Request) {
   }
 
   const ids = [...byVariant.keys()]
-  // 변형의 재고·예약과, 이 바이어의 기존 장바구니 수량을 함께 읽는다.
+  // 변형의 재고·예약, 품번·컬러·사이즈, 그리고 이 바이어의 기존 장바구니 수량.
   const [variants, existingItems] = await Promise.all([
     prisma.productVariant.findMany({
       where: { id: { in: ids } },
-      select: { id: true, stock: true, reserved: true, product: { select: { isActive: true } } },
+      select: {
+        id: true, stock: true, reserved: true,
+        product: { select: { isActive: true, code: true } },
+        color: { select: { name: true } },
+        size: { select: { name: true } },
+      },
     }),
     prisma.cartItem.findMany({
       where: { userId: session.user.id, variantId: { in: ids } },
@@ -351,26 +352,28 @@ export async function POST(request: Request) {
   const vById = new Map(variants.map((v) => [v.id, v]))
   const existingQty = new Map(existingItems.map((c) => [c.variantId, c.quantity]))
 
-  // 재고 없는 상품은 주문받지 않는다. 판매가능(재고−예약)을 넘는 수량은
-  // 잘라서 담고, 잘린 만큼 알린다. (다운로드↔업로드 사이 재고 변동 대비 안전망)
+  // 주문은 통과시키되 수량을 판매가능(재고−예약)에 맞춰 조정한다.
+  // 재고 0이면 0(담기지 않음), 재고가 주문량보다 적으면 재고만큼.
+  // 조정된 항목은 주문량→재고량으로 바이어에게 보여준다.
   let added = 0
-  let skipped = 0
-  let trimmed = 0
+  const adjusted: { code: string; color: string; size: string; requested: number; available: number }[] = []
   for (const [variantId, requested] of byVariant) {
     const v = vById.get(variantId)
-    if (!v || !v.product.isActive) {
-      skipped++
-      continue
-    }
+    if (!v || !v.product.isActive) continue
     const available = Math.max(0, v.stock - v.reserved)
     const existing = existingQty.get(variantId) ?? 0
-    const desired = existing + requested
-    const capped = Math.min(desired, available)
-    if (capped < desired) trimmed += desired - capped
-    if (capped <= 0) {
-      if (existing === 0) skipped++
-      continue
+    const capped = Math.min(existing + requested, available)
+    // 재고가 주문량(기존+요청)에 못 미치면 조정 내역에 남긴다(재고 0 포함).
+    if (available < existing + requested) {
+      adjusted.push({
+        code: v.product.code || "",
+        color: v.color.name,
+        size: v.size.name,
+        requested,
+        available,
+      })
     }
+    if (capped <= 0) continue // 재고 0 → 담지 않음(있던 것도 유지)
     await prisma.cartItem.upsert({
       where: { userId_variantId: { userId: session.user.id, variantId } },
       update: { quantity: capped },
@@ -382,8 +385,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     added,
     styles: styleKeys.size,
-    skipped,
-    trimmed,
+    adjustedCount: adjusted.length,
+    adjusted: adjusted.slice(0, 50),
     unresolved: unresolved.slice(0, 20),
     unresolvedCount: unresolved.length,
   })
