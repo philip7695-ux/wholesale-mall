@@ -150,5 +150,6 @@
   "statusReview": "수량조정",
   "deleteConfirm": "이 주문 내역을 삭제할까요? 되돌릴 수 없어요.",
   "deleteSuccess": "주문 내역을 삭제했어요.",
-  "deleteFail": "삭제하지 못했어요."
+  "deleteFail": "삭제하지 못했어요.",
+  "awaitingBuyerReview": "바이어 확인 대기 중입니다. 바이어가 확인해 되돌리면 다시 수정·확정할 수 있어요."
 }

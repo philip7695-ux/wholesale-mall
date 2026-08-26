@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Loader2, Send, CheckCircle2, Upload, AlertTriangle } from "lucide-react"
+import { Loader2, Send, CheckCircle2, Upload, AlertTriangle, Clock } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { DropZone } from "@/components/ui/drop-zone"
 import { sortSizeNames } from "@/lib/product-sizes"
@@ -445,6 +445,13 @@ export function OrderRevisionTable({
           <span className="text-xs text-muted-foreground">
             {isAdmin ? t("adminRevisionHint") : t("buyerRevisionHint")}
           </span>
+        </div>
+      )}
+      {/* 바이어 차례엔 어드민 버튼을 잠그고 대기 중임을 알린다 */}
+      {isAdmin && !canEdit && (
+        <div className="flex items-center gap-2 rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-700">
+          <Clock className="h-4 w-4" />
+          {t("awaitingBuyerReview")}
         </div>
       )}
     </div>

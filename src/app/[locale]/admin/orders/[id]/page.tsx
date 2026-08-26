@@ -195,7 +195,9 @@ export default async function AdminOrderDetailPage({
               <OrderRevisionTable
               orderId={order.id}
               isAdmin
-              canEdit
+              // 바이어 차례(확인 요청 보낸 뒤)엔 어드민 편집·버튼을 잠근다.
+              // 그래야 확인 요청·확정이 라운드당 한 번만 눌린다.
+              canEdit={order.status !== "BUYER_REVIEW"}
               items={order.items.map((item: any) => ({
                 id: item.id,
                 productCode: item.variant?.product?.code ?? null,
