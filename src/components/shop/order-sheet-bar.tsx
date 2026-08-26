@@ -59,9 +59,16 @@ export function OrderSheetBar({ filters }: { filters: Record<string, string | un
       const res = await fetch("/api/orders/order-sheet", { method: "POST", body: fd })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || t("orderSheetUploadFail"))
+      // 아무것도 안 담긴 경우(전부 품절이거나 품번 불일치) 명확히 알린다.
+      if (!d.added) {
+        toast.error(t("orderSheetNoneAdded"))
+        if (d.adjustedCount > 0) toast.warning(t("orderSheetAdjusted", { count: d.adjustedCount }))
+        return
+      }
       toast.success(t("orderSheetUploaded", { count: d.added }))
-      if (d.trimmed > 0) {
-        toast.warning(t("orderSheetTrimmed", { count: d.trimmed }))
+      // 재고에 맞춰 조정된 항목 안내(주문량 > 재고)
+      if (d.adjustedCount > 0) {
+        toast.warning(t("orderSheetAdjusted", { count: d.adjustedCount }))
       }
       if (d.unresolvedCount > 0) {
         toast.warning(t("orderSheetUnresolved", { count: d.unresolvedCount }))
