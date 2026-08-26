@@ -41,5 +41,10 @@
   "orderSheetDownloadFail": "Could not download the order sheet.",
   "orderSheetUploadFail": "Could not upload the order sheet.",
   "orderSheetTrimmed": "{count} units exceeded stock and were capped to available.",
-  "orderSheetAdjusted": "{count} items were capped to available stock."
+  "orderSheetAdjusted": "{count} items were capped to available stock.",
+  "orderSheetGoCart": "Go to cart",
+  "orderSheetClose": "Close",
+  "orderSheetAdjustHeader": "{count} items capped to available stock (ordered → available)",
+  "orderSheetExcluded": "excluded",
+  "orderSheetAndMore": "and {count} more"
 }

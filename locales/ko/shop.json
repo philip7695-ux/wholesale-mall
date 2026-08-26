@@ -55,5 +55,10 @@
   "orderSheetDownloadFail": "주문서를 받지 못했어요.",
   "orderSheetUploadFail": "주문서를 올리지 못했어요.",
   "orderSheetTrimmed": "재고를 넘은 {count}개는 재고만큼만 담았어요.",
-  "orderSheetAdjusted": "{count}개 항목은 재고가 부족해 재고 수량에 맞춰 조정했어요."
+  "orderSheetAdjusted": "{count}개 항목은 재고가 부족해 재고 수량에 맞춰 조정했어요.",
+  "orderSheetGoCart": "장바구니로 이동",
+  "orderSheetClose": "닫기",
+  "orderSheetAdjustHeader": "재고가 부족해 조정된 항목 {count}건 (주문량 → 재고량)",
+  "orderSheetExcluded": "제외",
+  "orderSheetAndMore": "외 {count}건 더"
 }

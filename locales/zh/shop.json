@@ -41,5 +41,10 @@
   "orderSheetDownloadFail": "无法下载订单表。",
   "orderSheetUploadFail": "无法上传订单表。",
   "orderSheetTrimmed": "超出库存的{count}件已按库存数量加入。",
-  "orderSheetAdjusted": "{count}项因库存不足已按库存数量调整。"
+  "orderSheetAdjusted": "{count}项因库存不足已按库存数量调整。",
+  "orderSheetGoCart": "前往购物车",
+  "orderSheetClose": "关闭",
+  "orderSheetAdjustHeader": "因库存不足调整的{count}项 (下单量 → 库存量)",
+  "orderSheetExcluded": "已排除",
+  "orderSheetAndMore": "还有{count}项"
 }

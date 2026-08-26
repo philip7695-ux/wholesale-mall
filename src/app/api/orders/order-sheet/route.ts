@@ -9,9 +9,9 @@ import { getGradeDiscount } from "@/lib/grade.server"
 import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 import { sortSizeNames } from "@/lib/product-sizes"
 
-// 한 번에 받을 수 있는 최대 스타일 수. 너무 많으면 이미지 삽입으로 파일이
-// 커지고 생성이 느려져 오류가 나기 쉽다.
-const STYLE_LIMIT = 300
+// 한 번에 받을 수 있는 최대 스타일 수. 한 시즌이 대략 400개라 400 으로 둔다.
+// 너무 많으면 이미지 삽입으로 파일이 커지고 생성이 느려질 수 있다.
+const STYLE_LIMIT = 400
 
 // 엑셀 헤더 라벨(언어별). 값(품번·컬러·사이즈)은 매칭 키라 번역하지 않고,
 // 사람이 읽는 헤더만 바이어 언어로 낸다.

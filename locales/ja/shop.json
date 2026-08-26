@@ -41,5 +41,10 @@
   "orderSheetDownloadFail": "注文書を取得できませんでした。",
   "orderSheetUploadFail": "注文書をアップロードできませんでした。",
   "orderSheetTrimmed": "在庫を超えた{count}点は在庫分のみ追加しました。",
-  "orderSheetAdjusted": "{count}件は在庫が不足しており在庫数に合わせて調整しました。"
+  "orderSheetAdjusted": "{count}件は在庫が不足しており在庫数に合わせて調整しました。",
+  "orderSheetGoCart": "カートへ",
+  "orderSheetClose": "閉じる",
+  "orderSheetAdjustHeader": "在庫不足で調整された{count}件 (注文数 → 在庫数)",
+  "orderSheetExcluded": "除外",
+  "orderSheetAndMore": "他{count}件"
 }
