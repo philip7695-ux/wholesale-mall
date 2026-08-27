@@ -496,5 +496,6 @@
   "invoiceIssue": "开具",
   "invoiceComposeCancel": "取消",
   "invoiceCurrencyModule": "结算币种",
-  "buyerReviewedBanner": "买家已确认调整方案 — 请检查后确定。"
+  "buyerReviewedBanner": "买家已确认调整方案 — 请检查后确定。",
+  "sortNoPhoto": "无图片商品"
 }

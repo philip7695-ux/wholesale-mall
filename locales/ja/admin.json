@@ -496,5 +496,6 @@
   "invoiceIssue": "発行",
   "invoiceComposeCancel": "キャンセル",
   "invoiceCurrencyModule": "決済通貨",
-  "buyerReviewedBanner": "バイヤーが調整案を確認しました — 確認して確定してください。"
+  "buyerReviewedBanner": "バイヤーが調整案を確認しました — 確認して確定してください。",
+  "sortNoPhoto": "写真なし商品"
 }
