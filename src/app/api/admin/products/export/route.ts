@@ -108,7 +108,7 @@ async function GET_impl(request: Request) {
 
 export const GET = apiRoute(GET_impl, { retry: true })
 
-const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "설명", "혼용률", "원산지", "컬러명*", "컬러코드", "컬러값(HEX)", "통화", "가격*"]
+const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "혼용률", "원산지", "컬러명*", "컬러코드", "통화", "가격*"]
 
 // 사이즈 열을 한 시트에 다 펼친다. 이름이 서로 겹치지 않으므로 성인/아동을
 // 나눌 필요가 없다. 업로더도 헤더에서 사이즈 열을 알아서 찾는다.
@@ -129,8 +129,8 @@ function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
         return v ? v.stock : ""
       }
       rows.push([
-        p.code || "", p.name, p.category.name, p.ageGroup || "", p.description || "",
-        p.material || "", p.origin || "", c.name, c.colorCode || "", c.hexColor || "",
+        p.code || "", p.name, p.category.name, p.ageGroup || "",
+        p.material || "", p.origin || "", c.name, c.colorCode || "",
         p.priceCurrency, price,
         ...SIZE_COLUMNS.map((sz) => stockOf(sz)),
       ])
@@ -139,7 +139,7 @@ function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   ws["!cols"] = headers.map((h, i) =>
-    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 28, 24, 12, 12, 10, 10, 8, 10][i] } : { wch: 6 },
+    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 24, 12, 12, 10, 8, 10][i] } : { wch: 6 },
   )
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "상품목록")

@@ -63,12 +63,9 @@ function parseSheetNew(
       continue
     }
 
-    const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
     const origin = String(row["원산지"] ?? "").trim()
     const colorCode = String(row["컬러코드"] ?? "").trim()
-    const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
-    const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
     const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
 
     // 그룹 키는 상품코드 우선(동일 상품명의 다른 스타일이 합쳐지는 것 방지)
@@ -76,17 +73,16 @@ function parseSheetNew(
     const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
 
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { code, name, ageGroup, category, description, material, origin, priceCurrency, variants: [] })
+      groups.set(groupKey, { code, name, ageGroup, category, description: "", material, origin, priceCurrency, variants: [] })
     }
 
     const group = groups.get(groupKey)!
-    if (description && !group.description) group.description = description
     if (material && !group.material) group.material = material
     if (origin && !group.origin) group.origin = origin
     if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
     for (const sizeName of sizeNames) {
-      group.variants.push({ colorName, colorCode, hexColor, sizeName, price, stock })
+      group.variants.push({ colorName, colorCode, hexColor: "", sizeName, price, stock })
     }
   }
 }
@@ -129,12 +125,9 @@ function parseSheetSizeColumns(
       continue
     }
 
-    const description = String(row["설명"] ?? "").trim()
     const material = String(row["혼용률"] ?? "").trim()
     const origin = String(row["원산지"] ?? "").trim()
     const colorCode = String(row["컬러코드"] ?? "").trim()
-    const rawHex = String(row["컬러값(HEX)"] ?? "").trim()
-    const hexColor = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawHex) ? rawHex : ""
     const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
 
     // 그룹 키는 상품코드 우선(동일 상품명의 다른 스타일이 합쳐지는 것 방지)
@@ -142,17 +135,16 @@ function parseSheetSizeColumns(
     const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
 
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { code, name, ageGroup, category, description, material, origin, priceCurrency, variants: [] })
+      groups.set(groupKey, { code, name, ageGroup, category, description: "", material, origin, priceCurrency, variants: [] })
     }
 
     const group = groups.get(groupKey)!
-    if (description && !group.description) group.description = description
     if (material && !group.material) group.material = material
     if (origin && !group.origin) group.origin = origin
     if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
     for (const { sizeName, stock } of sizeVariants) {
-      group.variants.push({ colorName, colorCode, hexColor, sizeName, price, stock })
+      group.variants.push({ colorName, colorCode, hexColor: "", sizeName, price, stock })
     }
   }
 }

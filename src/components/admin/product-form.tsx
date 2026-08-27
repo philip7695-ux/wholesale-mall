@@ -86,7 +86,6 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
   const [priceCurrency, setPriceCurrency] = useState(initialData?.priceCurrency || "KRW")
   const [code, setCode] = useState(initialData?.code || "")
   const [name, setName] = useState(initialData?.name || "")
-  const [description, setDescription] = useState(initialData?.description || "")
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "")
   const [images, setImages] = useState<string[]>(initialData?.images || [])
   const [material, setMaterial] = useState(initialData?.material || "")
@@ -271,7 +270,6 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       const body = {
         name,
         code: code.trim() || null,
-        description,
         categoryId,
         thumbnail: images[0] || null,
         images,
@@ -354,10 +352,6 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("productDesc")}</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
           <div className="space-y-2">
             <Label>{tp("composition")}</Label>
