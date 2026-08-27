@@ -34,9 +34,12 @@ export function ProductBulkUpload() {
   const [progress, setProgress] = useState<{ done: number; total: number; label: string } | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  // 템플릿 배치: 가로형(사이즈=열) / 세로형(사이즈=행). 업로더는 둘 다 읽는다.
+  const [layout, setLayout] = useState<"grid" | "rows">("grid")
 
+  const layoutQs = () => (layout === "rows" ? "&layout=rows" : "")
   const handleDownloadTemplate = (type: "adult" | "kids") => {
-    window.open(`/api/products/template?type=${type}`)
+    window.open(`/api/products/template?type=${type}${layoutQs()}`)
   }
 
   const acceptExcel = (selected: File | undefined) => {
@@ -329,6 +332,15 @@ export function ProductBulkUpload() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* 템플릿 배치 선택 — 가로형(사이즈가 열) / 세로형(행마다 한 사이즈) */}
+          <select
+            value={layout}
+            onChange={(e) => setLayout(e.target.value as "grid" | "rows")}
+            className="h-8 rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="grid">{t("templateLayoutGrid")}</option>
+            <option value="rows">{t("templateLayoutRows")}</option>
+          </select>
           <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate("adult")}>
             <Download className="mr-1 h-4 w-4" />
             성인복 템플릿
@@ -341,7 +353,7 @@ export function ProductBulkUpload() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open("/api/admin/products/export?format=template")}
+            onClick={() => window.open(`/api/admin/products/export?format=template${layoutQs()}`)}
           >
             <Download className="mr-1 h-4 w-4" />
             {t("exportCurrentProducts")}

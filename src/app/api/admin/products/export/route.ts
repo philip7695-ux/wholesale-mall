@@ -33,9 +33,13 @@ async function GET_impl(request: Request) {
   })
 
   // 템플릿과 같은 형식으로 내보내 그대로 고쳐 다시 올릴 수 있게 한다.
-  const format = new URL(request.url).searchParams.get("format")
+  // layout=rows 면 세로형(사이즈*/재고 열, 행마다 한 사이즈)으로 낸다.
+  const sp = new URL(request.url).searchParams
+  const format = sp.get("format")
   if (format === "template") {
-    return buildTemplateWorkbook(products)
+    return sp.get("layout") === "rows"
+      ? buildRowsWorkbook(products)
+      : buildTemplateWorkbook(products)
   }
 
   // 시트1: 상품 요약
@@ -113,6 +117,41 @@ const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대"
 // 사이즈 열을 한 시트에 다 펼친다. 이름이 서로 겹치지 않으므로 성인/아동을
 // 나눌 필요가 없다. 업로더도 헤더에서 사이즈 열을 알아서 찾는다.
 const SIZE_COLUMNS = sortSizeNames(ALL_SIZE_NAMES)
+
+/** 세로형: 행마다 사이즈 하나(사이즈·재고 열). 업로더가 헤더로 인식한다. */
+function buildRowsWorkbook(products: ExportProduct[]): NextResponse {
+  const headers = [...BASE_HEADERS, "사이즈*", "재고"]
+  const rows: (string | number)[][] = []
+  for (const p of products) {
+    for (const c of p.colors) {
+      const colorVariants = p.variants
+        .filter((v) => v.color.name === c.name)
+        .sort((a, b) => sortSizeNames([a.size.name, b.size.name])[0] === a.size.name ? -1 : 1)
+      for (const v of colorVariants) {
+        rows.push([
+          p.code || "", p.name, p.category.name, p.ageGroup || "",
+          p.material || "", p.origin || "", c.name, c.colorCode || "",
+          p.priceCurrency, v.price, v.size.name, v.stock,
+        ])
+      }
+    }
+  }
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+  ws["!cols"] = [
+    { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 24 },
+    { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 8 },
+  ]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, "상품목록")
+  const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
+  const fileName = `상품정보_세로형_${new Date().toISOString().split("T")[0]}.xlsx`
+  return new NextResponse(buf, {
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    },
+  })
+}
 
 /** 업로드 템플릿과 같은 형식(시트 하나)으로 현재 상품을 내보낸다. */
 function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
