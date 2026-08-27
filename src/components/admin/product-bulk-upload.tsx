@@ -73,7 +73,7 @@ export function ProductBulkUpload() {
       const XLSX = await import("xlsx")
       const wb = XLSX.read(await file.arrayBuffer(), { type: "array" })
 
-      type Chunk = { sheetName: string; rows: Record<string, any>[] }
+      type Chunk = { sheetName: string; rows: Record<string, any>[]; rowOffset: number }
       const chunks: Chunk[] = []
       let totalProducts = 0
 
@@ -84,20 +84,25 @@ export function ProductBulkUpload() {
         const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
         if (rows.length === 0) continue
 
-        // 같은 상품(코드)의 행이 청크 경계로 쪼개지지 않도록 코드 단위로 자른다
+        // 같은 상품(코드)의 행이 청크 경계로 쪼개지지 않도록 코드 단위로 자른다.
+        // rowOffset: 에러 행 번호가 청크 기준으로 어긋나지 않게 시트 내 시작
+        // 위치를 함께 보낸다(서버가 실제 시트 행 번호로 보고).
         let current: Record<string, any>[] = []
         let seen = new Set<string>()
-        for (const row of rows) {
+        let offset = 0
+        for (let ri = 0; ri < rows.length; ri++) {
+          const row = rows[ri]
           const key = String(row["상품코드"] ?? row["상품명*"] ?? "").trim()
           if (!seen.has(key) && seen.size >= PRODUCTS_PER_CHUNK) {
-            chunks.push({ sheetName, rows: current })
+            chunks.push({ sheetName, rows: current, rowOffset: offset })
+            offset = ri
             current = []
             seen = new Set<string>()
           }
           seen.add(key)
           current.push(row)
         }
-        if (current.length > 0) chunks.push({ sheetName, rows: current })
+        if (current.length > 0) chunks.push({ sheetName, rows: current, rowOffset: offset })
 
         totalProducts += new Set(
           rows.map((r) => String(r["상품코드"] ?? r["상품명*"] ?? "").trim()),
