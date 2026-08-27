@@ -9,7 +9,9 @@ import { Download, Upload, FileSpreadsheet, ImagePlus, X, CheckCircle2, AlertCir
 import { toast } from "sonner"
 import { useLeaveGuard } from "@/hooks/use-leave-guard"
 
+interface AutoMapped { product: string; from: string; to: string }
 interface UploadResult {
+  autoMapped?: AutoMapped[]
   success: number
   created: number
   updated: number
@@ -104,7 +106,7 @@ export function ProductBulkUpload() {
 
       if (chunks.length === 0) throw new Error(t("bulkNoData"))
 
-      const merged: UploadResult = { success: 0, created: 0, updated: 0, failed: [] }
+      const merged: UploadResult = { success: 0, created: 0, updated: 0, failed: [], autoMapped: [] }
       setProgress({ done: 0, total: totalProducts, label: "" })
 
       for (let i = 0; i < chunks.length; i++) {
@@ -124,6 +126,7 @@ export function ProductBulkUpload() {
         merged.created += data.created ?? 0
         merged.updated += data.updated ?? 0
         merged.failed.push(...data.failed)
+        if (data.autoMapped?.length) merged.autoMapped!.push(...data.autoMapped)
         setProgress({ done: merged.success + merged.failed.length, total: totalProducts, label: "" })
       }
 
@@ -446,6 +449,21 @@ export function ProductBulkUpload() {
                   {result.updated > 0 &&
                     ` (${t("bulkCreatedUpdated", { created: result.created, updated: result.updated })})`}
                 </span>
+              </div>
+            )}
+            {/* 상품명으로 카테고리를 자동 판독한 내역 — 관리자가 검수한다 */}
+            {(result.autoMapped?.length ?? 0) > 0 && (
+              <div className="space-y-1">
+                <div className="text-amber-700">
+                  {t("bulkAutoMapped", { count: result.autoMapped!.length })}
+                </div>
+                <ul className="max-h-40 space-y-0.5 overflow-auto rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+                  {result.autoMapped!.map((m, i) => (
+                    <li key={i}>
+                      {m.product} : &quot;{m.from}&quot; → <b>{m.to}</b>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {result.failed.length > 0 && (

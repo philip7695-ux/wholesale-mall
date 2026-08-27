@@ -48,6 +48,55 @@ function seasonKeyFromExplicit(yearRaw: string, seasonRaw: string): string | nul
   return sd ? `${d}${sd}` : null
 }
 
+
+// ── 카테고리 자동 판독 ─────────────────────────────────────────────
+// 작성자가 유효한 카테고리명을 모른 채(영/한 혼용) 올리는 일이 잦다.
+// 1) 정확 매칭 → 2) 별칭 → 3) 상품명 키워드 판독 → 4) 실패 순으로 푼다.
+
+/** 흔한 영어 표기 → 몰 카테고리명 */
+const CATEGORY_ALIASES: Record<string, string> = {
+  OUTER: "아우터", OUTERWEAR: "아우터",
+  TOP: "상의", TOPS: "상의",
+  BOTTOM: "하의", BOTTOMS: "하의", PANTS: "하의",
+  ONEPIECE: "원피스", "ONE-PIECE": "원피스", DRESS: "원피스",
+  ACC: "액세서리", ACCESSORY: "액세서리", ACCESSORIES: "액세서리",
+  SET: "세트",
+  INNER: "이너웨어", INNERWEAR: "이너웨어", UNDERWEAR: "이너웨어",
+  SWIM: "수영복", SWIMWEAR: "수영복",
+  HAT: "모자", CAP: "모자",
+  SOCKS: "양말",
+  BAG: "가방",
+}
+
+/**
+ * 상품명 키워드로 카테고리를 추정한다. 규칙 순서가 중요하다
+ * (예: "sweater beanie" 는 모자가 스웨터보다 먼저 잡혀야 한다).
+ * 규칙은 기존 4,500여 상품의 실제 분류 패턴에서 뽑았다.
+ */
+const NAME_RULES: [string[], string][] = [
+  [["bonnet", "beanie", "beret", "ball cap", "camp cap", " cap", "sun hat", " hat", "ear muff"], "모자"],
+  [["socks", "tights"], "양말"],
+  [["backpack", " bag", "bag "], "가방"],
+  [["bib", "hairpin", "hair band", "hairband", "goggles", "sunglass", "scrunchie", "hair clip"], "액세서리"],
+  [["pajama", "underwear", "brief", "boxer", "sleepwear"], "이너웨어"],
+  [["swimsuit", "swimwear", "swim suit", "rashguard", "rash guard"], "수영복"],
+  [["bodysuit set", "loungewear set", "overall set", "loungewear"], "세트"],
+  [["dress"], "원피스"],
+  [["bodysuit", "overall", "romper", "onesie"], "올인원"],
+  [["padding vest", "down vest", "jacket", "jumper", "windbreaker", "coat", "parka", "zip up", "zip-up"], "아우터"],
+  [["sweatpants", "jogger", "leggings", "skirt", "shorts", "jeans", "denim pants", "pants"], "하의"],
+  [["cardigan", "sweatshirt", "sweater", "pullover", "hoodie", "t-shirt", "tshirt", " tee", "blouse", "shirt", "vest", " top"], "상의"],
+  [[" set"], "세트"],
+]
+
+function inferCategoryFromName(productName: string): string | null {
+  const n = ` ${productName.toLowerCase()} `
+  for (const [keys, cat] of NAME_RULES) {
+    if (keys.some((k) => n.includes(k))) return cat
+  }
+  return null
+}
+
 function toSlug(name: string): string {
   return name
     .toLowerCase()
@@ -275,7 +324,12 @@ export async function POST(request: NextRequest) {
 
     for (const catName of categoryNames) {
       const norm = catName.trim().toLowerCase()
-      const found = byNorm.get(norm) || byNorm.get(toSlug(catName))
+      let found = byNorm.get(norm) || byNorm.get(toSlug(catName))
+      // 별칭(OUTER→아우터, INNER→이너웨어 등)으로 한 번 더 시도
+      if (!found) {
+        const alias = CATEGORY_ALIASES[catName.trim().toUpperCase()]
+        if (alias) found = byNorm.get(alias.toLowerCase())
+      }
       if (found) {
         categoryMap.set(catName, found)
       } else if (allowNewCategories) {
@@ -283,8 +337,10 @@ export async function POST(request: NextRequest) {
         categoryMap.set(catName, created.id)
         byNorm.set(norm, created.id)
       }
-      // 못 찾고 생성도 허용 안 되면 categoryMap 에 없음 → 아래에서 행별 실패 처리
+      // 못 찾으면 아래 그룹 처리에서 상품명 판독으로 마지막 시도를 한다
     }
+    // 상품명 판독으로 분류된 내역(관리자가 검수할 수 있게 결과에 담는다)
+    const autoMapped: { product: string; from: string; to: string }[] = []
 
     // 상품 생성/갱신
     let created = 0
@@ -294,7 +350,16 @@ export async function POST(request: NextRequest) {
     for (const [groupKey, group] of productGroups) {
       const productName = group.name
       try {
-        const categoryId = categoryMap.get(group.category)
+        let categoryId = categoryMap.get(group.category)
+        if (!categoryId) {
+          // 마지막 시도: 상품명 키워드로 판독 (예: "... T-SHIRT" → 상의)
+          const inferred = inferCategoryFromName(group.name)
+          const inferredId = inferred ? byNorm.get(inferred.toLowerCase()) : undefined
+          if (inferredId) {
+            categoryId = inferredId
+            autoMapped.push({ product: group.name, from: group.category, to: inferred! })
+          }
+        }
         if (!categoryId) { failed.push({ row: 0, error: `알 수 없는 카테고리 "${group.category}" — 상품 "${group.name}" 건너뜀. 사용 가능: ${validNames}. 새 카테고리를 만들려면 [없는 카테고리 자동 생성]을 켜고 다시 올리세요.` }); continue }
 
         const colorsMap = new Map<string, { colorCode: string; hexColor: string }>()
@@ -426,7 +491,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: created + updated, created, updated, failed })
+    return NextResponse.json({ success: created + updated, created, updated, failed, autoMapped })
   } catch (error) {
     console.error("Bulk upload error:", error)
     // 관리자 전용 엔드포인트이므로 원인을 그대로 돌려준다.
