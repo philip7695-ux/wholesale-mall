@@ -112,11 +112,19 @@ async function GET_impl(request: Request) {
 
 export const GET = apiRoute(GET_impl, { retry: true })
 
-const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "혼용률", "원산지", "컬러명*", "컬러코드", "통화", "가격*"]
+const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "브랜드", "연도", "시즌", "혼용률", "원산지", "컬러명*", "컬러코드", "통화", "가격*"]
 
 // 사이즈 열을 한 시트에 다 펼친다. 이름이 서로 겹치지 않으므로 성인/아동을
 // 나눌 필요가 없다. 업로더도 헤더에서 사이즈 열을 알아서 찾는다.
 const SIZE_COLUMNS = sortSizeNames(ALL_SIZE_NAMES)
+
+/** seasonKey("71") → [2027, "SS"] 표기. 없으면 빈 값. */
+function yearSeasonOf(p: ExportProduct): [string | number, string] {
+  const k = p.seasonKey || ""
+  if (!/^[3-9][1-4]$/.test(k)) return ["", ""]
+  const season = { "1": "SS", "2": "SU", "3": "FW", "4": "WI" }[k[1]] || ""
+  return [2020 + Number(k[0]), season]
+}
 
 /** 세로형: 행마다 사이즈 하나(사이즈·재고 열). 업로더가 헤더로 인식한다. */
 function buildRowsWorkbook(products: ExportProduct[]): NextResponse {
@@ -128,8 +136,9 @@ function buildRowsWorkbook(products: ExportProduct[]): NextResponse {
         .filter((v) => v.color.name === c.name)
         .sort((a, b) => sortSizeNames([a.size.name, b.size.name])[0] === a.size.name ? -1 : 1)
       for (const v of colorVariants) {
+        const [yy, ss] = yearSeasonOf(p)
         rows.push([
-          p.code || "", p.name, p.category.name, p.ageGroup || "",
+          p.code || "", p.name, p.category.name, p.ageGroup || "", p.brand || "", yy, ss,
           p.material || "", p.origin || "", c.name, c.colorCode || "",
           p.priceCurrency, v.price, v.size.name, v.stock,
         ])
@@ -138,8 +147,8 @@ function buildRowsWorkbook(products: ExportProduct[]): NextResponse {
   }
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   ws["!cols"] = [
-    { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 24 },
-    { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 8 },
+    { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 8 },
+    { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 8 },
   ]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "상품목록")
@@ -167,8 +176,9 @@ function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
         const v = colorVariants.find((x) => x.size.name === sizeName)
         return v ? v.stock : ""
       }
+      const [yy, ss] = yearSeasonOf(p)
       rows.push([
-        p.code || "", p.name, p.category.name, p.ageGroup || "",
+        p.code || "", p.name, p.category.name, p.ageGroup || "", p.brand || "", yy, ss,
         p.material || "", p.origin || "", c.name, c.colorCode || "",
         p.priceCurrency, price,
         ...SIZE_COLUMNS.map((sz) => stockOf(sz)),
@@ -178,7 +188,7 @@ function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   ws["!cols"] = headers.map((h, i) =>
-    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 24, 12, 12, 10, 8, 10][i] } : { wch: 6 },
+    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 12, 8, 8, 24, 12, 12, 10, 8, 10][i] } : { wch: 6 },
   )
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "상품목록")
