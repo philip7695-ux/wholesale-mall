@@ -496,5 +496,6 @@
   "invoiceIssue": "Issue",
   "invoiceComposeCancel": "Cancel",
   "invoiceCurrencyModule": "Currency",
-  "buyerReviewedBanner": "The buyer has reviewed the adjustment — review and confirm."
+  "buyerReviewedBanner": "The buyer has reviewed the adjustment — review and confirm.",
+  "sortNoPhoto": "No photo"
 }

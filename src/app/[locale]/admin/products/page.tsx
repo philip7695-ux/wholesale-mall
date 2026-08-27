@@ -64,10 +64,16 @@ export default async function AdminProductsPage({
       ? [{ totalStock: "desc" as const }]
       : [{ seasonKey: "desc" as const }, { code: "asc" as const }]
 
+  // "사진 없는 상품"은 정렬 자리에 있지만 실제로는 거름망이다.
+  // 사진 안 올라간 상품만 추려 채워 넣는 작업용.
+  if (sort === "nophoto") {
+    where.OR = [{ thumbnail: null }, { thumbnail: "" }]
+  }
+
   // 조건 없이 4,550개를 전부 부르면 조회에만 2.5초가 걸리고 카드도 그만큼
   // 그려야 한다. 아무것도 안 걸었으면 첫 장만 보여주고, 조건을 걸었으면
   // (이미 좁혔다는 뜻이므로) 걸린 것을 다 보여준다.
-  const hasFilter = Boolean(year || season || category || brand || code)
+  const hasFilter = Boolean(year || season || category || brand || code || sort === "nophoto")
   const PAGE_SIZE = 20
   const FILTERED_MAX = 600   // 조건을 걸어도 이만큼 넘으면 더 좁히도록 안내한다
 
@@ -129,6 +135,7 @@ export default async function AdminProductsPage({
         sorts={[
           { value: "", label: t("sortSeason") },
           { value: "stock", label: t("sortStock") },
+          { value: "nophoto", label: t("sortNoPhoto") },
         ]}
       />
 
