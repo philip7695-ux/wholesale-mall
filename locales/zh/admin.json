@@ -497,5 +497,7 @@
   "invoiceComposeCancel": "取消",
   "invoiceCurrencyModule": "结算币种",
   "buyerReviewedBanner": "买家已确认调整方案 — 请检查后确定。",
-  "sortNoPhoto": "无图片商品"
+  "sortNoPhoto": "无图片商品",
+  "templateLayoutGrid": "横向（尺码为列）",
+  "templateLayoutRows": "纵向（每行一个尺码）"
 }
