@@ -44,7 +44,11 @@ export function buyerPrice(
 export function seasonRateFor(
   code: string | null | undefined,
   rates: Record<string, number>,
+  brand?: string | null,
 ): number {
   const key = seasonKeyFromCode(code)
-  return key ? rates[key] ?? 0 : 0
+  if (!key) return 0
+  // 브랜드별 요율이 있으면 우선, 없으면 기본(전체 공통)으로 폴백
+  if (brand && rates[`${brand}:${key}`] !== undefined) return rates[`${brand}:${key}`]
+  return rates[key] ?? 0
 }

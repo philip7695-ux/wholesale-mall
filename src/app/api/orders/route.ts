@@ -168,7 +168,7 @@ export async function POST(request: Request) {
     const unitPrice = (item: (typeof cartItems)[number]) =>
       buyerPrice(
         item.variant.price,
-        seasonRateFor(item.variant.product.code, seasonRates),
+        seasonRateFor(item.variant.product.code, seasonRates, item.variant.product.brand),
         gradeDiscount,
         item.variant.product.specialOffer ? specialOfferRate : 0,
       )

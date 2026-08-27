@@ -10,9 +10,13 @@ import { seasonIndex } from "@/lib/season"
 export async function getSeasonRates(): Promise<Record<string, number>> {
   try {
     const rows = await prisma.seasonDiscount.findMany({
-      select: { seasonKey: true, rate: true },
+      select: { seasonKey: true, rate: true, brand: true },
     })
-    return Object.fromEntries(rows.map((r) => [r.seasonKey, r.rate]))
+    // 기본(brand="")은 seasonKey 그대로, 브랜드별은 "브랜드:seasonKey" 로 담는다.
+    // 조회(seasonRateFor)는 브랜드 키를 먼저 보고 없으면 기본으로 폴백한다.
+    return Object.fromEntries(
+      rows.map((r) => [r.brand ? `${r.brand}:${r.seasonKey}` : r.seasonKey, r.rate]),
+    )
   } catch {
     // 설정을 못 읽으면 할인 없이(정상가) 보여준다. 싸게 파는 것보다
     // 비싸게 보이는 쪽이 되돌리기 쉽다.

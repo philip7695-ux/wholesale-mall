@@ -184,7 +184,10 @@ export default async function AdminProductsPage({
             // 어드민은 정상가를 다루지만, 바이어에게 얼마로 나가는지도 보여야
             // 할인율 설정이 맞는지 확인할 수 있다. 등급 할인은 회원마다 달라
             // 기준가(BRONZE)만 계산한다.
-            const seasonRate = seasonRates[product.seasonKey ?? ""] ?? 0
+            const sk = product.seasonKey ?? ""
+            const seasonRate =
+              (product.brand ? seasonRates[`${product.brand}:${sk}`] : undefined) ??
+              seasonRates[sk] ?? 0
             const specialRate = product.specialOffer ? specialOfferRate : 0
             const wholesale = minPrice > 0 ? buyerPrice(minPrice, seasonRate, 0, specialRate) : 0
             const images: string[] = product.images ?? []

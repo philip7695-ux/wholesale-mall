@@ -18,7 +18,8 @@ async function PUT_impl(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { seasonKey, rate } = await request.json()
+  const { seasonKey, rate, brand: brandRaw } = await request.json()
+  const brand = typeof brandRaw === "string" ? brandRaw.trim() : ""
 
   if (typeof seasonKey !== "string" || !/^[0-9][1-9]$/.test(seasonKey)) {
     return NextResponse.json({ error: "시즌 값이 올바르지 않습니다." }, { status: 400 })
@@ -29,9 +30,9 @@ async function PUT_impl(request: Request) {
   }
 
   const saved = await prisma.seasonDiscount.upsert({
-    where: { seasonKey },
+    where: { brand_seasonKey: { brand, seasonKey } },
     update: { rate },
-    create: { seasonKey, rate },
+    create: { brand, seasonKey, rate },
   })
   return NextResponse.json(saved)
 }
