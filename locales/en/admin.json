@@ -499,5 +499,6 @@
   "buyerReviewedBanner": "The buyer has reviewed the adjustment — review and confirm.",
   "sortNoPhoto": "No photo",
   "templateLayoutGrid": "Horizontal (sizes as columns)",
-  "templateLayoutRows": "Vertical (one size per row)"
+  "templateLayoutRows": "Vertical (one size per row)",
+  "bulkAllowNewCategories": "Auto-create missing categories (off = existing categories only, prevents typos)"
 }

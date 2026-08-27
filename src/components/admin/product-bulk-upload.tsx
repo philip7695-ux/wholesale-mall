@@ -36,6 +36,8 @@ export function ProductBulkUpload() {
   const inputRef = useRef<HTMLInputElement>(null)
   // 템플릿 배치: 가로형(사이즈=열) / 세로형(사이즈=행). 업로더는 둘 다 읽는다.
   const [layout, setLayout] = useState<"grid" | "rows">("grid")
+  // 오타로 카테고리가 늘어나는 것을 막기 위해 기본은 기존 카테고리만 허용
+  const [allowNewCategories, setAllowNewCategories] = useState(false)
 
   const layoutQs = () => (layout === "rows" ? "&layout=rows" : "")
   const handleDownloadTemplate = (type: "adult" | "kids") => {
@@ -109,7 +111,7 @@ export function ProductBulkUpload() {
         const res = await fetch("/api/products/bulk", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(chunks[i]),
+          body: JSON.stringify({ ...chunks[i], allowNewCategories }),
         })
 
         if (!res.ok) {
@@ -389,6 +391,16 @@ export function ProductBulkUpload() {
 
         {file && !result && (
           <div className="space-y-2">
+            {/* 오타로 카테고리가 늘어나지 않게 기본은 기존 카테고리만 매칭 */}
+            <label className="flex w-fit items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={allowNewCategories}
+                onChange={(e) => setAllowNewCategories(e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              {t("bulkAllowNewCategories")}
+            </label>
             <Button size="sm" onClick={handleUpload} disabled={uploading} className="w-fit">
               {uploading ? (
                 <>
