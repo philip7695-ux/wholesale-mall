@@ -166,8 +166,10 @@ export function ProductBulkUpload() {
   const [stockResult, setStockResult] = useState<StockUpdateResult | null>(null)
   const stockInputRef = useRef<HTMLInputElement>(null)
 
+  // 재고 카드 전용 배치 선택(대량등록과 독립)
+  const [stockLayout, setStockLayout] = useState<"grid" | "rows">("grid")
   const handleStockDownload = () => {
-    window.open(`/api/admin/products/stock${layout === "rows" ? "?layout=rows" : ""}`)
+    window.open(`/api/admin/products/stock${stockLayout === "rows" ? "?layout=rows" : ""}`)
   }
 
   const acceptStock = (selected: File | undefined) => {
@@ -503,6 +505,14 @@ export function ProductBulkUpload() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={stockLayout}
+            onChange={(e) => setStockLayout(e.target.value as "grid" | "rows")}
+            className="h-8 rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="grid">{t("templateLayoutGrid")}</option>
+            <option value="rows">{t("templateLayoutRows")}</option>
+          </select>
           <Button variant="outline" size="sm" onClick={handleStockDownload}>
             <Download className="mr-1 h-4 w-4" />
             {t("stockDownload")}
