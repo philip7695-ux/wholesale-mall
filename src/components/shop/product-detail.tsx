@@ -410,9 +410,7 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
-          {product.description && (
-            <p className="text-sm font-light text-gray-500 leading-relaxed">{product.description}</p>
-          )}
+          {/* 설명은 한국어뿐이라 다국어 바이어에게 무의미해 노출하지 않는다 */}
 
           {/* 혼용률·원산지. B2B 바이어는 통관·상품 등록에 이 값이 꼭 필요하다. */}
           {(product.material || product.origin) && (
