@@ -125,7 +125,6 @@ function parseSheetNew(
     const stock = Number(row["재고"] ?? 0) || 0
 
     if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
-    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
     if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
     if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
 
@@ -184,7 +183,6 @@ function parseSheetSizeColumns(
     const price = Number(row["가격*"])
 
     if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
-    if (!category) { failed.push({ row: rowNum, error: `[${sheetLabel}] 카테고리가 비어있습니다.` }); continue }
     if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
     if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
 
@@ -360,7 +358,15 @@ export async function POST(request: NextRequest) {
             autoMapped.push({ product: group.name, from: group.category, to: inferred! })
           }
         }
-        if (!categoryId) { failed.push({ row: 0, error: `알 수 없는 카테고리 "${group.category}" — 상품 "${group.name}" 건너뜀. 사용 가능: ${validNames}. 새 카테고리를 만들려면 [없는 카테고리 자동 생성]을 켜고 다시 올리세요.` }); continue }
+        if (!categoryId) {
+          failed.push({
+            row: 0,
+            error: group.category
+              ? `알 수 없는 카테고리 "${group.category}" — 상품 "${group.name}" 건너뜀. 사용 가능: ${validNames}. 새 카테고리를 만들려면 [없는 카테고리 자동 생성]을 켜고 다시 올리세요.`
+              : `상품 "${group.name}" — 카테고리가 비어 있고 상품명으로도 판별하지 못했습니다. 카테고리를 적어주세요. 사용 가능: ${validNames}`,
+          })
+          continue
+        }
 
         const colorsMap = new Map<string, { colorCode: string; hexColor: string }>()
         const sizesSet = new Set<string>()
