@@ -41,8 +41,10 @@ function seasonKeyFromExplicit(yearRaw: string, seasonRaw: string): string | nul
   if (d < 3 || d > 9) return null
   const map: Record<string, string> = {
     "1": "1", "2": "2", "3": "3", "4": "4",
-    SS: "1", SP: "1", "봄": "1", SU: "2", "여름": "2",
-    FW: "3", "가을": "3", WI: "4", "겨울": "4",
+    SS: "1", SP: "1", SPRING: "1", "봄": "1",
+    SU: "2", SUMMER: "2", "여름": "2",
+    FW: "3", FALL: "3", AUTUMN: "3", "가을": "3",
+    WI: "4", WINTER: "4", "겨울": "4",
   }
   const sd = map[seasonRaw.trim().toUpperCase()]
   return sd ? `${d}${sd}` : null
@@ -97,6 +99,14 @@ function inferCategoryFromName(productName: string): string | null {
   return null
 }
 
+
+/** "12,000" / "₩12000" / " 12000 " 도 숫자로 읽는다. */
+function parsePrice(raw: unknown): number {
+  if (typeof raw === "number") return raw
+  const cleaned = String(raw ?? "").replace(/[,₩$\s원]/g, "")
+  return cleaned === "" ? NaN : Number(cleaned)
+}
+
 function toSlug(name: string): string {
   return name
     .toLowerCase()
@@ -120,13 +130,21 @@ function parseSheetNew(
     const name = String(row["상품명*"] ?? "").trim()
     const category = String(row["카테고리*"] ?? "").trim()
     const colorName = String(row["컬러명*"] ?? "").trim()
-    const price = Number(row["가격*"])
+    let price = parsePrice(row["가격*"])
     const sizeStr = String(row["사이즈*"] ?? "").trim()
     const stock = Number(row["재고"] ?? 0) || 0
 
     if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
     if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
-    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
+    if (isNaN(price) || price <= 0) {
+      // 세로형에서 이어지는 행은 가격을 비우기도 한다. 같은 상품(코드/이름)의
+      // 같은 컬러 앞 행 가격을 물려받는다.
+      const gk = (String(row["상품코드"] ?? "").trim()) || `name:${name}`
+      const prev = groups.get(gk)?.variants.filter((v) => v.colorName === colorName).at(-1)
+        ?? groups.get(gk)?.variants.at(-1)
+      if (prev) price = prev.price
+    }
+    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다. (숫자로 적어주세요. 예: 12000)` }); continue }
 
     const sizeNames = sizeStr.split(",").map((s) => s.trim()).filter(Boolean)
     if (sizeNames.length === 0) {
@@ -180,11 +198,19 @@ function parseSheetSizeColumns(
     const name = String(row["상품명*"] ?? "").trim()
     const category = String(row["카테고리*"] ?? "").trim()
     const colorName = String(row["컬러명*"] ?? "").trim()
-    const price = Number(row["가격*"])
+    let price = parsePrice(row["가격*"])
 
     if (!name) { failed.push({ row: rowNum, error: `[${sheetLabel}] 상품명이 비어있습니다.` }); continue }
     if (!colorName) { failed.push({ row: rowNum, error: `[${sheetLabel}] 컬러명이 비어있습니다.` }); continue }
-    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다.` }); continue }
+    if (isNaN(price) || price <= 0) {
+      // 세로형에서 이어지는 행은 가격을 비우기도 한다. 같은 상품(코드/이름)의
+      // 같은 컬러 앞 행 가격을 물려받는다.
+      const gk = (String(row["상품코드"] ?? "").trim()) || `name:${name}`
+      const prev = groups.get(gk)?.variants.filter((v) => v.colorName === colorName).at(-1)
+        ?? groups.get(gk)?.variants.at(-1)
+      if (prev) price = prev.price
+    }
+    if (isNaN(price) || price <= 0) { failed.push({ row: rowNum, error: `[${sheetLabel}] 가격이 올바르지 않습니다. (숫자로 적어주세요. 예: 12000)` }); continue }
 
     const sizeVariants: { sizeName: string; stock: number }[] = []
     for (const sizeName of sizeColumns) {
