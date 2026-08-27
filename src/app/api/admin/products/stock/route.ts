@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+
+// WMS 원본(3만 행 가까이)을 받을 수 있어 여유를 둔다
+export const maxDuration = 60
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
@@ -40,7 +43,7 @@ async function GET_impl(request: NextRequest) {
   // 세로형: 행마다 사이즈 하나(사이즈·재고 열). 대량등록 세로형과 같은 감각.
   const vertical = request.nextUrl.searchParams.get("layout") === "rows"
   if (vertical) {
-    const vHeaders = ["상품코드", "상품명", "컬러명", "가격", "사이즈", "재고"]
+    const vHeaders = ["상품코드", "상품명", "컬러명", "컬러코드", "가격", "사이즈", "재고"]
     const vRows: (string | number)[][] = []
     for (const product of products) {
       for (const color of product.colors) {
@@ -51,13 +54,13 @@ async function GET_impl(request: NextRequest) {
             return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
           })
         for (const v of colorVariants) {
-          vRows.push([product.code || "", product.name, color.name, v.price, v.size.name, v.stock])
+          vRows.push([product.code || "", product.name, color.name, color.colorCode || "", v.price, v.size.name, v.stock])
         }
       }
     }
     const wbV = XLSX.utils.book_new()
     const wsV = XLSX.utils.aoa_to_sheet([vHeaders, ...vRows])
-    wsV["!cols"] = [{ wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 8 }]
+    wsV["!cols"] = [{ wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 8 }, { wch: 8 }]
     XLSX.utils.book_append_sheet(wbV, wsV, "재고현황")
     const bufV = XLSX.write(wbV, { type: "buffer", bookType: "xlsx" })
     const fileNameV = `재고현황_세로형_${new Date().toISOString().split("T")[0]}.xlsx`
@@ -69,7 +72,7 @@ async function GET_impl(request: NextRequest) {
     })
   }
 
-  const baseHeaders = ["상품코드", "상품명", "컬러명", "가격"]
+  const baseHeaders = ["상품코드", "상품명", "컬러명", "컬러코드", "가격"]
   const headers = [...baseHeaders, ...sizeColumns]
 
   const rows: (string | number)[][] = []
@@ -79,6 +82,7 @@ async function GET_impl(request: NextRequest) {
         product.code || "",
         product.name,
         color.name,
+        color.colorCode || "",
         // 해당 컬러의 첫 번째 variant 가격
         product.variants.find((v) => v.colorId === color.id)?.price ?? 0,
       ]
@@ -96,7 +100,7 @@ async function GET_impl(request: NextRequest) {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   ws["!cols"] = [
-    { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 10 },
+    { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 8 }, { wch: 10 },
     ...sizeColumns.map(() => ({ wch: 8 })),
   ]
   XLSX.utils.book_append_sheet(wb, ws, "재고현황")
@@ -133,6 +137,115 @@ export async function POST(request: NextRequest) {
     const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
     if (rows.length === 0) return NextResponse.json({ error: "데이터가 없습니다." }, { status: 400 })
 
+    // ── 창고(WMS) 원본 형식 지원 ────────────────────────────────────
+    // 헤더: 창고코드/로케이션코드/zone명/품목코드/스타일코드/색상/사이즈/총 재고
+    // (헤더에 후행 공백이 섞여 있어 trim 해서 본다.) 로케이션별 행을
+    // 스타일×색상×사이즈로 합산해 몰 재고에 반영한다. 몰에 등록하지 않은
+    // 상품·컬러·사이즈는 반영하지 않고 요약으로만 알린다.
+    {
+      const keyMap = new Map(Object.keys(rows[0]).map((k) => [k.trim(), k]))
+      const has = (k: string) => keyMap.has(k)
+      if (has("스타일코드") && has("색상") && has("사이즈") && (has("총 재고") || has("총재고"))) {
+        const get = (row: Record<string, any>, k: string) => row[keyMap.get(k)!]
+        const stockKey = has("총 재고") ? "총 재고" : "총재고"
+
+        // 1) 로케이션 합산: 스타일|색상코드|사이즈 → 총재고
+        const agg = new Map<string, number>()
+        for (const row of rows) {
+          const style = String(get(row, "스타일코드") ?? "").trim()
+          const colorCode = String(get(row, "색상") ?? "").trim().toUpperCase()
+          const size = String(get(row, "사이즈") ?? "").trim()
+          const qty = Number(get(row, stockKey))
+          if (!style || !colorCode || !size || !Number.isFinite(qty)) continue
+          const k = `${style}|${colorCode}|${size}`
+          agg.set(k, (agg.get(k) ?? 0) + qty)
+        }
+
+        // 2) 몰 상품 일괄 조회 후 variant 매핑
+        const styles = [...new Set([...agg.keys()].map((k) => k.split("|")[0]))]
+        const prods = await prisma.product.findMany({
+          where: { code: { in: styles } },
+          select: {
+            id: true, code: true,
+            colors: { select: { id: true, name: true, colorCode: true } },
+            variants: { select: { id: true, colorId: true, size: { select: { name: true } } } },
+          },
+        })
+        const registered = new Set(prods.map((p) => p.code!))
+        const variantOf = new Map<string, string>() // style|COLORCODE|size → variantId
+        for (const p of prods) {
+          const colorByCode = new Map(p.colors.map((c) => [(c.colorCode || "").toUpperCase(), c.id]))
+          const colorIdToKey = new Map(p.colors.map((c) => [c.id, (c.colorCode || c.name).toUpperCase()]))
+          void colorByCode
+          for (const v of p.variants) {
+            const ck = colorIdToKey.get(v.colorId)
+            if (ck) variantOf.set(`${p.code}|${ck}|${v.size.name}`, v.id)
+          }
+        }
+
+        // 3) 반영 대상/미등록 분류
+        const ids: string[] = []
+        const stocks: number[] = []
+        const unregisteredStyles = new Set<string>()
+        let unmatchedCombos = 0
+        const unmatchedSample: string[] = []
+        for (const [k, qty] of agg) {
+          const [style] = k.split("|")
+          if (!registered.has(style)) {
+            unregisteredStyles.add(style)
+            continue
+          }
+          const vid = variantOf.get(k)
+          if (!vid) {
+            unmatchedCombos++
+            if (unmatchedSample.length < 10) unmatchedSample.push(k.replace(/\|/g, "/"))
+            continue
+          }
+          ids.push(vid)
+          stocks.push(Math.max(0, Math.round(qty)))
+        }
+
+        // 4) 단일 SQL 로 일괄 갱신 (수만 건도 한 방)
+        let updated = 0
+        if (ids.length) {
+          updated = await prisma.$executeRaw`
+            update mall."ProductVariant" v
+            set stock = d.stock, "updatedAt" = now()
+            from (select unnest(${ids}::text[]) as id, unnest(${stocks}::int[]) as stock) d
+            where v.id = d.id`
+          // 판매가능 집계 갱신
+          await prisma.$executeRaw`
+            update mall."Product" p set
+              "inStock" = exists (
+                select 1 from mall."ProductVariant" v
+                where v."productId" = p.id and v.stock - v.reserved > 0
+              ),
+              "totalStock" = coalesce((
+                select sum(greatest(v.stock - v.reserved, 0))::int
+                from mall."ProductVariant" v where v."productId" = p.id
+              ), 0)
+            where p.code = any(${styles})`
+        }
+
+        // 5) 미등록은 행별 에러 폭탄 대신 요약으로
+        const failed: { row: number; error: string }[] = []
+        if (unregisteredStyles.size) {
+          const list = [...unregisteredStyles]
+          failed.push({
+            row: 0,
+            error: `등록하지 않은 상품 ${list.length}개 스타일 — 재고 반영 안 함: ${list.slice(0, 20).join(", ")}${list.length > 20 ? ` 외 ${list.length - 20}개` : ""}`,
+          })
+        }
+        if (unmatchedCombos) {
+          failed.push({
+            row: 0,
+            error: `등록된 상품이지만 몰에 없는 컬러/사이즈 ${unmatchedCombos}건 — 반영 안 함 (예: ${unmatchedSample.join(", ")})`,
+          })
+        }
+        return NextResponse.json({ updated, failed })
+      }
+    }
+
     // 세로형(사이즈·재고 열)이면 가로형 한 줄(컬러당)로 합쳐 기존 로직을 태운다.
     let workRows: Record<string, any>[] = rows
     if ("사이즈" in rows[0] && "재고" in rows[0]) {
@@ -145,7 +258,7 @@ export async function POST(request: NextRequest) {
         const size = String(r["사이즈"] ?? "").trim()
         const key = `${code}|${name}|${colorName}`
         if (!byKey.has(key)) {
-          byKey.set(key, { 상품코드: code, 상품명: name, 컬러명: colorName, __row: i + 2 })
+          byKey.set(key, { 상품코드: code, 상품명: name, 컬러명: colorName, 컬러코드: String(r["컬러코드"] ?? "").trim(), __row: i + 2 })
         }
         if (size !== "") byKey.get(key)![size] = r["재고"]
       }
@@ -153,7 +266,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 헤더에서 사이즈 컬럼 추출 (기본 컬럼 제외한 나머지가 사이즈)
-    const baseKeys = new Set(["상품코드", "상품명", "컬러명", "가격", "사이즈", "재고", "__row"])
+    const baseKeys = new Set(["상품코드", "상품명", "컬러명", "컬러코드", "가격", "사이즈", "재고", "__row"])
     const sizeColumns = [...new Set(workRows.flatMap((r) => Object.keys(r)))].filter((k) => !baseKeys.has(k))
 
     let updated = 0
@@ -165,13 +278,14 @@ export async function POST(request: NextRequest) {
       const code = String(row["상품코드"] ?? "").trim()
       const name = String(row["상품명"] ?? "").trim()
       const colorName = String(row["컬러명"] ?? "").trim()
+      const colorCodeIn = String(row["컬러코드"] ?? "").trim()
 
       if (!name && !code) {
         failed.push({ row: rowNum, error: "상품코드 또는 상품명이 필요합니다." })
         continue
       }
-      if (!colorName) {
-        failed.push({ row: rowNum, error: "컬러명이 비어있습니다." })
+      if (!colorName && !colorCodeIn) {
+        failed.push({ row: rowNum, error: "컬러명(또는 컬러코드)이 비어있습니다." })
         continue
       }
 
@@ -199,9 +313,13 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const color = product.colors.find((c) => c.name === colorName)
+      // 컬러코드 우선(창고 시스템과의 대조 기준), 없으면 이름으로
+      const color =
+        (colorCodeIn &&
+          product.colors.find((c) => (c.colorCode || "").toUpperCase() === colorCodeIn.toUpperCase())) ||
+        product.colors.find((c) => c.name === colorName)
       if (!color) {
-        failed.push({ row: rowNum, error: `컬러를 찾을 수 없습니다: ${colorName} (상품: ${product.name})` })
+        failed.push({ row: rowNum, error: `컬러를 찾을 수 없습니다: ${colorName || colorCodeIn} (상품: ${product.name})` })
         continue
       }
 
