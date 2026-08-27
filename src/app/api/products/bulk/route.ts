@@ -121,10 +121,11 @@ function parseSheetNew(
   sheetLabel: string,
   failed: FailedRow[],
   groups: ProductGroups,
+  rowOffset = 0,
 ) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
-    const rowNum = i + 2
+    const rowNum = rowOffset + i + 2
 
     const code = String(row["상품코드"] ?? "").trim()
     const name = String(row["상품명*"] ?? "").trim()
@@ -189,10 +190,11 @@ function parseSheetSizeColumns(
   sheetLabel: string,
   failed: FailedRow[],
   groups: ProductGroups,
+  rowOffset = 0,
 ) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
-    const rowNum = i + 2
+    const rowNum = rowOffset + i + 2
 
     const code = String(row["상품코드"] ?? "").trim()
     const name = String(row["상품명*"] ?? "").trim()
@@ -263,17 +265,18 @@ function parseSheet(
   sheetName: string,
   failed: FailedRow[],
   groups: ProductGroups,
+  rowOffset = 0,
 ) {
   if (rows.length === 0) return
   if ("사이즈*" in rows[0]) {
-    parseSheetNew(rows, sheetName, failed, groups)
+    parseSheetNew(rows, sheetName, failed, groups, rowOffset)
   } else {
     // 헤더에서 사이즈 열을 직접 찾는다. 시트 이름(성인/아동)에 기대지 않으므로
     // 한 시트에 여러 사이즈 체계를 섞어 올려도 된다. 헤더에 사이즈 열이
     // 하나도 없으면 예전처럼 시트 이름으로 유추한다(옛 파일 호환).
     const detected = Object.keys(rows[0]).filter(isSizeColumn)
     const sizeCols = detected.length > 0 ? detected : getSizeColumnsForSheet(sheetName)
-    parseSheetSizeColumns(rows, sizeCols, sheetName, failed, groups)
+    parseSheetSizeColumns(rows, sizeCols, sheetName, failed, groups, rowOffset)
   }
 }
 
@@ -304,11 +307,12 @@ export async function POST(request: NextRequest) {
       const body = await request.json()
       const rows: Record<string, any>[] = Array.isArray(body?.rows) ? body.rows : []
       allowNewCategories = body?.allowNewCategories === true
+      const rowOffset: number = Number(body?.rowOffset) || 0
       const sheetName: string = String(body?.sheetName ?? "")
       if (rows.length === 0) {
         return NextResponse.json({ error: "처리할 행이 없습니다." }, { status: 400 })
       }
-      parseSheet(rows, sheetName, failed, productGroups)
+      parseSheet(rows, sheetName, failed, productGroups, rowOffset)
     } else {
       // 파일 업로드(기존 방식): 서버에서 엑셀 전체를 파싱한다
       const formData = await request.formData()
