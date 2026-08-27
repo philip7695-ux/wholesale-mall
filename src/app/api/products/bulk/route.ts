@@ -18,12 +18,35 @@ type ProductGroups = Map<string, {
   name: string
   ageGroup: AgeGroupValue | null
   category: string
+  brand: string
+  yearRaw: string
+  seasonRaw: string
   description: string
   material: string
   origin: string
   priceCurrency: string
   variants: { colorName: string; colorCode: string; hexColor: string; sizeName: string; price: number; stock: number }[]
 }>
+
+
+/**
+ * 명시된 연도·시즌 → seasonKey. 브랜드마다 품번 체계가 달라 코드 파싱에
+ * 기대지 않고 템플릿의 연도/시즌 열을 우선한다. (2027|27|7 → "7", 시즌은
+ * 1~4 또는 SS/SP/SU/FW/WI)
+ */
+function seasonKeyFromExplicit(yearRaw: string, seasonRaw: string): string | null {
+  const y = parseInt(yearRaw)
+  if (!Number.isFinite(y)) return null
+  const d = y >= 2020 ? y - 2020 : y >= 20 ? y - 20 : y
+  if (d < 3 || d > 9) return null
+  const map: Record<string, string> = {
+    "1": "1", "2": "2", "3": "3", "4": "4",
+    SS: "1", SP: "1", "봄": "1", SU: "2", "여름": "2",
+    FW: "3", "가을": "3", WI: "4", "겨울": "4",
+  }
+  const sd = map[seasonRaw.trim().toUpperCase()]
+  return sd ? `${d}${sd}` : null
+}
 
 function toSlug(name: string): string {
   return name
@@ -67,17 +90,23 @@ function parseSheetNew(
     const origin = String(row["원산지"] ?? "").trim()
     const colorCode = String(row["컬러코드"] ?? "").trim()
     const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
+    const brand = String(row["브랜드"] ?? "").trim()
+    const yearRaw = String(row["연도"] ?? "").trim()
+    const seasonRaw = String(row["시즌"] ?? "").trim()
 
     // 그룹 키는 상품코드 우선(동일 상품명의 다른 스타일이 합쳐지는 것 방지)
     const groupKey = code || `name:${name}`
     const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
 
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { code, name, ageGroup, category, description: "", material, origin, priceCurrency, variants: [] })
+      groups.set(groupKey, { code, name, ageGroup, category, brand, yearRaw, seasonRaw, description: "", material, origin, priceCurrency, variants: [] })
     }
 
     const group = groups.get(groupKey)!
     if (material && !group.material) group.material = material
+    if (brand && !group.brand) group.brand = brand
+    if (yearRaw && !group.yearRaw) group.yearRaw = yearRaw
+    if (seasonRaw && !group.seasonRaw) group.seasonRaw = seasonRaw
     if (origin && !group.origin) group.origin = origin
     if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
@@ -129,17 +158,23 @@ function parseSheetSizeColumns(
     const origin = String(row["원산지"] ?? "").trim()
     const colorCode = String(row["컬러코드"] ?? "").trim()
     const priceCurrency = String(row["통화"] ?? "KRW").trim().toUpperCase()
+    const brand = String(row["브랜드"] ?? "").trim()
+    const yearRaw = String(row["연도"] ?? "").trim()
+    const seasonRaw = String(row["시즌"] ?? "").trim()
 
     // 그룹 키는 상품코드 우선(동일 상품명의 다른 스타일이 합쳐지는 것 방지)
     const groupKey = code || `name:${name}`
     const ageGroup = normalizeAgeGroup(String(row["연령대"] ?? ""))
 
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { code, name, ageGroup, category, description: "", material, origin, priceCurrency, variants: [] })
+      groups.set(groupKey, { code, name, ageGroup, category, brand, yearRaw, seasonRaw, description: "", material, origin, priceCurrency, variants: [] })
     }
 
     const group = groups.get(groupKey)!
     if (material && !group.material) group.material = material
+    if (brand && !group.brand) group.brand = brand
+    if (yearRaw && !group.yearRaw) group.yearRaw = yearRaw
+    if (seasonRaw && !group.seasonRaw) group.seasonRaw = seasonRaw
     if (origin && !group.origin) group.origin = origin
     if (ageGroup && !group.ageGroup) group.ageGroup = ageGroup
 
@@ -275,7 +310,11 @@ export async function POST(request: NextRequest) {
             data: {
               name: productName,
               code: group.code || null,
-              seasonKey: seasonKeyFromCode(group.code),
+              brand: group.brand || null,
+              // 명시된 연도·시즌이 있으면 우선, 없으면 품번에서 유도
+              seasonKey:
+                seasonKeyFromExplicit(group.yearRaw, group.seasonRaw) ??
+                seasonKeyFromCode(group.code),
               description: group.description || null,
               material: group.material || null,
               origin: group.origin || null,
@@ -309,6 +348,10 @@ export async function POST(request: NextRequest) {
             where: { id: existing.id },
             data: {
               name: productName,
+              ...(group.brand ? { brand: group.brand } : {}),
+              ...(seasonKeyFromExplicit(group.yearRaw, group.seasonRaw)
+                ? { seasonKey: seasonKeyFromExplicit(group.yearRaw, group.seasonRaw) }
+                : {}),
               description: group.description || null,
               material: group.material || null,
               origin: group.origin || null,

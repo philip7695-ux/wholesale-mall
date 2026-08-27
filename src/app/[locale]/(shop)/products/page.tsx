@@ -54,7 +54,7 @@ export default async function ProductsPage({
     .catch(() => [] as { seasonKey: string | null }[])
   const availableSeasons = seasonRows
     .map((r: { seasonKey: string | null }) => r.seasonKey ?? "")
-    .filter((k: string) => /^[3-6][1-4]$/.test(k))
+    .filter((k: string) => /^[3-9][1-4]$/.test(k))
 
   // 가격은 서버에서 계산한다. 화면과 주문이 서로 다른 값을 쓰지 않게 하려는 것이다.
   const session = await auth().catch(() => null)

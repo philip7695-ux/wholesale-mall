@@ -23,7 +23,7 @@ export function buildProductWhere(params: ProductFilterParams): Record<string, u
   if (specialOnly) where.specialOffer = true
   if (isAgeGroup(ageGroup)) where.ageGroup = ageGroup
   // 시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌)
-  if (season && /^[3-6][1-4]?$/.test(season)) {
+  if (season && /^[3-9][1-4]?$/.test(season)) {
     where.seasonKey = season.length === 2 ? season : { startsWith: season }
   }
   // 시즌과 검색은 둘 다 OR 묶음이라 AND 로 묶어 둘 다 걸리게 한다.

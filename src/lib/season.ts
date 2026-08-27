@@ -20,7 +20,7 @@ export function seasonKeyFromCode(code: string | null | undefined): string | nul
 /** 코드 앞 두 자리 = 라인. 브랜드가 늘면 여기에 추가한다. */
 export const LINE_CODES = ["BP", "BU"] as const
 
-export const YEAR_DIGITS = ["3", "4", "5", "6"] as const
+export const YEAR_DIGITS = ["3", "4", "5", "6", "7"] as const
 export const SEASON_DIGITS = ["1", "2", "3", "4"] as const
 
 /** 연도 숫자 → 표기 (3 → 2023) */
