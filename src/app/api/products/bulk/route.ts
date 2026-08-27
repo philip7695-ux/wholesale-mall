@@ -223,11 +223,14 @@ export async function POST(request: NextRequest) {
     const failed: FailedRow[] = []
     const productGroups: ProductGroups = new Map()
     const contentType = request.headers.get("content-type") ?? ""
+    // 기본은 기존 카테고리에만 매칭. 새 카테고리 생성은 명시적으로 켠 경우만.
+    let allowNewCategories = false
 
     if (contentType.includes("application/json")) {
       // 청크 업로드: 클라이언트가 엑셀을 파싱해 행 묶음을 나눠 보낸다
       const body = await request.json()
       const rows: Record<string, any>[] = Array.isArray(body?.rows) ? body.rows : []
+      allowNewCategories = body?.allowNewCategories === true
       const sheetName: string = String(body?.sheetName ?? "")
       if (rows.length === 0) {
         return NextResponse.json({ error: "처리할 행이 없습니다." }, { status: 400 })
@@ -237,6 +240,7 @@ export async function POST(request: NextRequest) {
       // 파일 업로드(기존 방식): 서버에서 엑셀 전체를 파싱한다
       const formData = await request.formData()
       const file = formData.get("file") as File | null
+      allowNewCategories = formData.get("allowNewCategories") === "true"
       if (!file) return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 })
 
       const buffer = Buffer.from(await file.arrayBuffer())
@@ -254,15 +258,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "엑셀에 데이터가 없습니다." }, { status: 400 })
     }
 
-    // 카테고리 처리
+    // 카테고리 처리.
+    // "상의"와 "tshirt"처럼 표기가 갈리면 카테고리가 조용히 늘어난다.
+    // 기본은 기존 카테고리에만 매칭(대소문자·공백 무시)하고, 없으면 그
+    // 상품을 실패로 떨어뜨려 오타를 드러낸다. 새 카테고리를 정말 만들
+    // 때만 allowNewCategories 를 켜고 올린다.
     const categoryNames = [...new Set([...productGroups.values()].map((g) => g.category))]
     const categoryMap = new Map<string, string>()
+    const allCategories = await prisma.category.findMany({ select: { id: true, name: true, slug: true } })
+    const byNorm = new Map<string, string>()
+    for (const c of allCategories) {
+      byNorm.set(c.name.trim().toLowerCase(), c.id)
+      byNorm.set(c.slug.trim().toLowerCase(), c.id)
+    }
+    const validNames = allCategories.map((c) => c.name).join(", ")
 
     for (const catName of categoryNames) {
-      const slug = toSlug(catName)
-      let category = await prisma.category.findFirst({ where: { OR: [{ name: catName }, { slug }] } })
-      if (!category) category = await prisma.category.create({ data: { name: catName, slug } })
-      categoryMap.set(catName, category.id)
+      const norm = catName.trim().toLowerCase()
+      const found = byNorm.get(norm) || byNorm.get(toSlug(catName))
+      if (found) {
+        categoryMap.set(catName, found)
+      } else if (allowNewCategories) {
+        const created = await prisma.category.create({ data: { name: catName, slug: toSlug(catName) } })
+        categoryMap.set(catName, created.id)
+        byNorm.set(norm, created.id)
+      }
+      // 못 찾고 생성도 허용 안 되면 categoryMap 에 없음 → 아래에서 행별 실패 처리
     }
 
     // 상품 생성/갱신
@@ -274,7 +295,7 @@ export async function POST(request: NextRequest) {
       const productName = group.name
       try {
         const categoryId = categoryMap.get(group.category)
-        if (!categoryId) { failed.push({ row: 0, error: `카테고리 "${group.category}" 처리 실패` }); continue }
+        if (!categoryId) { failed.push({ row: 0, error: `알 수 없는 카테고리 "${group.category}" — 상품 "${group.name}" 건너뜀. 사용 가능: ${validNames}. 새 카테고리를 만들려면 [없는 카테고리 자동 생성]을 켜고 다시 올리세요.` }); continue }
 
         const colorsMap = new Map<string, { colorCode: string; hexColor: string }>()
         const sizesSet = new Set<string>()

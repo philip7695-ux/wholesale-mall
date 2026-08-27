@@ -499,5 +499,6 @@
   "buyerReviewedBanner": "买家已确认调整方案 — 请检查后确定。",
   "sortNoPhoto": "无图片商品",
   "templateLayoutGrid": "横向（尺码为列）",
-  "templateLayoutRows": "纵向（每行一个尺码）"
+  "templateLayoutRows": "纵向（每行一个尺码）",
+  "bulkAllowNewCategories": "自动创建不存在的分类（关闭=仅允许现有分类，防止错别字）"
 }

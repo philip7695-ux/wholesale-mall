@@ -499,5 +499,6 @@
   "buyerReviewedBanner": "바이어가 조정안을 확인했습니다 — 검토 후 확정하세요.",
   "sortNoPhoto": "사진 없는 상품",
   "templateLayoutGrid": "가로형 (사이즈=열)",
-  "templateLayoutRows": "세로형 (사이즈=행)"
+  "templateLayoutRows": "세로형 (사이즈=행)",
+  "bulkAllowNewCategories": "없는 카테고리 자동 생성 (끄면 기존 카테고리만 허용 — 오타 방지)"
 }
