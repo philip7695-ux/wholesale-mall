@@ -226,6 +226,64 @@ export async function GET(request: Request) {
     }
   })
 
+  // ── 2번째 시트: 사이즈별 재고 ─────────────────────────────────────
+  // 주문 시트와 같은 그리드(품번×컬러 행, 사이즈 열)로 판매가능 수량을
+  // 보여준다. 바이어가 수량을 적을 때 참고한다. 업로드는 첫 시트만 읽는다.
+  {
+    const sws = wb.addWorksheet("Stock", {
+      views: [{ state: "frozen", xSplit: 3, ySplit: 1 }],
+    })
+    const S_CODE = 1, S_NAME = 2, S_COLOR = 3
+    const sFirstSize = 4
+    sws.columns = [
+      { width: 16 }, // 품번
+      { width: 28 }, // 상품명
+      { width: 14 }, // 컬러
+      ...sizeColumns.map(() => ({ width: 7 })),
+    ]
+    const shead = sws.getRow(1)
+    shead.getCell(S_CODE).value = L.code
+    shead.getCell(S_NAME).value = L.name
+    shead.getCell(S_COLOR).value = L.color
+    sizeColumns.forEach((s, i) => (shead.getCell(sFirstSize + i).value = s))
+    shead.height = 20
+    shead.eachCell((cell) => {
+      cell.font = { bold: true, size: 10 }
+      cell.alignment = { horizontal: "center", vertical: "middle" }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } }
+      cell.border = border
+    })
+    let sRow = 2
+    for (const p of products) {
+      const colors = [...p.colors].sort((a, b) => a.sortOrder - b.sortOrder)
+      for (const color of colors) {
+        const colorVariants = p.variants.filter((v) => v.colorId === color.id)
+        if (colorVariants.length === 0) continue
+        const row = sws.getRow(sRow)
+        row.getCell(S_CODE).value = p.code
+        row.getCell(S_NAME).value = p.name
+        row.getCell(S_COLOR).value = color.name
+        row.height = 16
+        sizeColumns.forEach((sizeName, i) => {
+          const cell = row.getCell(sFirstSize + i)
+          cell.alignment = { horizontal: "center" }
+          const variant = colorVariants.find((v) => v.size.name === sizeName)
+          if (!variant) {
+            cell.value = "-"
+            cell.font = { color: { argb: "FFBBBBBB" } }
+          } else {
+            const avail = Math.max(0, variant.stock - variant.reserved)
+            cell.value = avail
+            // 품절은 붉게 표시해 바로 눈에 띄게 한다
+            if (avail === 0) cell.font = { color: { argb: "FFCC3333" } }
+          }
+        })
+        row.eachCell((cell) => { cell.border = border })
+        sRow++
+      }
+    }
+  }
+
   const buf = (await wb.xlsx.writeBuffer()) as ArrayBuffer
   const fileName = `${L.file}_${new Date().toISOString().split("T")[0]}.xlsx`
   return new NextResponse(buf, {
