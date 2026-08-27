@@ -6,7 +6,7 @@ import { ALL_SIZES } from "@/lib/product-sizes"
 import { apiRoute } from "@/lib/api-route"
 
 // GET: 재고 현황 엑셀 다운로드
-async function GET_impl() {
+async function GET_impl(request: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -36,6 +36,38 @@ async function GET_impl() {
     const bi = ALL_SIZES.indexOf(b)
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
   })
+
+  // 세로형: 행마다 사이즈 하나(사이즈·재고 열). 대량등록 세로형과 같은 감각.
+  const vertical = request.nextUrl.searchParams.get("layout") === "rows"
+  if (vertical) {
+    const vHeaders = ["상품코드", "상품명", "컬러명", "가격", "사이즈", "재고"]
+    const vRows: (string | number)[][] = []
+    for (const product of products) {
+      for (const color of product.colors) {
+        const colorVariants = product.variants
+          .filter((v) => v.colorId === color.id)
+          .sort((a, b) => {
+            const ai = ALL_SIZES.indexOf(a.size.name); const bi = ALL_SIZES.indexOf(b.size.name)
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+          })
+        for (const v of colorVariants) {
+          vRows.push([product.code || "", product.name, color.name, v.price, v.size.name, v.stock])
+        }
+      }
+    }
+    const wbV = XLSX.utils.book_new()
+    const wsV = XLSX.utils.aoa_to_sheet([vHeaders, ...vRows])
+    wsV["!cols"] = [{ wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 8 }]
+    XLSX.utils.book_append_sheet(wbV, wsV, "재고현황")
+    const bufV = XLSX.write(wbV, { type: "buffer", bookType: "xlsx" })
+    const fileNameV = `재고현황_세로형_${new Date().toISOString().split("T")[0]}.xlsx`
+    return new NextResponse(bufV, {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileNameV)}`,
+      },
+    })
+  }
 
   const baseHeaders = ["상품코드", "상품명", "컬러명", "가격"]
   const headers = [...baseHeaders, ...sizeColumns]
@@ -101,17 +133,35 @@ export async function POST(request: NextRequest) {
     const rows = XLSX.utils.sheet_to_json(ws) as Record<string, any>[]
     if (rows.length === 0) return NextResponse.json({ error: "데이터가 없습니다." }, { status: 400 })
 
+    // 세로형(사이즈·재고 열)이면 가로형 한 줄(컬러당)로 합쳐 기존 로직을 태운다.
+    let workRows: Record<string, any>[] = rows
+    if ("사이즈" in rows[0] && "재고" in rows[0]) {
+      const byKey = new Map<string, Record<string, any>>()
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i]
+        const code = String(r["상품코드"] ?? "").trim()
+        const name = String(r["상품명"] ?? "").trim()
+        const colorName = String(r["컬러명"] ?? "").trim()
+        const size = String(r["사이즈"] ?? "").trim()
+        const key = `${code}|${name}|${colorName}`
+        if (!byKey.has(key)) {
+          byKey.set(key, { 상품코드: code, 상품명: name, 컬러명: colorName, __row: i + 2 })
+        }
+        if (size !== "") byKey.get(key)![size] = r["재고"]
+      }
+      workRows = [...byKey.values()]
+    }
+
     // 헤더에서 사이즈 컬럼 추출 (기본 컬럼 제외한 나머지가 사이즈)
-    const baseKeys = new Set(["상품코드", "상품명", "컬러명", "가격"])
-    const firstRow = rows[0]
-    const sizeColumns = Object.keys(firstRow).filter((k) => !baseKeys.has(k))
+    const baseKeys = new Set(["상품코드", "상품명", "컬러명", "가격", "사이즈", "재고", "__row"])
+    const sizeColumns = [...new Set(workRows.flatMap((r) => Object.keys(r)))].filter((k) => !baseKeys.has(k))
 
     let updated = 0
     const failed: { row: number; error: string }[] = []
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const rowNum = i + 2
+    for (let i = 0; i < workRows.length; i++) {
+      const row = workRows[i]
+      const rowNum = Number(row.__row) || i + 2
       const code = String(row["상품코드"] ?? "").trim()
       const name = String(row["상품명"] ?? "").trim()
       const colorName = String(row["컬러명"] ?? "").trim()

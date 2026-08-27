@@ -167,7 +167,7 @@ export function ProductBulkUpload() {
   const stockInputRef = useRef<HTMLInputElement>(null)
 
   const handleStockDownload = () => {
-    window.open("/api/admin/products/stock")
+    window.open(`/api/admin/products/stock${layout === "rows" ? "?layout=rows" : ""}`)
   }
 
   const acceptStock = (selected: File | undefined) => {
