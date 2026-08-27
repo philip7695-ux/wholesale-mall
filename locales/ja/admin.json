@@ -500,5 +500,7 @@
   "sortNoPhoto": "写真なし商品",
   "templateLayoutGrid": "横型（サイズ＝列）",
   "templateLayoutRows": "縦型（サイズ＝行）",
-  "bulkAllowNewCategories": "未登録カテゴリを自動作成（オフ＝既存カテゴリのみ、誤記防止）"
+  "bulkAllowNewCategories": "未登録カテゴリを自動作成（オフ＝既存カテゴリのみ、誤記防止）",
+  "brandRateDefault": "基本（全ブランド共通）",
+  "brandRateHint": "ここで保存した料率がこのブランドに優先適用されます。未保存のシーズンは基本に従います。"
 }

@@ -500,5 +500,7 @@
   "sortNoPhoto": "无图片商品",
   "templateLayoutGrid": "横向（尺码为列）",
   "templateLayoutRows": "纵向（每行一个尺码）",
-  "bulkAllowNewCategories": "自动创建不存在的分类（关闭=仅允许现有分类，防止错别字）"
+  "bulkAllowNewCategories": "自动创建不存在的分类（关闭=仅允许现有分类，防止错别字）",
+  "brandRateDefault": "默认（所有品牌通用）",
+  "brandRateHint": "在此保存的折扣率将优先应用于该品牌；未保存的季节沿用默认值。"
 }

@@ -500,5 +500,7 @@
   "sortNoPhoto": "No photo",
   "templateLayoutGrid": "Horizontal (sizes as columns)",
   "templateLayoutRows": "Vertical (one size per row)",
-  "bulkAllowNewCategories": "Auto-create missing categories (off = existing categories only, prevents typos)"
+  "bulkAllowNewCategories": "Auto-create missing categories (off = existing categories only, prevents typos)",
+  "brandRateDefault": "Default (all brands)",
+  "brandRateHint": "Rates saved here override the default for this brand; unsaved seasons follow the default."
 }

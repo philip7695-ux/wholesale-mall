@@ -21,7 +21,6 @@ export interface SeasonRow {
   label: string      // "25 FW"
   seasonName: string // "가을"
   year: string       // "5" (코드의 연도 한 자리)
-  rate: number
   productCount: number
 }
 
@@ -44,9 +43,15 @@ const fullYear = (digit: string) => 2020 + Number(digit)
 export function SeasonDiscountForm({
   rows,
   gradeRates,
+  brands,
+  allRates,
 }: {
   rows: SeasonRow[]
   gradeRates: Grade[]
+  /** 상품에 존재하는 브랜드 목록. 탭으로 브랜드별 요율을 따로 건다. */
+  brands: string[]
+  /** 기본은 seasonKey, 브랜드별은 "브랜드:seasonKey" 키의 요율 맵 */
+  allRates: Record<string, number>
 }) {
   const router = useRouter()
   const t = useTranslations("admin")
@@ -54,6 +59,13 @@ export function SeasonDiscountForm({
   const [openYear, setOpenYear] = useState<string | null>(null)
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  // "" = 기본(전체 공통). 브랜드를 고르면 그 브랜드 요율을 보고 저장한다.
+  const [brand, setBrand] = useState("")
+
+  // 브랜드 요율이 있으면 우선, 없으면 기본으로 폴백(실제 가격 계산과 동일)
+  const rateOf = (key: string) =>
+    (brand ? allRates[`${brand}:${key}`] : undefined) ?? allRates[key] ?? 0
+  const hasOverride = (key: string) => brand !== "" && allRates[`${brand}:${key}`] !== undefined
 
   // 연도별로 묶는다. rows 는 이미 최신순이다.
   const years: { year: string; seasons: SeasonRow[] }[] = []
@@ -65,7 +77,7 @@ export function SeasonDiscountForm({
 
   function open(year: string) {
     const seasons = years.find((y) => y.year === year)?.seasons ?? []
-    setDraft(Object.fromEntries(seasons.map((s) => [s.key, String(Math.round(s.rate * 100))])))
+    setDraft(Object.fromEntries(seasons.map((s) => [s.key, String(Math.round(rateOf(s.key) * 100))])))
     setOpenYear(year)
   }
 
@@ -86,7 +98,7 @@ export function SeasonDiscountForm({
         const res = await fetch("/api/admin/season-discounts", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ seasonKey, rate: Number(v) / 100 }),
+          body: JSON.stringify({ seasonKey, rate: Number(v) / 100, brand }),
         })
         if (!res.ok) throw new Error((await res.json()).error)
       }
@@ -104,9 +116,39 @@ export function SeasonDiscountForm({
 
   return (
     <>
+      {/* 브랜드 탭: 기본(전체) + 브랜드별 요율 */}
+      {brands.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setBrand("")}
+            className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+              brand === "" ? "border-primary bg-primary text-primary-foreground" : "border-input hover:bg-accent"
+            }`}
+          >
+            {t("brandRateDefault")}
+          </button>
+          {brands.map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setBrand(b)}
+              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                brand === b ? "border-primary bg-primary text-primary-foreground" : "border-input hover:bg-accent"
+              }`}
+            >
+              {b}
+            </button>
+          ))}
+          {brand !== "" && (
+            <span className="ml-1 text-xs text-muted-foreground">{t("brandRateHint")}</span>
+          )}
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-lg border">
         {years.map((y) => {
-          const rates = y.seasons.map((s) => Math.round(s.rate * 100))
+          const rates = y.seasons.map((s) => Math.round(rateOf(s.key) * 100))
           const min = Math.min(...rates)
           const max = Math.max(...rates)
           const total = y.seasons.reduce((s, x) => s + x.productCount, 0)
@@ -133,8 +175,8 @@ export function SeasonDiscountForm({
               </span>
               <span className="hidden gap-1.5 text-xs text-muted-foreground sm:flex">
                 {y.seasons.map((s) => (
-                  <span key={s.key} className="rounded bg-muted px-1.5 py-0.5">
-                    {s.seasonName} {Math.round(s.rate * 100)}%
+                  <span key={s.key} className={`rounded px-1.5 py-0.5 ${hasOverride(s.key) ? "bg-primary/10 text-primary" : "bg-muted"}`}>
+                    {s.seasonName} {Math.round(rateOf(s.key) * 100)}%
                   </span>
                 ))}
               </span>
@@ -147,7 +189,7 @@ export function SeasonDiscountForm({
       <Dialog open={openYear !== null} onOpenChange={(v) => !v && setOpenYear(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{openYear && fullYear(openYear)} {t("seasonRate")}</DialogTitle>
+            <DialogTitle>{brand ? `${brand} · ` : ""}{openYear && fullYear(openYear)} {t("seasonRate")}</DialogTitle>
           </DialogHeader>
 
           <div className="overflow-x-auto">

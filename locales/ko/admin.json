@@ -500,5 +500,7 @@
   "sortNoPhoto": "사진 없는 상품",
   "templateLayoutGrid": "가로형 (사이즈=열)",
   "templateLayoutRows": "세로형 (사이즈=행)",
-  "bulkAllowNewCategories": "없는 카테고리 자동 생성 (끄면 기존 카테고리만 허용 — 오타 방지)"
+  "bulkAllowNewCategories": "없는 카테고리 자동 생성 (끄면 기존 카테고리만 허용 — 오타 방지)",
+  "brandRateDefault": "기본 (전체 공통)",
+  "brandRateHint": "이 브랜드에 저장하면 기본 대신 이 요율이 적용돼요. 저장 안 한 시즌은 기본을 따라요."
 }

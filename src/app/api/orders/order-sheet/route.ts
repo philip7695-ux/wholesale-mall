@@ -172,7 +172,7 @@ export async function GET(request: Request) {
 
   let rowIdx = 2
   products.forEach((p, pi) => {
-    const seasonRate = seasonRateFor(p.code, seasonRates)
+    const seasonRate = seasonRateFor(p.code, seasonRates, p.brand)
     // 색상별로 한 줄. 색상 정렬은 sortOrder. 재고 여부와 무관하게 다 채울
     // 수 있게 낸다(업로드 시 재고만큼 조정된다).
     const colors = [...p.colors].sort((a, b) => a.sortOrder - b.sortOrder)

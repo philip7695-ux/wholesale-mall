@@ -35,9 +35,14 @@ export default async function PricingSettingsPage() {
       label: s.label,
       seasonName: t(SEASON_KEYS[s.season]),
       year: s.year,
-      rate: rates[s.key] ?? 0,
       productCount: countMap[s.key],
     }))
+
+  // 브랜드별 요율 탭에 띄울 브랜드 목록(상품에 실제 존재하는 것만)
+  const brandRows = await prisma.product
+    .findMany({ where: { brand: { not: null } }, distinct: ["brand"], select: { brand: true } })
+    .catch(() => [] as { brand: string | null }[])
+  const brands = brandRows.map((b) => b.brand!).filter(Boolean).sort()
 
   return (
     <div className="space-y-6">
@@ -51,6 +56,8 @@ export default async function PricingSettingsPage() {
       <SeasonDiscountForm
         rows={rows}
         gradeRates={grades.map((g: any) => ({ grade: g.grade, rate: g.discountRate }))}
+        brands={brands}
+        allRates={rates}
       />
     </div>
   )

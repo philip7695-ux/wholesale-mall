@@ -56,7 +56,7 @@ export default async function ProductDetailPage({
   // 신상 = 품번 시즌지수가 최신 2개 시즌 문턱 이상
   const prodSeasonIdx = seasonIndex(raw.seasonKey ?? seasonKeyFromCode(raw.code))
   const isNew = prodSeasonIdx !== null && newThreshold !== null && prodSeasonIdx >= newThreshold
-  const seasonRate = seasonRateFor(raw.code, seasonRates)
+  const seasonRate = seasonRateFor(raw.code, seasonRates, raw.brand)
   const specialRate = raw.specialOffer ? specialOfferRate : 0
 
   // Serialize to plain object to avoid Date/Prisma type serialization issues

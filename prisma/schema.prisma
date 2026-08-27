@@ -239,11 +239,15 @@ model Order {
 /// 나중에 비율만 바꿔도 전 상품이 따라오고 원가 추적이 된다.
 model SeasonDiscount {
   id        String   @id @default(cuid())
-  seasonKey String   @unique   // 코드 3~4번째 두 자리. "53" = 25 FW
+  seasonKey String   // 코드 3~4번째 두 자리. "53" = 25 FW
+  // 브랜드별 요율. "" = 기본(모든 브랜드 공통). 브랜드 요율이 있으면
+  // 그게 우선이고 없으면 기본으로 폴백한다.
+  brand     String   @default("")
   rate      Float    @default(0)   // 0.5 = 택가의 50%
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([brand, seasonKey])
   @@schema("mall")
 }
 
