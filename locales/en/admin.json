@@ -502,5 +502,6 @@
   "templateLayoutRows": "Vertical (one size per row)",
   "bulkAllowNewCategories": "Auto-create missing categories (off = existing categories only, prevents typos)",
   "brandRateDefault": "Default (all brands)",
-  "brandRateHint": "Rates saved here override the default for this brand; unsaved seasons follow the default."
+  "brandRateHint": "Rates saved here override the default for this brand; unsaved seasons follow the default.",
+  "bulkAutoMapped": "{count} products had their category inferred from the product name — please review below."
 }
