@@ -46,10 +46,10 @@ export async function GET() {
     ])
     // 담지 않은 변형도 같은 규칙으로 값을 매겨야 빈 칸에 수량을 넣었을 때
     // 가격이 달라지지 않는다.
-    const priceOf = (product: { code: string | null; specialOffer: boolean; brand: string | null }, raw: number) =>
+    const priceOf = (product: { code: string | null; specialOffer: boolean; brand: string | null; seasonKey: string | null }, raw: number) =>
       buyerPrice(
         raw,
-        seasonRateFor(product.code, seasonRates, product.brand),
+        seasonRateFor(product.code, seasonRates, product.brand, product.seasonKey),
         gradeRate,
         product.specialOffer ? specialOfferRate : 0,
       )

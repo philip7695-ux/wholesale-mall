@@ -45,8 +45,12 @@ export function seasonRateFor(
   code: string | null | undefined,
   rates: Record<string, number>,
   brand?: string | null,
+  // DB 에 저장된 seasonKey. CK 처럼 품번에서 시즌을 유도할 수 없는
+  // 브랜드는 명시 저장된 값을 쓴다. 이게 없으면 품번에서 유도한다.
+  explicitKey?: string | null,
 ): number {
-  const key = seasonKeyFromCode(code)
+  const key = (explicitKey && /^[3-9][1-4]$/.test(explicitKey) ? explicitKey : null)
+    ?? seasonKeyFromCode(code)
   if (!key) return 0
   // 브랜드별 요율이 있으면 우선, 없으면 기본(전체 공통)으로 폴백
   if (brand && rates[`${brand}:${key}`] !== undefined) return rates[`${brand}:${key}`]
