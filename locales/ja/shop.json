@@ -56,5 +56,6 @@
   "orderSheetPickerTitle": "注文書を取得 — 条件を選択",
   "orderSheetSelectAll": "すべて",
   "orderSheetPickerHint": "年度・年齢・カテゴリを複数選択できます。未選択なら全体が対象です。（一度に最大600スタイル）",
-  "brandFilter": "ブランド"
+  "brandFilter": "ブランド",
+  "seasonOfYear": "季節"
 }

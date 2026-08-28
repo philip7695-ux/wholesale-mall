@@ -61,6 +61,7 @@ export async function GET(request: Request) {
   const where = buildProductWhereMulti({
     categories: arr("categories"),
     years: arr("years"),
+    seasons: arr("seasons"),
     ageGroups: arr("ageGroups"),
     brands: arr("brands"),
     specialOnly: sp.get("special") === "1",

@@ -49,6 +49,7 @@ export function buildProductWhere(params: ProductFilterParams): Record<string, u
 export function buildProductWhereMulti(params: {
   categories?: string[]
   years?: string[]
+  seasons?: string[]
   ageGroups?: string[]
   brands?: string[]
   specialOnly?: boolean
@@ -58,9 +59,16 @@ export function buildProductWhereMulti(params: {
   if (params.brands?.length) where.brand = { in: params.brands }
   if (params.ageGroups?.length) where.ageGroup = { in: params.ageGroups }
   if (params.specialOnly) where.specialOffer = true
-  // 연도는 상품코드 시즌키의 첫 자리(연도 digit). 여러 해면 OR 로 묶는다.
-  if (params.years?.length) {
-    where.OR = params.years.map((y) => ({ seasonKey: { startsWith: y } }))
+  // 시즌키는 연도 digit + 계절 digit 두 자리다. 연도만 고르면 그 해 전체,
+  // 계절만 고르면 모든 해의 그 계절, 둘 다 고르면 조합(연도×계절)이다.
+  const years = params.years?.filter(Boolean) ?? []
+  const seasons = params.seasons?.filter(Boolean) ?? []
+  if (years.length && seasons.length) {
+    where.seasonKey = { in: years.flatMap((y) => seasons.map((s) => `${y}${s}`)) }
+  } else if (years.length) {
+    where.OR = years.map((y) => ({ seasonKey: { startsWith: y } }))
+  } else if (seasons.length) {
+    where.OR = seasons.map((s) => ({ seasonKey: { endsWith: s } }))
   }
   return where
 }
