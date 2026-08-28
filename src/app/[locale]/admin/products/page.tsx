@@ -78,6 +78,9 @@ export default async function AdminProductsPage({
   const FILTERED_MAX = 600   // 조건을 걸어도 이만큼 넘으면 더 좁히도록 안내한다
 
   const total = await prisma.product.count({ where })
+  // 전체 선택은 화면(페이지)이 아니라 필터 조건 전체를 대상으로 한다.
+  // id 만 뽑으므로 수천 개여도 가볍다.
+  const allIdRows = await prisma.product.findMany({ where, select: { id: true } })
   const take = hasFilter ? FILTERED_MAX : PAGE_SIZE
   const skip = hasFilter ? 0 : (page - 1) * PAGE_SIZE
 
@@ -155,7 +158,7 @@ export default async function AdminProductsPage({
         <ProductGrid
           allImagesLabel={t("allImages")}
           mainImageLabel={t("mainImage")}
-          allIds={products.map((p: any) => p.id)}
+          allIds={allIdRows.map((p) => p.id)}
           labels={{
             selected: t("bulkSelected"),
             selectAll: t("bulkSelectAll"),

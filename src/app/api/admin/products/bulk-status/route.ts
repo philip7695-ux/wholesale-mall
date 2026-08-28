@@ -14,7 +14,9 @@ import { apiRoute } from "@/lib/api-route"
  * 상품이 섞여 있으면 몇 건인지 알려준다.
  */
 
-const MAX = 500
+// 전체 선택(필터 조건 전체)이 수천 개일 수 있다. updateMany 의 in 조건은
+// 이 규모를 무리 없이 처리한다.
+const MAX = 6000
 
 async function POST_impl(request: Request) {
   const session = await auth()
