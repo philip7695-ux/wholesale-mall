@@ -22,7 +22,7 @@ import { buyerPrice, seasonRateFor } from "@/lib/pricing"
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string; season?: string; special?: string }>
+  searchParams: Promise<{ category?: string; search?: string; page?: string; ageGroup?: string; season?: string; special?: string; brand?: string }>
 }) {
   const t = await getTranslations("shop")
   const tCat = await getTranslations("categories")
@@ -33,6 +33,7 @@ export default async function ProductsPage({
   const ageGroup = params.ageGroup
   // 연도만("6") 고르거나 연도+계절("63")까지 좁힐 수 있다
   const season = params.season
+  const brand = params.brand
   const specialOnly = params.special === "1"
   const page = parseInt(params.page || "1")
   const limit = 20
@@ -41,7 +42,7 @@ export default async function ProductsPage({
   // 주문 차단은 상세 화면(품절 표시 + 수량 입력 비활성)과
   // 주문 API 의 재고 검증이 담당한다.
   // 필터 조건은 엑셀 주문서 다운로드와 공유한다(lib/product-filter)
-  const where = buildProductWhere({ category, season, ageGroup, search, specialOnly })
+  const where = buildProductWhere({ category, season, ageGroup, search, specialOnly, brand })
 
   // 상품이 없는 시즌은 필터에 띄우지 않는다.
   // 코드를 전부 끌어오면 4,000행이 넘으므로 DB 에서 접두어만 집계한다.
@@ -64,6 +65,12 @@ export default async function ProductsPage({
     getSpecialOfferRate(),
   ])
 
+  // 브랜드 필터 목록(상품에 실제 존재하는 것만)
+  const brandRows = await prisma.product
+    .findMany({ where: { isActive: true, brand: { not: null } }, distinct: ["brand"], select: { brand: true }, orderBy: { brand: "asc" } })
+    .catch(() => [] as { brand: string | null }[])
+  const availableBrands = brandRows.map((b) => b.brand!).filter(Boolean)
+
   // 스페셜 오퍼가 하나도 없으면 필터에 띄우지 않는다
   const hasSpecialOffers =
     (await prisma.product.count({ where: { isActive: true, specialOffer: true } }).catch(() => 0)) > 0
@@ -71,24 +78,39 @@ export default async function ProductsPage({
   let products: any[] = [], categories: any[] = [], total = 0
   let loadError = false
   try {
-    ;[products, categories, total] = await withDbRetry(() => Promise.all([
+    // 노출 우선순위: 재고 있음 → 사진 있음 → 최신 시즌 → 품번.
+    // DB 정렬로는 "사진 유무"를 표현할 수 없고, seasonKey DESC 는 null 이
+    // 맨 앞으로 와(포스트그레스 기본) 사진도 시즌도 없는 신규 등록이
+    // 첫 화면을 도배했다. 가벼운 필드만 전부 받아 앱에서 정렬한 뒤
+    // 해당 페이지 상품만 다시 조회한다.
+    const [slim, cats] = await withDbRetry(() => Promise.all([
       prisma.product.findMany({
         where,
+        select: { id: true, thumbnail: true, inStock: true, seasonKey: true, code: true },
+      }),
+      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    ]))
+    categories = cats
+    slim.sort((a, b) =>
+      (b.inStock ? 1 : 0) - (a.inStock ? 1 : 0) ||
+      (b.thumbnail ? 1 : 0) - (a.thumbnail ? 1 : 0) ||
+      (b.seasonKey ?? "").localeCompare(a.seasonKey ?? "") ||
+      (a.code ?? "").localeCompare(b.code ?? ""),
+    )
+    total = slim.length
+    const pageIds = slim.slice((page - 1) * limit, page * limit).map((x) => x.id)
+    const pageProducts = await withDbRetry(() =>
+      prisma.product.findMany({
+        where: { id: { in: pageIds } },
         include: {
           category: true,
           colors: { orderBy: { sortOrder: "asc" } },
           variants: true,
         },
-        // 품절을 뒤로 보내고 최신 시즌부터 보여준다.
-        // createdAt 은 DB 에 넣은 시각이라 시즌 순서와 무관하다.
-        // 2023년을 나중에 넣었더니 목록 앞머리가 2023년이 됐다.
-        orderBy: [{ inStock: "desc" }, { seasonKey: "desc" }, { code: "asc" }],
-        skip: (page - 1) * limit,
-        take: limit,
       }),
-      prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.product.count({ where }),
-    ]))
+    )
+    const order = new Map(pageIds.map((id, i) => [id, i]))
+    products = pageProducts.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
   } catch (err) {
     // 일시적 DB 연결 오류 시 전체 페이지 500 대신 안내 메시지로 대체
     console.error("[ProductsPage] DB error:", err)
@@ -120,7 +142,9 @@ export default async function ProductsPage({
             currentAgeGroup={ageGroup}
             currentSeason={season}
             currentSearch={search}
+            currentBrand={brand}
             availableSeasons={availableSeasons}
+            availableBrands={availableBrands}
             specialOnly={specialOnly}
             hasSpecialOffers={hasSpecialOffers}
           />
@@ -144,6 +168,7 @@ export default async function ProductsPage({
               .sort((a, b) => Number(b) - Number(a))
               .map((d) => ({ value: d, label: String(2020 + Number(d)) }))}
             ageGroups={[...AGE_GROUPS]}
+            brands={availableBrands}
             categories={categories.map((c: any) => ({
               value: c.slug,
               label: translateCategory(c.slug, tCat, c.name),

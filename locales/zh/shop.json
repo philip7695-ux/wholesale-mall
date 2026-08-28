@@ -55,5 +55,6 @@
   "orderSheetErrNoQty": "没有填写数量的行。",
   "orderSheetPickerTitle": "下载订单表 — 选择条件",
   "orderSheetSelectAll": "全部",
-  "orderSheetPickerHint": "可多选年份、年龄段和分类。不选则包含全部。（一次最多600个款式）"
+  "orderSheetPickerHint": "可多选年份、年龄段和分类。不选则包含全部。（一次最多600个款式）",
+  "brandFilter": "品牌"
 }

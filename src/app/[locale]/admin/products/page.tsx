@@ -62,7 +62,7 @@ export default async function AdminProductsPage({
   const orderBy =
     sort === "stock"
       ? [{ totalStock: "desc" as const }]
-      : [{ seasonKey: "desc" as const }, { code: "asc" as const }]
+      : [{ seasonKey: { sort: "desc" as const, nulls: "last" as const } }, { code: "asc" as const }]
 
   // "사진 없는 상품"은 정렬 자리에 있지만 실제로는 거름망이다.
   // 사진 안 올라간 상품만 추려 채워 넣는 작업용.
