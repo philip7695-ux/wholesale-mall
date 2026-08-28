@@ -505,5 +505,7 @@
   "brandRateHint": "在此保存的折扣率将优先应用于该品牌；未保存的季节沿用默认值。",
   "bulkAutoMapped": "{count}件商品根据商品名自动判定了分类 — 请核对以下内容。",
   "bulkSelectAll": "全选 ({count})",
-  "bulkRegisterInactive": "以下架状态登记 — 准备好后批量上架"
+  "bulkRegisterInactive": "以下架状态登记 — 准备好后批量上架",
+  "imageDeleteConfirm": "要删除这张照片吗？",
+  "imageDeleteFail": "照片删除失败。"
 }

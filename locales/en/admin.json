@@ -505,5 +505,7 @@
   "brandRateHint": "Rates saved here override the default for this brand; unsaved seasons follow the default.",
   "bulkAutoMapped": "{count} products had their category inferred from the product name — please review below.",
   "bulkSelectAll": "Select all ({count})",
-  "bulkRegisterInactive": "Register as inactive (hidden) — activate in bulk when ready"
+  "bulkRegisterInactive": "Register as inactive (hidden) — activate in bulk when ready",
+  "imageDeleteConfirm": "Delete this photo?",
+  "imageDeleteFail": "Failed to delete the photo."
 }
