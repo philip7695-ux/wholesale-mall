@@ -167,6 +167,7 @@ export default async function ProductsPage({
             years={[...new Set(availableSeasons.map((s: string) => s[0]))]
               .sort((a, b) => Number(b) - Number(a))
               .map((d) => ({ value: d, label: String(2020 + Number(d)) }))}
+            seasons={[...new Set(availableSeasons.map((s: string) => s[1]))].sort()}
             ageGroups={[...AGE_GROUPS]}
             brands={availableBrands}
             categories={categories.map((c: any) => ({

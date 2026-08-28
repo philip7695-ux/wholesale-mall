@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Download, Upload, FileSpreadsheet, X } from "lucide-react"
 import { AGE_GROUP_KEYS, type AgeGroupValue } from "@/lib/age-group"
+import { SEASON_KEYS } from "@/lib/season"
 import { toast } from "sonner"
 
 interface AdjustedItem {
@@ -43,11 +44,14 @@ interface Option {
  */
 export function OrderSheetBar({
   years,
+  seasons = [],
   ageGroups,
   categories,
   brands = [],
 }: {
   years: Option[]
+  /** 상품이 있는 계절 digit 목록("1"~"4") */
+  seasons?: string[]
   ageGroups: AgeGroupValue[]
   categories: Option[]
   brands?: string[]
@@ -59,6 +63,7 @@ export function OrderSheetBar({
   const [result, setResult] = useState<UploadResult | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [selYears, setSelYears] = useState<Set<string>>(new Set())
+  const [selSeasons, setSelSeasons] = useState<Set<string>>(new Set())
   const [selAges, setSelAges] = useState<Set<string>>(new Set())
   const [selCats, setSelCats] = useState<Set<string>>(new Set())
   const [selBrands, setSelBrands] = useState<Set<string>>(new Set())
@@ -97,6 +102,7 @@ export function OrderSheetBar({
       const p = new URLSearchParams()
       if (selCats.size) p.set("categories", [...selCats].join(","))
       if (selYears.size) p.set("years", [...selYears].join(","))
+      if (selSeasons.size) p.set("seasons", [...selSeasons].join(","))
       if (selAges.size) p.set("ageGroups", [...selAges].join(","))
       if (selBrands.size) p.set("brands", [...selBrands].join(","))
       const res = await fetch(`/api/orders/order-sheet?${p.toString()}`)
@@ -197,6 +203,7 @@ export function OrderSheetBar({
   }
 
   const ageOptions: Option[] = ageGroups.map((a) => ({ value: a, label: t(AGE_GROUP_KEYS[a]) }))
+  const seasonOptions: Option[] = seasons.map((s) => ({ value: s, label: t(SEASON_KEYS[s]) }))
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/70 px-3 py-2">
@@ -244,6 +251,13 @@ export function OrderSheetBar({
               selected={selYears}
               onToggle={(v) => toggle(selYears, setSelYears, v)}
               onAll={() => toggleAll(years.map((y) => y.value), selYears, setSelYears)}
+            />
+            <ChipGroup
+              title={t("seasonOfYear")}
+              options={seasonOptions}
+              selected={selSeasons}
+              onToggle={(v) => toggle(selSeasons, setSelSeasons, v)}
+              onAll={() => toggleAll(seasonOptions.map((s) => s.value), selSeasons, setSelSeasons)}
             />
             <ChipGroup
               title={t("ageGroup")}

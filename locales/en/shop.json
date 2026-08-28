@@ -56,5 +56,6 @@
   "orderSheetPickerTitle": "Download order sheet — choose filters",
   "orderSheetSelectAll": "All",
   "orderSheetPickerHint": "Pick multiple years, age groups, and categories. Leave empty to include everything. (Up to 600 styles at a time.)",
-  "brandFilter": "Brand"
+  "brandFilter": "Brand",
+  "seasonOfYear": "Season (SS/FW)"
 }
