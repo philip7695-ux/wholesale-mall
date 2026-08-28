@@ -35,7 +35,7 @@ async function GET_impl(
       user: { select: { name: true, businessName: true } },
       items: {
         include: {
-          variant: { select: { product: { select: { code: true } } } },
+          variant: { select: { product: { select: { code: true } }, color: { select: { colorCode: true } } } },
         },
       },
     },
@@ -51,6 +51,11 @@ async function GET_impl(
   const codeOf = (item: (typeof order.items)[number]) =>
     item.variant?.product?.code || "-"
 
+  // 창고는 WMS 와 대조하므로 컬러명 대신 컬러코드를 쓴다. 코드가 없는
+  // 옛 상품만 이름으로 남긴다.
+  const colorOf = (item: (typeof order.items)[number]) =>
+    item.variant?.color?.colorCode || item.colorName
+
   // 열 순서를 직접 준다. "85", "90" 같은 숫자꼴 키를 객체에 담으면
   // 자바스크립트가 그 키들을 앞으로 끌어올려 품번보다 먼저 나온다.
   let header: string[] = []
@@ -62,7 +67,7 @@ async function GET_impl(
           .map((item) => ({
             품번: codeOf(item),
             상품명: item.productName,
-            컬러: item.colorName,
+            컬러: colorOf(item),
             사이즈: item.sizeName,
             주문수량: item.quantity,
             확인수량: "",
@@ -92,12 +97,12 @@ async function GET_impl(
 
     const groups = new Map<string, Record<string, unknown>>()
     for (const item of order!.items) {
-      const key = `${codeOf(item)}|${item.colorName}`
+      const key = `${codeOf(item)}|${colorOf(item)}`
       if (!groups.has(key)) {
         groups.set(key, {
           품번: codeOf(item),
           상품명: item.productName,
-          컬러: item.colorName,
+          컬러: colorOf(item),
           ...Object.fromEntries(sizeCols.map((c) => [c, ""])),
           주문합계: 0,
           비고: "",
@@ -190,7 +195,7 @@ async function POST_impl(
     where: { id },
     include: {
       items: {
-        include: { variant: { select: { product: { select: { code: true } } } } },
+        include: { variant: { select: { product: { select: { code: true } }, color: { select: { colorCode: true } } } } },
       },
     },
   })
@@ -243,9 +248,14 @@ async function POST_impl(
   const byKey = new Map<string, (typeof order.items)[number]>()
   for (const item of order.items) {
     const code = item.variant?.product?.code
-    const tail = `${norm(item.colorName)}|${norm(item.sizeName)}`
-    if (code) byKey.set(`${norm(code)}|${tail}`, item)
-    byKey.set(`${norm(item.productName)}|${tail}`, item)
+    // 발주서가 컬러코드로 나가므로 코드·이름 어느 쪽으로도 찾아지게 한다
+    const tails = [`${norm(item.colorName)}|${norm(item.sizeName)}`]
+    const cc = item.variant?.color?.colorCode
+    if (cc) tails.push(`${norm(cc)}|${norm(item.sizeName)}`)
+    for (const tail of tails) {
+      if (code) byKey.set(`${norm(code)}|${tail}`, item)
+      byKey.set(`${norm(item.productName)}|${tail}`, item)
+    }
   }
 
   // 이 주문에 실제로 있는 사이즈만 열로 인정한다. 그래야 창고가 담당자나
