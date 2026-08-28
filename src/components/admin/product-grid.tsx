@@ -17,6 +17,7 @@ import {
   X,
   Tag,
   Ban,
+  CheckSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -56,13 +57,17 @@ export function ProductGrid({
   children,
   allImagesLabel,
   mainImageLabel,
+  allIds = [],
   labels,
 }: {
   children: React.ReactNode
   allImagesLabel: string
   mainImageLabel: string
+  /** 현재 목록(필터 결과)의 상품 id 전체 — 전체 선택용 */
+  allIds?: string[]
   labels: {
     selected: string
+    selectAll: string
     activate: string
     deactivate: string
     delete: string
@@ -152,6 +157,22 @@ export function ProductGrid({
     <GridContext.Provider value={{ showAll, selected, toggle }}>
       <div>
         <div className="mb-3 flex items-center justify-end gap-1">
+          {/* 필터로 추린 결과를 통째로 활성/비활성 전환할 때 쓴다 */}
+          {allIds.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mr-auto h-8 gap-1.5 px-2.5"
+              onClick={() =>
+                setSelected(selected.size === allIds.length ? new Set() : new Set(allIds))
+              }
+            >
+              <CheckSquare className="h-4 w-4" />
+              <span className="text-xs font-normal">
+                {selected.size === allIds.length ? labels.clear : labels.selectAll.replace("{count}", String(allIds.length))}
+              </span>
+            </Button>
+          )}
           <Button
             variant={showAll ? "default" : "ghost"}
             size="sm"
