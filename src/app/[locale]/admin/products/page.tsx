@@ -155,8 +155,10 @@ export default async function AdminProductsPage({
         <ProductGrid
           allImagesLabel={t("allImages")}
           mainImageLabel={t("mainImage")}
+          allIds={products.map((p: any) => p.id)}
           labels={{
             selected: t("bulkSelected"),
+            selectAll: t("bulkSelectAll"),
             activate: t("bulkActivate"),
             deactivate: t("bulkDeactivate"),
             delete: tc("delete"),
