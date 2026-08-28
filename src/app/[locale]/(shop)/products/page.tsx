@@ -237,6 +237,7 @@ export default async function ProductsPage({
                     ...(search ? { search } : {}),
                     ...(ageGroup ? { ageGroup } : {}),
                     ...(season ? { season } : {}),
+                    ...(brand ? { brand } : {}),
                     ...(specialOnly ? { special: "1" } : {}),
                     page: p.toString(),
                   })}`
