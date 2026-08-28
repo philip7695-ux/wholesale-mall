@@ -145,7 +145,27 @@ async function PATCH_impl(
   }
 
   const { id } = await params
-  const { isActive } = await request.json()
+  const { isActive, removeImage } = await request.json()
+
+  // 목록 카드에서 사진을 한 장씩 지운다. 대표 사진을 지우면 남은 첫 장이
+  // 대표가 된다(썸네일 없는 상품이 되지 않게).
+  if (typeof removeImage === "string" && removeImage) {
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { images: true, thumbnail: true },
+    })
+    if (!product) {
+      return NextResponse.json({ error: "상품을 찾을 수 없습니다." }, { status: 404 })
+    }
+    const images = product.images.filter((u) => u !== removeImage)
+    const thumbnail = product.thumbnail === removeImage ? (images[0] ?? null) : product.thumbnail
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { images, thumbnail },
+      select: { id: true, images: true, thumbnail: true },
+    })
+    return NextResponse.json(updated)
+  }
 
   if (typeof isActive !== "boolean") {
     return NextResponse.json({ error: "isActive 는 true/false 여야 합니다." }, { status: 400 })

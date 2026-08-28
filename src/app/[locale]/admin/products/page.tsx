@@ -201,6 +201,7 @@ export default async function AdminProductsPage({
                 <Card className="relative flex flex-col overflow-hidden transition-shadow hover:shadow-md cursor-pointer">
                   <ProductSelectCheckbox id={product.id} label={product.name} />
                   <ProductImageStrip
+                    productId={product.id}
                     images={images}
                     thumbnail={product.thumbnail}
                     name={product.name}
@@ -208,6 +209,8 @@ export default async function AdminProductsPage({
                     activeLabel={t("active")}
                     inactiveLabel={t("inactive")}
                     noImageLabel={t("noImage")}
+                    deleteConfirmLabel={t("imageDeleteConfirm")}
+                    deleteFailLabel={t("imageDeleteFail")}
                   />
                   <CardHeader className="pb-2 pt-3">
                     <div className="flex items-center justify-between gap-2">

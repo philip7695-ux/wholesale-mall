@@ -505,5 +505,7 @@
   "brandRateHint": "이 브랜드에 저장하면 기본 대신 이 요율이 적용돼요. 저장 안 한 시즌은 기본을 따라요.",
   "bulkAutoMapped": "카테고리를 상품명으로 자동 판독한 상품 {count}건 — 아래 내역을 확인해주세요.",
   "bulkSelectAll": "전체 선택 ({count})",
-  "bulkRegisterInactive": "비활성(숨김) 상태로 등록 — 사진 등 준비 후 일괄 활성화"
+  "bulkRegisterInactive": "비활성(숨김) 상태로 등록 — 사진 등 준비 후 일괄 활성화",
+  "imageDeleteConfirm": "이 사진을 삭제할까요?",
+  "imageDeleteFail": "사진 삭제에 실패했습니다."
 }

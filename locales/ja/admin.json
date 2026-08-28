@@ -505,5 +505,7 @@
   "brandRateHint": "ここで保存した料率がこのブランドに優先適用されます。未保存のシーズンは基本に従います。",
   "bulkAutoMapped": "{count}件は商品名からカテゴリを自動判定しました — 以下をご確認ください。",
   "bulkSelectAll": "すべて選択 ({count})",
-  "bulkRegisterInactive": "非公開で登録 — 準備後に一括で公開"
+  "bulkRegisterInactive": "非公開で登録 — 準備後に一括で公開",
+  "imageDeleteConfirm": "この写真を削除しますか？",
+  "imageDeleteFail": "写真の削除に失敗しました。"
 }
