@@ -45,10 +45,12 @@ export function OrderSheetBar({
   years,
   ageGroups,
   categories,
+  brands = [],
 }: {
   years: Option[]
   ageGroups: AgeGroupValue[]
   categories: Option[]
+  brands?: string[]
 }) {
   const t = useTranslations("shop")
   const router = useRouter()
@@ -59,6 +61,7 @@ export function OrderSheetBar({
   const [selYears, setSelYears] = useState<Set<string>>(new Set())
   const [selAges, setSelAges] = useState<Set<string>>(new Set())
   const [selCats, setSelCats] = useState<Set<string>>(new Set())
+  const [selBrands, setSelBrands] = useState<Set<string>>(new Set())
   const fileRef = useRef<HTMLInputElement>(null)
 
   function toggle(set: Set<string>, setter: (s: Set<string>) => void, v: string) {
@@ -95,6 +98,7 @@ export function OrderSheetBar({
       if (selCats.size) p.set("categories", [...selCats].join(","))
       if (selYears.size) p.set("years", [...selYears].join(","))
       if (selAges.size) p.set("ageGroups", [...selAges].join(","))
+      if (selBrands.size) p.set("brands", [...selBrands].join(","))
       const res = await fetch(`/api/orders/order-sheet?${p.toString()}`)
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
@@ -247,6 +251,13 @@ export function OrderSheetBar({
               selected={selAges}
               onToggle={(v) => toggle(selAges, setSelAges, v)}
               onAll={() => toggleAll(ageOptions.map((a) => a.value), selAges, setSelAges)}
+            />
+            <ChipGroup
+              title={t("brandFilter")}
+              options={brands.map((b) => ({ value: b, label: b }))}
+              selected={selBrands}
+              onToggle={(v) => toggle(selBrands, setSelBrands, v)}
+              onAll={() => toggleAll(brands, selBrands, setSelBrands)}
             />
             <ChipGroup
               title={t("category")}

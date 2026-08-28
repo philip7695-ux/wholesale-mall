@@ -13,13 +13,15 @@ export interface ProductFilterParams {
   ageGroup?: string
   search?: string
   specialOnly?: boolean
+  brand?: string
 }
 
 export function buildProductWhere(params: ProductFilterParams): Record<string, unknown> {
-  const { category, season, ageGroup, search, specialOnly } = params
+  const { category, season, ageGroup, search, specialOnly, brand } = params
 
   const where: Record<string, unknown> = { isActive: true }
   if (category) where.category = { slug: category }
+  if (brand) where.brand = brand
   if (specialOnly) where.specialOffer = true
   if (isAgeGroup(ageGroup)) where.ageGroup = ageGroup
   // 시즌은 상품 코드 접두어로만 알 수 있다(라인 + 연도 + 시즌)
@@ -48,10 +50,12 @@ export function buildProductWhereMulti(params: {
   categories?: string[]
   years?: string[]
   ageGroups?: string[]
+  brands?: string[]
   specialOnly?: boolean
 }): Record<string, unknown> {
   const where: Record<string, unknown> = { isActive: true }
   if (params.categories?.length) where.category = { slug: { in: params.categories } }
+  if (params.brands?.length) where.brand = { in: params.brands }
   if (params.ageGroups?.length) where.ageGroup = { in: params.ageGroups }
   if (params.specialOnly) where.specialOffer = true
   // 연도는 상품코드 시즌키의 첫 자리(연도 digit). 여러 해면 OR 로 묶는다.

@@ -62,6 +62,7 @@ export async function GET(request: Request) {
     categories: arr("categories"),
     years: arr("years"),
     ageGroups: arr("ageGroups"),
+    brands: arr("brands"),
     specialOnly: sp.get("special") === "1",
   })
 

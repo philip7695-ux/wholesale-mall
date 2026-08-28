@@ -20,7 +20,9 @@ export function ProductFilterSidebar({
   currentAgeGroup,
   currentSeason,
   currentSearch,
+  currentBrand,
   availableSeasons,
+  availableBrands = [],
   specialOnly,
   hasSpecialOffers,
 }: {
@@ -29,7 +31,9 @@ export function ProductFilterSidebar({
   currentAgeGroup?: string
   currentSeason?: string
   currentSearch?: string
+  currentBrand?: string
   availableSeasons: string[]
+  availableBrands?: string[]
   specialOnly: boolean
   hasSpecialOffers: boolean
 }) {
@@ -44,14 +48,17 @@ export function ProductFilterSidebar({
     ageGroup?: string | null
     season?: string | null
     special?: boolean | null
+    brand?: string | null
   }) {
     const params = new URLSearchParams()
     const cat = overrides.category !== undefined ? overrides.category : currentCategory
     const age = overrides.ageGroup !== undefined ? overrides.ageGroup : currentAgeGroup
     const sea = overrides.season !== undefined ? overrides.season : currentSeason
+    const brd = overrides.brand !== undefined ? overrides.brand : currentBrand
     if (cat) params.set("category", cat)
     if (age) params.set("ageGroup", age)
     if (sea) params.set("season", sea)
+    if (brd) params.set("brand", brd)
     const sp = overrides.special !== undefined ? overrides.special : specialOnly
     if (sp) params.set("special", "1")
     // 검색어는 URL 이 아니라 입력창 상태를 따른다. 창을 비우면
@@ -78,6 +85,7 @@ export function ProductFilterSidebar({
     if (currentCategory) params.set("category", currentCategory)
     if (currentAgeGroup) params.set("ageGroup", currentAgeGroup)
     if (currentSeason) params.set("season", currentSeason)
+    if (currentBrand) params.set("brand", currentBrand)
     if (specialOnly) params.set("special", "1")
     const qs = params.toString()
     router.push(`/products${qs ? `?${qs}` : ""}`)
@@ -129,6 +137,37 @@ export function ProductFilterSidebar({
         >
           {t("specialOffer")}
         </button>
+      )}
+
+      {/* Brand */}
+      {availableBrands.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-[#1A1A1A] mb-3">{t("brandFilter")}</h3>
+          <ul className="space-y-2">
+            <li>
+              <button
+                onClick={() => router.push(buildUrl({ brand: null }))}
+                className={`text-sm transition-colors ${
+                  !currentBrand ? "text-[#1A1A1A] font-medium" : "text-gray-500 hover:text-[#1A1A1A]"
+                }`}
+              >
+                {tc("all")}
+              </button>
+            </li>
+            {availableBrands.map((b) => (
+              <li key={b}>
+                <button
+                  onClick={() => router.push(buildUrl({ brand: currentBrand === b ? null : b }))}
+                  className={`text-sm transition-colors ${
+                    currentBrand === b ? "text-[#1A1A1A] font-medium" : "text-gray-500 hover:text-[#1A1A1A]"
+                  }`}
+                >
+                  {b}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {/* Season */}
