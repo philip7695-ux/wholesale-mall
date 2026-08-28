@@ -86,21 +86,6 @@ export function ProductDetail({ product }: { product: Product }) {
 
   const ZOOM_SCALE = 2.2
 
-  // 저장된 원본이 900~1100px 수준이라 그대로 확대하면 흐릿하다.
-  // Cloudinary AI 업스케일(e_upscale)을 확대 화면에만 쓴다.
-  // 입력이 크면 e_upscale 이 거부하므로 c_limit 으로 먼저 줄인다.
-  const zoomSrc = useCallback((url: string) => {
-    if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url
-    return url.replace("/upload/", "/upload/c_limit,w_1400/e_upscale/")
-  }, [])
-
-  // 확대 이미지는 첫 요청 때 생성돼 몇 초 걸린다. 미리 받아 캐시를 데워둔다.
-  useEffect(() => {
-    if (!mainImage) return
-    const img = new window.Image()
-    img.src = zoomSrc(mainImage)
-  }, [mainImage, zoomSrc])
-
   // 이미지는 object-contain 이라 컨테이너를 꽉 채우지 않는다.
   // 실제로 그려진 영역을 기준으로 해야 확대 위치가 커서와 맞는다.
   const paintedRect = useCallback((rect: DOMRect) => {
@@ -135,13 +120,13 @@ export function ProductDetail({ product }: { product: Product }) {
     if (!zoomActive) return
     setZoomStyle({
       opacity: 1,
-      backgroundImage: `url(${zoomSrc(mainImage)})`,
+      backgroundImage: `url(${mainImage})`,
       backgroundSize: `${p.width * ZOOM_SCALE}px ${p.height * ZOOM_SCALE}px`,
       backgroundPosition: `${(px / p.width) * 100}% ${(py / p.height) * 100}%`,
       backgroundRepeat: "no-repeat",
       backgroundColor: "#fff",
     })
-  }, [mainImage, zoomActive, paintedRect, zoomSrc])
+  }, [mainImage, zoomActive, paintedRect])
 
   const handleMouseLeave = useCallback(() => {
     setHint(null)
@@ -167,13 +152,13 @@ export function ProductDetail({ product }: { product: Product }) {
     setZoomActive(true)
     setZoomStyle({
       opacity: 1,
-      backgroundImage: `url(${zoomSrc(mainImage)})`,
+      backgroundImage: `url(${mainImage})`,
       backgroundSize: `${p.width * ZOOM_SCALE}px ${p.height * ZOOM_SCALE}px`,
       backgroundPosition: `${(px / p.width) * 100}% ${(py / p.height) * 100}%`,
       backgroundRepeat: "no-repeat",
       backgroundColor: "#fff",
     })
-  }, [mainImage, zoomActive, paintedRect, zoomSrc])
+  }, [mainImage, zoomActive, paintedRect])
 
   // 다른 이미지로 바꾸면 확대를 해제한다
   useEffect(() => {
