@@ -11,7 +11,9 @@ const SIZE_NAME_SET = new Set(ALL_SIZE_NAMES.map((s) => s.toUpperCase()))
 
 /** 엑셀 헤더가 사이즈 열인지(알려진 사이즈 이름인지) 판단 */
 export function isSizeColumn(header: string): boolean {
-  return SIZE_NAME_SET.has(String(header).trim().toUpperCase())
+  const v = String(header).trim().toUpperCase()
+  // 나이 사이즈(8Y, 3M, 24개월)도 사이즈 열로 인식한다
+  return SIZE_NAME_SET.has(v) || /^\d+(?:Y|M|세|개월)$/.test(v)
 }
 
 /**
@@ -25,6 +27,12 @@ export function sizeSortIndex(name: string): number {
   const v = name.trim().toUpperCase()
   const num = Number(v)
   if (Number.isFinite(num)) return num
+  // 나이 사이즈(CK: 8Y, 10Y / 개월: 3M, 18M). 한 상품 안에서 cm 사이즈와
+  // 섞이지 않으므로 개월<년 순서만 지키면 된다(3M < 18M < 2Y < 8Y < 10Y).
+  const months = v.match(/^(\d+)(?:M|개월)$/)
+  if (months) return Number(months[1]) / 12
+  const years = v.match(/^(\d+)(?:Y|세)$/)
+  if (years) return Number(years[1])
   const letter = SIZE_ORDER.indexOf(v)
   if (letter >= 0) return 10000 + letter
   return 20000
@@ -70,6 +78,16 @@ export function determineAgeGroup(productName: string, sizeNames: string[]): Age
 
   // 뉴본은 F/S/M/L 또는 소형 사이즈로만 나오므로, 아동 전용 사이즈가 없을 때만 인정
   if (hasNewborn && !sizeNames.some((s) => KIDS_ONLY_NUM_SIZES.has(s))) return "NEWBORN"
+
+  // 나이 사이즈: 개월(3M, 18M)은 베이비, 년(Y)은 최대 나이 4세 미만이면
+  // 베이비, 그 이상이면 키즈(CK 의 8Y~14Y 등).
+  const yearSizes = sizeNames
+    .map((s) => s.trim().toUpperCase().match(/^(\d+)(?:Y|세)$/))
+    .filter(Boolean)
+    .map((m) => Number(m![1]))
+  const hasMonthSize = sizeNames.some((s) => /^(\d+)(?:M|개월)$/.test(s.trim().toUpperCase()))
+  if (yearSizes.length) return Math.max(...yearSizes) < 4 ? "BABY" : "KIDS"
+  if (hasMonthSize) return "BABY"
 
   const hasBabyNumSize = sizeNames.some((s) => BABY_NUM_SIZES.has(s))
   const hasKidsNumSize = sizeNames.some((s) => KIDS_ONLY_NUM_SIZES.has(s))

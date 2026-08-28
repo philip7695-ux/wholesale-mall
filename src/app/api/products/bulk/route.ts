@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, ALL_SIZES, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue, isSizeColumn} from "@/lib/product-sizes"
+import { ADULT_SIZES, KIDS_NUM_SIZES, KIDS_LETTER_SIZES, sortSizeNames, determineAgeGroup, normalizeAgeGroup, type AgeGroupValue, isSizeColumn} from "@/lib/product-sizes"
 import { seasonKeyFromCode } from "@/lib/season"
 
 // 대량 생성은 DB 왕복이 많아 오래 걸린다. 청크로 나눠 보내더라도 여유를 둔다.
@@ -373,7 +373,6 @@ export async function POST(request: NextRequest) {
     // 상품 생성/갱신
     let created = 0
     let updated = 0
-    const sizeOrder = ALL_SIZES
 
     for (const [groupKey, group] of productGroups) {
       const productName = group.name
@@ -406,11 +405,8 @@ export async function POST(request: NextRequest) {
           sizesSet.add(v.sizeName)
         }
 
-        const sortedSizes = [...sizesSet].sort((a, b) => {
-          const ai = sizeOrder.indexOf(a)
-          const bi = sizeOrder.indexOf(b)
-          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-        })
+        // 정렬표에 없는 사이즈(8Y 등)도 자연 순서로 정렬한다
+        const sortedSizes = sortSizeNames([...sizesSet])
         const ageGroup = group.ageGroup ?? determineAgeGroup(productName, sortedSizes)
 
         // 같은 상품코드가 이미 있으면 덮어쓴다(재업로드 대비).
