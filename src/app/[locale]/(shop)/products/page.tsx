@@ -187,7 +187,7 @@ export default async function ProductsPage({
                   const price = minRetail > 0
                     ? buyerPrice(
                         minRetail,
-                        seasonRateFor(product.code, seasonRates, product.brand),
+                        seasonRateFor(product.code, seasonRates, product.brand, product.seasonKey),
                         gradeRate,
                         product.specialOffer ? specialRate : 0,
                       )
