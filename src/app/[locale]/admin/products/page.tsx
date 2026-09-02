@@ -21,6 +21,7 @@ import { YEAR_DIGITS, SEASON_DIGITS, SEASON_KEYS, yearLabel } from "@/lib/season
 import { getSeasonRates, getSpecialOfferRate } from "@/lib/pricing.server"
 import { buyerPrice } from "@/lib/pricing"
 import { paginationRange, ELLIPSIS } from "@/lib/pagination"
+import { buildAdminProductWhere } from "@/lib/product-filter"
 
 export default async function AdminProductsPage({
   searchParams,
@@ -47,16 +48,8 @@ export default async function AdminProductsPage({
     getSpecialOfferRate(),
   ])
 
-  // 연도·시즌은 seasonKey(코드 3~4번째 두 자리)로 거른다.
-  // 둘 다 비면 조건을 걸지 않아 코드 없는 상품도 남는다.
-  const where: Record<string, unknown> = {}
-  if (year && season) where.seasonKey = `${year}${season}`
-  else if (year) where.seasonKey = { startsWith: year }
-  else if (season) where.seasonKey = { endsWith: season }
-  if (category) where.categoryId = category
-  if (brand) where.brand = brand
-  // 스타일 넘버는 일부만 넣어도 찾는다
-  if (code) where.code = { contains: code, mode: "insensitive" }
+  // 조건 빌드는 엑셀 내보내기와 공유한다(같은 필터 = 같은 결과)
+  const where = buildAdminProductWhere({ year, season, category, brand, code })
 
   // 재고 많은 순은 스페셜 오퍼로 묶을 대상을 찾을 때 쓴다
   const orderBy =
@@ -100,12 +93,19 @@ export default async function AdminProductsPage({
   const totalPages = hasFilter ? 1 : Math.ceil(total / PAGE_SIZE)
   const capped = hasFilter && total > FILTERED_MAX
 
+  // 엑셀 다운로드도 화면과 같은 필터 조건으로 받는다
+  const exportQs = new URLSearchParams()
+  for (const [k, v] of Object.entries({ year, season, category, brand, code })) {
+    if (v) exportQs.set(k, v)
+  }
+  const exportHref = `/api/admin/products/export${exportQs.toString() ? `?${exportQs}` : ""}`
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("productMgmt")}</h1>
         <div className="flex items-center gap-2">
-          <a href="/api/admin/products/export" download>
+          <a href={exportHref} download>
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
               {t("exportExcel") || "Excel"}

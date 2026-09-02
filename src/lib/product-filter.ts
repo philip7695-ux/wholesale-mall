@@ -43,6 +43,35 @@ export function buildProductWhere(params: ProductFilterParams): Record<string, u
 }
 
 /**
+ * 어드민 상품 목록·엑셀 내보내기 공용 필터.
+ *
+ * 목록 화면에서 걸어 둔 조건(연도·시즌·카테고리·브랜드·코드)이
+ * 엑셀 다운로드에도 똑같이 적용되도록 조건을 한곳에서 만든다.
+ */
+export interface AdminProductFilterParams {
+  year?: string
+  season?: string
+  category?: string // categoryId
+  brand?: string
+  code?: string
+}
+
+export function buildAdminProductWhere(params: AdminProductFilterParams): Record<string, unknown> {
+  const { year, season, category, brand, code } = params
+  const where: Record<string, unknown> = {}
+  // 연도·시즌은 seasonKey(코드 3~4번째 두 자리)로 거른다.
+  // 둘 다 비면 조건을 걸지 않아 코드 없는 상품도 남는다.
+  if (year && season) where.seasonKey = `${year}${season}`
+  else if (year) where.seasonKey = { startsWith: year }
+  else if (season) where.seasonKey = { endsWith: season }
+  if (category) where.categoryId = category
+  if (brand) where.brand = brand
+  // 스타일 넘버는 일부만 넣어도 찾는다
+  if (code) where.code = { contains: code, mode: "insensitive" }
+  return where
+}
+
+/**
  * 엑셀 주문서 팝업용 다중선택 필터. 연도·연령대·카테고리를 각각 여러 개
  * 고를 수 있다(중복선택). 빈 배열은 그 항목에 제한을 두지 않는다(=전체).
  */

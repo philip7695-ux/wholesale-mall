@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { apiRoute } from "@/lib/api-route"
 import { ALL_SIZE_NAMES, sortSizeNames } from "@/lib/product-sizes"
+import { buildAdminProductWhere } from "@/lib/product-filter"
 
 // 내보내기·템플릿에서 쓰는 상품 페이로드(관계 포함) 타입
 type ExportProduct = Prisma.ProductGetPayload<{
@@ -22,7 +23,19 @@ async function GET_impl(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // 목록 화면에서 걸어 둔 필터(연도·시즌·카테고리·브랜드·코드)를
+  // 그대로 받아 같은 조건의 상품만 내보낸다. 파라미터가 없으면 전체.
+  const sp = new URL(request.url).searchParams
+  const where = buildAdminProductWhere({
+    year: sp.get("year") || undefined,
+    season: sp.get("season") || undefined,
+    category: sp.get("category") || undefined,
+    brand: sp.get("brand") || undefined,
+    code: sp.get("code") || undefined,
+  })
+
   const products = await prisma.product.findMany({
+    where,
     include: {
       category: true,
       colors: { orderBy: { sortOrder: "asc" } },
@@ -34,7 +47,6 @@ async function GET_impl(request: Request) {
 
   // 템플릿과 같은 형식으로 내보내 그대로 고쳐 다시 올릴 수 있게 한다.
   // layout=rows 면 세로형(사이즈*/재고 열, 행마다 한 사이즈)으로 낸다.
-  const sp = new URL(request.url).searchParams
   const format = sp.get("format")
   if (format === "template") {
     return sp.get("layout") === "rows"
@@ -112,11 +124,18 @@ async function GET_impl(request: Request) {
 
 export const GET = apiRoute(GET_impl, { retry: true })
 
-const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "브랜드", "연도", "시즌", "혼용률", "원산지", "컬러명*", "컬러코드", "통화", "가격*"]
+// "사이즈런"은 상품 전체 사이즈를 한눈에 보기 위한 열이다. 업로더는
+// 알려진 사이즈 이름 헤더만 사이즈 열로 인식하므로(isSizeColumn) 재업로드 시 무시된다.
+const BASE_HEADERS = ["상품코드", "상품명*", "카테고리*", "연령대", "브랜드", "연도", "시즌", "혼용률", "원산지", "컬러명*", "컬러코드", "통화", "가격*", "사이즈런"]
 
 // 사이즈 열을 한 시트에 다 펼친다. 이름이 서로 겹치지 않으므로 성인/아동을
 // 나눌 필요가 없다. 업로더도 헤더에서 사이즈 열을 알아서 찾는다.
 const SIZE_COLUMNS = sortSizeNames(ALL_SIZE_NAMES)
+
+/** 상품이 가진 사이즈 전체를 "85,90,100" 형식으로 만든다 */
+function sizeRunOf(p: ExportProduct): string {
+  return sortSizeNames(p.sizes.map((s) => s.name)).join(",")
+}
 
 /** seasonKey("71") → [2027, "SS"] 표기. 없으면 빈 값. */
 function yearSeasonOf(p: ExportProduct): [string | number, string] {
@@ -140,7 +159,7 @@ function buildRowsWorkbook(products: ExportProduct[]): NextResponse {
         rows.push([
           p.code || "", p.name, p.category.name, p.ageGroup || "", p.brand || "", yy, ss,
           p.material || "", p.origin || "", c.name, c.colorCode || "",
-          p.priceCurrency, v.price, v.size.name, v.stock,
+          p.priceCurrency, v.price, sizeRunOf(p), v.size.name, v.stock,
         ])
       }
     }
@@ -148,7 +167,7 @@ function buildRowsWorkbook(products: ExportProduct[]): NextResponse {
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   ws["!cols"] = [
     { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 8 },
-    { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 8 },
+    { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 18 }, { wch: 10 }, { wch: 8 },
   ]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "상품목록")
@@ -180,7 +199,7 @@ function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
       rows.push([
         p.code || "", p.name, p.category.name, p.ageGroup || "", p.brand || "", yy, ss,
         p.material || "", p.origin || "", c.name, c.colorCode || "",
-        p.priceCurrency, price,
+        p.priceCurrency, price, sizeRunOf(p),
         ...SIZE_COLUMNS.map((sz) => stockOf(sz)),
       ])
     }
@@ -188,7 +207,7 @@ function buildTemplateWorkbook(products: ExportProduct[]): NextResponse {
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   ws["!cols"] = headers.map((h, i) =>
-    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 12, 8, 8, 24, 12, 12, 10, 8, 10][i] } : { wch: 6 },
+    i < BASE_HEADERS.length ? { wch: [12, 22, 12, 10, 12, 8, 8, 24, 12, 12, 10, 8, 10, 18][i] } : { wch: 6 },
   )
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "상품목록")
