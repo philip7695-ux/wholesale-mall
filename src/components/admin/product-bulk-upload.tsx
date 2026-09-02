@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { DropZone } from "@/components/ui/drop-zone"
@@ -44,6 +45,17 @@ export function ProductBulkUpload() {
   const layoutQs = () => (layout === "rows" ? "&layout=rows" : "")
   const handleDownloadTemplate = (type: "adult" | "kids") => {
     window.open(`/api/products/template?type=${type}${layoutQs()}`)
+  }
+
+  // "상품 정보 내려받기"는 목록에 걸어 둔 필터 그대로 받는다
+  const params = useSearchParams()
+  const filterQs = () => {
+    let qs = ""
+    for (const k of ["year", "season", "category", "brand", "code"]) {
+      const v = params.get(k)
+      if (v) qs += `&${k}=${encodeURIComponent(v)}`
+    }
+    return qs
   }
 
   const acceptExcel = (selected: File | undefined) => {
@@ -365,7 +377,7 @@ export function ProductBulkUpload() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open(`/api/admin/products/export?format=template${layoutQs()}`)}
+            onClick={() => window.open(`/api/admin/products/export?format=template${layoutQs()}${filterQs()}`)}
           >
             <Download className="mr-1 h-4 w-4" />
             {t("exportCurrentProducts")}
