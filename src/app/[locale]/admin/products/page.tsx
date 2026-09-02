@@ -111,13 +111,6 @@ export default async function AdminProductsPage({
               {t("exportExcel") || "Excel"}
             </Button>
           </a>
-          {/* 코리안넷(GS1) 대량등록용 — 현재 필터 조건 그대로 */}
-          <a href={`/api/admin/products/gs1${exportQs.toString() ? `?${exportQs}` : ""}`} download>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              GS1
-            </Button>
-          </a>
           <Link href="/admin/products/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
