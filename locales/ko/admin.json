@@ -534,5 +534,7 @@
   "revAmount": "금액",
   "revNoData": "해당 기간에 매출이 없습니다",
   "revDeletedBuyer": "탈퇴 회원",
-  "revLoadFailed": "매출 데이터를 불러오지 못했습니다"
+  "revLoadFailed": "매출 데이터를 불러오지 못했습니다",
+  "orderFilterAll": "전체",
+  "orderFilterEmpty": "해당 상태의 주문이 없습니다"
 }

@@ -534,5 +534,7 @@
   "revAmount": "Amount",
   "revNoData": "No revenue in this period",
   "revDeletedBuyer": "Deleted user",
-  "revLoadFailed": "Failed to load revenue data"
+  "revLoadFailed": "Failed to load revenue data",
+  "orderFilterAll": "All",
+  "orderFilterEmpty": "No orders in this status"
 }

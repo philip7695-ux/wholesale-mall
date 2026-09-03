@@ -534,5 +534,7 @@
   "revAmount": "金額",
   "revNoData": "この期間の売上はありません",
   "revDeletedBuyer": "退会会員",
-  "revLoadFailed": "売上データの読み込みに失敗しました"
+  "revLoadFailed": "売上データの読み込みに失敗しました",
+  "orderFilterAll": "すべて",
+  "orderFilterEmpty": "この状態の注文はありません"
 }

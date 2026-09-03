@@ -534,5 +534,7 @@
   "revAmount": "金额",
   "revNoData": "该期间没有销售额",
   "revDeletedBuyer": "已注销会员",
-  "revLoadFailed": "销售数据加载失败"
+  "revLoadFailed": "销售数据加载失败",
+  "orderFilterAll": "全部",
+  "orderFilterEmpty": "该状态没有订单"
 }

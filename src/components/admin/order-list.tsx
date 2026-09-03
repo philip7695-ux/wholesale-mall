@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Link, useRouter } from "@/i18n/navigation"
 import { useTranslations, useLocale } from "next-intl"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,6 +14,12 @@ import { toast } from "sonner"
 import { useCurrency } from "@/hooks/use-currency"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
 import { OrderStatusStepper } from "@/components/order/order-status-stepper"
+import {
+  ORDER_STATUS_ALL,
+  ORDER_STATUS_LABEL_KEYS,
+  STATUS_COLOR,
+  STATUS_COLOR_FALLBACK,
+} from "@/lib/order-status"
 
 interface OrderItem {
   id: string
@@ -46,6 +53,26 @@ export function OrderList({ orders }: { orders: Order[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<string | null>(null)
 
+  // 상태 필터는 URL 에 둔다. 대시보드 주문 현황에서 눌러 들어오는 자리이고,
+  // 새로고침하거나 링크를 넘겨도 같은 화면이 열려야 한다.
+  const searchParams = useSearchParams()
+  const statusFilter = searchParams.get("status") ?? ""
+  const visibleOrders = statusFilter
+    ? orders.filter((o) => o.status === statusFilter)
+    : orders
+
+  const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
+    acc[o.status] = (acc[o.status] ?? 0) + 1
+    return acc
+  }, {})
+
+  function applyStatusFilter(status: string) {
+    // 이미 켜진 칩을 다시 누르면 해제한다.
+    const next = status && status !== statusFilter ? `?status=${status}` : ""
+    router.push(`/admin/orders${next}`)
+    setSelected(new Set())
+  }
+
   const paymentLabels: Record<string, string> = {
     PENDING: t("paymentStatusPending"),
     PAID: t("paymentStatusPaid"),
@@ -53,13 +80,14 @@ export function OrderList({ orders }: { orders: Order[] }) {
     REFUNDED: t("paymentStatusRefunded"),
   }
 
-  const allSelected = orders.length > 0 && selected.size === orders.length
+  const allSelected =
+    visibleOrders.length > 0 && visibleOrders.every((o) => selected.has(o.id))
 
   function toggleAll() {
     if (allSelected) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(orders.map((o) => o.id)))
+      setSelected(new Set(visibleOrders.map((o) => o.id)))
     }
   }
 
@@ -222,6 +250,35 @@ export function OrderList({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
+      {/* 상태 필터 — 건수가 0인 상태도 남겨둔다. 없는 게 아니라 0건임을 보여야 한다 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => applyStatusFilter("")}
+          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            statusFilter === ""
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          {t("orderFilterAll")} {orders.length}
+        </button>
+        {ORDER_STATUS_ALL.map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => applyStatusFilter(status)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              statusFilter === status
+                ? "border-transparent ring-2 ring-primary ring-offset-1"
+                : "hover:opacity-80"
+            } ${STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK}`}
+          >
+            {t(ORDER_STATUS_LABEL_KEYS[status])} {statusCounts[status] ?? 0}
+          </button>
+        ))}
+      </div>
+
       {/* Select All */}
       <div className="flex items-center gap-2 px-1">
         <Checkbox
@@ -236,7 +293,12 @@ export function OrderList({ orders }: { orders: Order[] }) {
 
       {/* Order List */}
       <div className="space-y-3">
-        {orders.map((order) => (
+        {visibleOrders.length === 0 && (
+          <p className="rounded-lg border bg-white py-10 text-center text-sm text-muted-foreground">
+            {t("orderFilterEmpty")}
+          </p>
+        )}
+        {visibleOrders.map((order) => (
           <div key={order.id} className="flex items-start gap-3">
             <div className="pt-5">
               <Checkbox

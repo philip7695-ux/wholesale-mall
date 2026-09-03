@@ -9,28 +9,12 @@ import { WiseBalanceWidget } from "@/components/admin/wise-balance-widget"
 import { isWiseConfigured } from "@/lib/wise"
 import { Prisma } from "@prisma/client"
 import { revenueWhere, startOfDay, startOfMonth, startOfWeek } from "@/lib/revenue"
-
-const STATUS_COLORS: Record<string, string> = {
-  ORDER_PLACED: "bg-gray-100 text-gray-700",
-  STOCK_CHECKING: "bg-amber-100 text-amber-700",
-  BUYER_REVIEW: "bg-orange-100 text-orange-700",
-  CONFIRMED: "bg-emerald-100 text-emerald-700",
-  INVOICE_SENT: "bg-blue-100 text-blue-700",
-  PAYMENT_CONFIRMED: "bg-cyan-100 text-cyan-700",
-  SHIPPED: "bg-indigo-100 text-indigo-700",
-  CANCELLED: "bg-red-100 text-red-700",
-}
-
-const STATUS_KEYS: Record<string, string> = {
-  ORDER_PLACED: "statusReceived",
-  STOCK_CHECKING: "statusStockChecking",
-  BUYER_REVIEW: "statusBuyerReview",
-  CONFIRMED: "statusConfirmed",
-  INVOICE_SENT: "statusInvoiceSent",
-  PAYMENT_CONFIRMED: "statusPaymentConfirmed",
-  SHIPPED: "statusShipped",
-  CANCELLED: "statusCancelled",
-}
+import {
+  ORDER_STATUS_ALL,
+  ORDER_STATUS_LABEL_KEYS,
+  STATUS_COLOR,
+  STATUS_COLOR_FALLBACK,
+} from "@/lib/order-status"
 
 export default async function AdminDashboard() {
   const t = await getTranslations("admin")
@@ -59,6 +43,8 @@ export default async function AdminDashboard() {
   let recentOrders: any[] = []
   let wiseConfig: any = null
   let monthlyRevenueRaw: { month: string; revenue: bigint }[] = []
+  // 인기 상품은 이름으로 집계된다. 상세로 보내려면 이름 → id 가 필요하다.
+  let topProductIds: Record<string, string> = {}
 
   try {
     ;[
@@ -170,6 +156,13 @@ export default async function AdminDashboard() {
         `
       ),
     ])
+    if (topProducts.length > 0) {
+      const found = await prisma.product.findMany({
+        where: { name: { in: topProducts.map((p: { productName: string }) => p.productName) } },
+        select: { id: true, name: true },
+      })
+      topProductIds = Object.fromEntries(found.map((p) => [p.name, p.id]))
+    }
   } catch (err) {
     // 일시적 DB 연결 오류(광저우 RDS 국경 간 지연 등)로 전체 페이지가 500이 되지 않도록,
     // 위에 선언된 안전 기본값으로 렌더를 이어간다.
@@ -286,21 +279,23 @@ export default async function AdminDashboard() {
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">{t("dashOrderStatus")}</h2>
           <div className="mt-4 space-y-2">
-            {(
-              [
-                "ORDER_PLACED",
-                "INVOICE_SENT",
-                "PAYMENT_CONFIRMED",
-                "SHIPPED",
-                "CANCELLED",
-              ] as const
-            ).map((status) => (
-              <div key={status} className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-gray-50">
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
-                  {t(STATUS_KEYS[status])}
+            {ORDER_STATUS_ALL.map((status) => (
+              <Link
+                key={status}
+                href={`/admin/orders?status=${status}`}
+                className="flex items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-gray-50"
+              >
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK
+                  }`}
+                >
+                  {t(ORDER_STATUS_LABEL_KEYS[status])}
                 </span>
-                <span className="text-sm font-semibold">{t("dashStatusCount", { count: statusMap[status] ?? 0 })}</span>
-              </div>
+                <span className="text-sm font-semibold">
+                  {t("dashStatusCount", { count: statusMap[status] ?? 0 })}
+                </span>
+              </Link>
             ))}
           </div>
 
@@ -335,7 +330,18 @@ export default async function AdminDashboard() {
                 {topProducts.map((item, idx) => (
                   <tr key={item.productName} className="border-b last:border-0">
                     <td className="py-2 font-bold text-muted-foreground">{idx + 1}</td>
-                    <td className="py-2">{item.productName}</td>
+                    <td className="py-2">
+                      {topProductIds[item.productName] ? (
+                        <Link
+                          href={`/admin/products/${topProductIds[item.productName]}`}
+                          className="text-primary hover:underline"
+                        >
+                          {item.productName}
+                        </Link>
+                      ) : (
+                        item.productName
+                      )}
+                    </td>
                     <td className="py-2 text-right font-semibold">{item._sum.quantity}</td>
                   </tr>
                 ))}
@@ -362,7 +368,11 @@ export default async function AdminDashboard() {
             ) : (
               <ul className="space-y-2">
                 {recentBuyers.map((buyer) => (
-                  <li key={buyer.id} className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-gray-50">
+                  <li key={buyer.id}>
+                    <Link
+                      href={`/admin/members/${buyer.id}`}
+                      className="flex items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-gray-50"
+                    >
                     <div>
                       <span className="text-sm font-medium">{buyer.name}</span>
                       {buyer.businessName && (
@@ -372,6 +382,7 @@ export default async function AdminDashboard() {
                     <span className="text-xs text-muted-foreground">
                       {t("dashOrderCount", { count: buyer._count.orders })}
                     </span>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -412,11 +423,13 @@ export default async function AdminDashboard() {
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2 py-1 text-xs font-medium ${
-                          STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-700"
+                          STATUS_COLOR[order.status] ?? STATUS_COLOR_FALLBACK
                         }`}
                       >
                         {/* enum에 상태가 늘었는데 맵을 안 고친 경우, 500 대신 상태값을 그대로 보여준다 */}
-                        {STATUS_KEYS[order.status] ? t(STATUS_KEYS[order.status]) : order.status}
+                        {ORDER_STATUS_LABEL_KEYS[order.status]
+                          ? t(ORDER_STATUS_LABEL_KEYS[order.status])
+                          : order.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">

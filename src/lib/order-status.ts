@@ -117,3 +117,27 @@ export const STATUS_TIMESTAMP_FIELD: Record<string, string> = {
   SHIPPED: "shippedAt",
   CANCELLED: "cancelledAt",
 }
+
+/**
+ * 화면에 목록으로 늘어놓을 때 쓰는 전체 상태. 정상 흐름 뒤에 취소가 붙는다.
+ *
+ * 상태별 건수·필터처럼 "빠짐없이 보여줘야 하는" 자리에서는 이 목록을 돌려야 한다.
+ * 화면마다 상태를 따로 적어두면 enum 이 늘었을 때 조용히 빠진다.
+ * (대시보드에서 상태 하나가 빠져 렌더가 죽은 적이 있다.)
+ */
+export const ORDER_STATUS_ALL = [...ORDER_STATUS_FLOW, "CANCELLED"] as const
+
+/** 상태 → admin 네임스페이스 번역 키 */
+export const ORDER_STATUS_LABEL_KEYS: Record<string, string> = {
+  ORDER_PLACED: "statusReceived",
+  STOCK_CHECKING: "statusStockChecking",
+  BUYER_REVIEW: "statusBuyerReview",
+  CONFIRMED: "statusConfirmed",
+  INVOICE_SENT: "statusInvoiceSent",
+  PAYMENT_CONFIRMED: "statusPaymentConfirmed",
+  SHIPPED: "statusShipped",
+  CANCELLED: "statusCancelled",
+}
+
+/** 목록에 없는 상태가 들어와도 배지가 비어 보이지 않게 하는 기본값 */
+export const STATUS_COLOR_FALLBACK = "bg-gray-100 text-gray-700 border-gray-300"
