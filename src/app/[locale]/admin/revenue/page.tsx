@@ -3,11 +3,17 @@ export const dynamic = "force-dynamic"
 import { prisma } from "@/lib/prisma"
 import { Link } from "@/i18n/navigation"
 import { getTranslations, getLocale } from "next-intl/server"
-import { formatPrice } from "@/lib/utils"
+import { formatAmountIn } from "@/lib/currency"
 import { Prisma } from "@prisma/client"
 import { RevenueTrendChart } from "@/components/admin/dashboard-charts"
 import { RevenueFilter } from "@/components/admin/revenue-filter"
-import { addDays, formatDateParam, resolveRange, revenueWhere } from "@/lib/revenue"
+import {
+  addDays,
+  formatDateParam,
+  resolveRange,
+  revenueConditionsSql,
+  revenueSummarySql,
+} from "@/lib/revenue"
 
 export default async function AdminRevenuePage({
   searchParams,
@@ -19,44 +25,45 @@ export default async function AdminRevenuePage({
   const locale = await getLocale()
 
   const range = resolveRange(sp.preset, sp.from, sp.to)
-  const where = revenueWhere(range.from, range.to)
+  // 주문마다 통화가 달라 그대로 더할 수 없다. 주문 시점 환율로 원화 환산해 합친다.
+  const conditions = revenueConditionsSql(range.from, range.to)
 
   // 일별이면 MM-DD, 월별이면 YYYY-MM 로 눈금을 찍는다.
   const trendFormat = range.granularity === "day" ? "MM-DD" : "YYYY-MM"
 
-  let summary: { _sum: { totalAmount: number | null }; _count: number } = {
-    _sum: { totalAmount: null },
-    _count: 0,
-  }
+  let summary: { total: number; orders: number }[] = []
   let trendRaw: { label: string; revenue: number }[] = []
-  let byBuyer: { userId: string | null; _sum: { totalAmount: number | null }; _count: number }[] = []
+  let byBuyer: { userId: string | null; total: number; orders: number }[] = []
   let buyers: { id: string; name: string; businessName: string | null }[] = []
   let dbError = false
 
   try {
     ;[summary, trendRaw, byBuyer] = await Promise.all([
-      prisma.order.aggregate({ where, _sum: { totalAmount: true }, _count: true }),
+      prisma.$queryRaw<{ total: number; orders: number }[]>(revenueSummarySql(range.from, range.to)),
       prisma.$queryRaw<{ label: string; revenue: number }[]>(
         Prisma.sql`
           SELECT
             to_char(date_trunc(${range.granularity}, COALESCE("shippedAt", "createdAt")), ${trendFormat}) AS label,
-            COALESCE(SUM("totalAmount"), 0) AS revenue
+            COALESCE(SUM("totalAmount" * "exchangeRate"), 0)::float8 AS revenue
           FROM mall."Order"
-          WHERE "status" = 'SHIPPED'
-            AND COALESCE("shippedAt", "createdAt") >= ${range.from}
-            AND COALESCE("shippedAt", "createdAt") < ${range.to}
+          WHERE ${conditions}
           GROUP BY 1
           ORDER BY MIN(COALESCE("shippedAt", "createdAt")) ASC
         `,
       ),
-      prisma.order.groupBy({
-        by: ["userId"],
-        where,
-        _sum: { totalAmount: true },
-        _count: true,
-        orderBy: { _sum: { totalAmount: "desc" } },
-        take: 20,
-      }),
+      prisma.$queryRaw<{ userId: string | null; total: number; orders: number }[]>(
+        Prisma.sql`
+          SELECT
+            "userId",
+            COALESCE(SUM("totalAmount" * "exchangeRate"), 0)::float8 AS total,
+            COUNT(*)::int AS orders
+          FROM mall."Order"
+          WHERE ${conditions}
+          GROUP BY "userId"
+          ORDER BY total DESC
+          LIMIT 20
+        `,
+      ),
     ])
 
     const ids = byBuyer.map((b) => b.userId).filter((id): id is string => Boolean(id))
@@ -72,16 +79,16 @@ export default async function AdminRevenuePage({
     dbError = true
   }
 
-  const total = summary._sum.totalAmount ?? 0
-  const orderCount = summary._count
+  const total = summary[0]?.total ?? 0
+  const orderCount = summary[0]?.orders ?? 0
   const avg = orderCount > 0 ? Math.round(total / orderCount) : 0
   const trend = trendRaw.map((r) => ({ label: r.label, revenue: Number(r.revenue) }))
   const buyerMap = new Map(buyers.map((b) => [b.id, b]))
 
   const cards = [
-    { label: t("revTotal"), value: formatPrice(total, locale) },
+    { label: t("revTotal"), value: formatAmountIn(total, "KRW") },
     { label: t("revOrderCount"), value: String(orderCount) },
-    { label: t("revAvgOrder"), value: formatPrice(avg, locale) },
+    { label: t("revAvgOrder"), value: formatAmountIn(avg, "KRW") },
   ]
 
   return (
@@ -157,9 +164,9 @@ export default async function AdminRevenuePage({
                         )}
                       </td>
                       <td className="py-2 text-muted-foreground">{buyer?.businessName ?? "-"}</td>
-                      <td className="py-2 text-right">{row._count}</td>
+                      <td className="py-2 text-right">{row.orders}</td>
                       <td className="py-2 text-right font-semibold">
-                        {formatPrice(row._sum.totalAmount ?? 0, locale)}
+                        {formatAmountIn(row.total, "KRW")}
                       </td>
                     </tr>
                   )

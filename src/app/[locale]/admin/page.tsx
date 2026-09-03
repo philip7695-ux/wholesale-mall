@@ -3,12 +3,13 @@ export const dynamic = "force-dynamic"
 import { prisma } from "@/lib/prisma"
 import { Link } from "@/i18n/navigation"
 import { getTranslations, getLocale } from "next-intl/server"
-import { formatPrice, formatDateTime } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils"
 import { MonthlyRevenueChart, GradeDistributionChart } from "@/components/admin/dashboard-charts"
 import { WiseBalanceWidget } from "@/components/admin/wise-balance-widget"
 import { isWiseConfigured } from "@/lib/wise"
 import { Prisma } from "@prisma/client"
-import { revenueWhere, startOfDay, startOfMonth, startOfWeek } from "@/lib/revenue"
+import { revenueSummarySql, startOfDay, startOfMonth, startOfWeek } from "@/lib/revenue"
+import { formatAmountIn } from "@/lib/currency"
 import {
   ORDER_STATUS_ALL,
   ORDER_STATUS_LABEL_KEYS,
@@ -31,9 +32,10 @@ export default async function AdminDashboard() {
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
   let productCount = 0, orderCount = 0, memberCount = 0
-  let todayRevenue: any = { _sum: { totalAmount: 0 } }
-  let weekRevenue: any = { _sum: { totalAmount: 0 } }
-  let monthRevenue: any = { _sum: { totalAmount: 0 } }
+  type RevenueRow = { total: number; orders: number }
+  let todayRevenue: RevenueRow[] = []
+  let weekRevenue: RevenueRow[] = []
+  let monthRevenue: RevenueRow[] = []
   let ordersByStatus: any[] = []
   let pendingPayments = 0
   let topProducts: any[] = []
@@ -69,19 +71,11 @@ export default async function AdminDashboard() {
       prisma.order.count(),
       prisma.user.count({ where: { role: "BUYER" } }),
 
-      // 매출 현황 — 출하완료된 주문만, 출하일 기준 (revenueWhere)
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: revenueWhere(todayStart),
-      }),
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: revenueWhere(weekStart),
-      }),
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: revenueWhere(monthStart),
-      }),
+      // 매출 현황 — 출하완료된 주문만, 출하일 기준. 통화가 섞여 있어 주문 시점
+      // 환율로 원화 환산해 합친다.
+      prisma.$queryRaw<RevenueRow[]>(revenueSummarySql(todayStart)),
+      prisma.$queryRaw<RevenueRow[]>(revenueSummarySql(weekStart)),
+      prisma.$queryRaw<RevenueRow[]>(revenueSummarySql(monthStart)),
 
       // 주문 상태별 건수
       prisma.order.groupBy({
@@ -147,7 +141,7 @@ export default async function AdminDashboard() {
         Prisma.sql`
           SELECT
             to_char(COALESCE("shippedAt", "createdAt"), 'YYYY-MM') as month,
-            COALESCE(SUM("totalAmount"), 0) as revenue
+            COALESCE(SUM("totalAmount" * "exchangeRate"), 0) as revenue
           FROM mall."Order"
           WHERE "status" = 'SHIPPED'
             AND COALESCE("shippedAt", "createdAt") >= ${sixMonthsAgo}
@@ -201,17 +195,17 @@ export default async function AdminDashboard() {
   const revenueItems = [
     {
       label: t("dashToday"),
-      value: todayRevenue._sum.totalAmount ?? 0,
+      value: todayRevenue[0]?.total ?? 0,
       href: "/admin/revenue?preset=today",
     },
     {
       label: t("dashThisWeek"),
-      value: weekRevenue._sum.totalAmount ?? 0,
+      value: weekRevenue[0]?.total ?? 0,
       href: "/admin/revenue?preset=week",
     },
     {
       label: t("dashThisMonth"),
-      value: monthRevenue._sum.totalAmount ?? 0,
+      value: monthRevenue[0]?.total ?? 0,
       href: "/admin/revenue?preset=month",
     },
   ]
@@ -261,7 +255,7 @@ export default async function AdminDashboard() {
                 className="-m-2 rounded-md p-2 transition-colors hover:bg-gray-50"
               >
                 <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className="mt-1 text-lg font-bold">{formatPrice(item.value, locale)}</p>
+                <p className="mt-1 text-lg font-bold">{formatAmountIn(item.value, "KRW")}</p>
               </Link>
             ))}
           </div>
@@ -419,7 +413,7 @@ export default async function AdminDashboard() {
                     </td>
                     <td className="px-4 py-3">{order.user?.name ?? order.deletedUserName ?? "-"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{order.user?.businessName ?? "-"}</td>
-                    <td className="px-4 py-3 text-right">{formatPrice(order.totalAmount, locale)}</td>
+                    <td className="px-4 py-3 text-right">{formatAmountIn(order.totalAmount, order.currency || "KRW")}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2 py-1 text-xs font-medium ${

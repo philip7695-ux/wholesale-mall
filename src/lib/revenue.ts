@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client"
 
 /**
  * 매출로 인정하는 기준.
@@ -14,18 +14,32 @@ export const REVENUE_STATUS = "SHIPPED" as const
  */
 export const REVENUE_DATE_SQL = `COALESCE("shippedAt", "createdAt")`
 
-/** 기간(from 이상, to 미만)의 매출 주문 조건. 인자를 비우면 전 기간이다. */
-export function revenueWhere(from?: Date, to?: Date): Prisma.OrderWhereInput {
-  if (!from && !to) return { status: REVENUE_STATUS }
+/**
+ * 주문 금액을 원화로 환산하는 SQL 식.
+ *
+ * 주문마다 통화가 다르다(국내 KRW, 수출 USD·CNY 등). 그대로 더하면 단위가
+ * 섞인 숫자가 나온다. 환산은 주문에 남은 그 시점 환율로 한다. 오늘 환율로
+ * 다시 계산하면 지난 달 매출이 환율 따라 흔들린다.
+ */
+export const AMOUNT_IN_KRW_SQL = Prisma.sql`("totalAmount" * "exchangeRate")`
 
-  const range: Prisma.DateTimeFilter = {}
-  if (from) range.gte = from
-  if (to) range.lt = to
+/** 매출로 치는 주문의 SQL 조건. revenueWhere 의 raw SQL 판이다. */
+export function revenueConditionsSql(from?: Date, to?: Date): Prisma.Sql {
+  const conds: Prisma.Sql[] = [Prisma.sql`"status" = '${Prisma.raw(REVENUE_STATUS)}'`]
+  if (from) conds.push(Prisma.sql`COALESCE("shippedAt", "createdAt") >= ${from}`)
+  if (to) conds.push(Prisma.sql`COALESCE("shippedAt", "createdAt") < ${to}`)
+  return Prisma.join(conds, " AND ")
+}
 
-  return {
-    status: REVENUE_STATUS,
-    OR: [{ shippedAt: range }, { shippedAt: null, createdAt: range }],
-  }
+/** 기간 매출 합계(원화 환산)와 주문 건수. */
+export function revenueSummarySql(from?: Date, to?: Date): Prisma.Sql {
+  return Prisma.sql`
+    SELECT
+      COALESCE(SUM(${AMOUNT_IN_KRW_SQL}), 0)::float8 AS total,
+      COUNT(*)::int AS orders
+    FROM mall."Order"
+    WHERE ${revenueConditionsSql(from, to)}
+  `
 }
 
 export function startOfDay(d: Date): Date {

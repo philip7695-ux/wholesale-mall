@@ -10,8 +10,8 @@ import { MemberApprovalButton } from "@/components/admin/member-approval-button"
 import { MemberGradeSelect } from "@/components/admin/member-grade-select"
 import { MemberRoleSelect } from "@/components/admin/member-role-select"
 import { MemberTradeSelect } from "@/components/admin/member-trade-select"
-import { formatDate, formatPrice } from "@/lib/utils"
-import { getExchangeRate } from "@/lib/currency.server"
+import { formatDate } from "@/lib/utils"
+import { formatAmountIn } from "@/lib/currency"
 import { auth } from "@/lib/auth"
 
 const approvalVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -30,10 +30,7 @@ const gradeVariant: Record<string, "default" | "secondary" | "destructive" | "ou
 export default async function AdminMembersPage() {
   const t = await getTranslations("admin")
   const locale = await getLocale()
-  const [{ rate }, session] = await Promise.all([
-    getExchangeRate(locale),
-    auth(),
-  ])
+  const session = await auth()
 
   const approvalLabels: Record<string, string> = {
     PENDING: t("approvalPending"),
@@ -66,7 +63,8 @@ export default async function AdminMembersPage() {
       _count: { select: { orders: true } },
       orders: {
         where: { status: { not: "CANCELLED" } },
-        select: { totalAmount: true },
+        // 통화가 섞여 있어 환산해야 합산이 된다. 환율은 주문 시점 값을 쓴다.
+        select: { totalAmount: true, exchangeRate: true },
       },
     },
   })
@@ -89,7 +87,10 @@ export default async function AdminMembersPage() {
       ) : (
         <div className="space-y-3">
           {members.map((member: any) => {
-            const totalSpending = member.orders.reduce((sum: number, o: any) => sum + o.totalAmount, 0)
+            const totalSpending = member.orders.reduce(
+              (sum: number, o: any) => sum + o.totalAmount * (o.exchangeRate || 1),
+              0,
+            )
             return (
               <Card key={member.id}>
                 <CardContent className="flex flex-col gap-3 py-3 lg:flex-row lg:items-center lg:justify-between">
@@ -117,7 +118,7 @@ export default async function AdminMembersPage() {
                       {member.phone && <span>· {member.phone}</span>}
                       {member.country && <span>· {member.country}</span>}
                       <span>· {t("orderCount", { count: member._count.orders })}{formatDate(member.createdAt, locale)}</span>
-                      <span>· {t("totalSpendingLabel")}: {formatPrice(totalSpending, locale, rate)}</span>
+                      <span>· {t("totalSpendingLabel")}: {formatAmountIn(totalSpending, "KRW")}</span>
                     </p>
                     {member.adminNote && (
                       <p className="whitespace-pre-wrap text-xs text-amber-700 dark:text-amber-400">
