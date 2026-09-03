@@ -11,6 +11,9 @@ import { Prisma } from "@prisma/client"
 
 const STATUS_COLORS: Record<string, string> = {
   ORDER_PLACED: "bg-gray-100 text-gray-700",
+  STOCK_CHECKING: "bg-amber-100 text-amber-700",
+  BUYER_REVIEW: "bg-orange-100 text-orange-700",
+  CONFIRMED: "bg-emerald-100 text-emerald-700",
   INVOICE_SENT: "bg-blue-100 text-blue-700",
   PAYMENT_CONFIRMED: "bg-cyan-100 text-cyan-700",
   SHIPPED: "bg-indigo-100 text-indigo-700",
@@ -19,6 +22,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_KEYS: Record<string, string> = {
   ORDER_PLACED: "statusReceived",
+  STOCK_CHECKING: "statusStockChecking",
+  BUYER_REVIEW: "statusBuyerReview",
+  CONFIRMED: "statusConfirmed",
   INVOICE_SENT: "statusInvoiceSent",
   PAYMENT_CONFIRMED: "statusPaymentConfirmed",
   SHIPPED: "statusShipped",
@@ -387,8 +393,13 @@ export default async function AdminDashboard() {
                     <td className="px-4 py-3 text-muted-foreground">{order.user?.businessName ?? "-"}</td>
                     <td className="px-4 py-3 text-right">{formatPrice(order.totalAmount, locale)}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-                        {t(STATUS_KEYS[order.status])}
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-medium ${
+                          STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {/* enum에 상태가 늘었는데 맵을 안 고친 경우, 500 대신 상태값을 그대로 보여준다 */}
+                        {STATUS_KEYS[order.status] ? t(STATUS_KEYS[order.status]) : order.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
