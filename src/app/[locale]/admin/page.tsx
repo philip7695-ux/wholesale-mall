@@ -8,6 +8,7 @@ import { MonthlyRevenueChart, GradeDistributionChart } from "@/components/admin/
 import { WiseBalanceWidget } from "@/components/admin/wise-balance-widget"
 import { isWiseConfigured } from "@/lib/wise"
 import { Prisma } from "@prisma/client"
+import { revenueWhere, startOfDay, startOfMonth, startOfWeek } from "@/lib/revenue"
 
 const STATUS_COLORS: Record<string, string> = {
   ORDER_PLACED: "bg-gray-100 text-gray-700",
@@ -36,17 +37,14 @@ export default async function AdminDashboard() {
   const locale = await getLocale()
 
   const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const weekStart = new Date(todayStart)
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const todayStart = startOfDay(now)
+  const weekStart = startOfWeek(now)
+  const monthStart = startOfMonth(now)
   const thirtyDaysAgo = new Date(now)
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const sevenDaysAgo = new Date(now)
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
-
-  const notCancelled = { status: { not: "CANCELLED" as const } }
 
   let productCount = 0, orderCount = 0, memberCount = 0
   let todayRevenue: any = { _sum: { totalAmount: 0 } }
@@ -85,18 +83,18 @@ export default async function AdminDashboard() {
       prisma.order.count(),
       prisma.user.count({ where: { role: "BUYER" } }),
 
-      // 매출 현황 (CANCELLED 제외)
+      // 매출 현황 — 출하완료된 주문만, 출하일 기준 (revenueWhere)
       prisma.order.aggregate({
         _sum: { totalAmount: true },
-        where: { ...notCancelled, createdAt: { gte: todayStart } },
+        where: revenueWhere(todayStart),
       }),
       prisma.order.aggregate({
         _sum: { totalAmount: true },
-        where: { ...notCancelled, createdAt: { gte: weekStart } },
+        where: revenueWhere(weekStart),
       }),
       prisma.order.aggregate({
         _sum: { totalAmount: true },
-        where: { ...notCancelled, createdAt: { gte: monthStart } },
+        where: revenueWhere(monthStart),
       }),
 
       // 주문 상태별 건수
@@ -162,12 +160,12 @@ export default async function AdminDashboard() {
       prisma.$queryRaw<{ month: string; revenue: bigint }[]>(
         Prisma.sql`
           SELECT
-            to_char("createdAt", 'YYYY-MM') as month,
+            to_char(COALESCE("shippedAt", "createdAt"), 'YYYY-MM') as month,
             COALESCE(SUM("totalAmount"), 0) as revenue
           FROM mall."Order"
-          WHERE "status" != 'CANCELLED'
-            AND "createdAt" >= ${sixMonthsAgo}
-          GROUP BY to_char("createdAt", 'YYYY-MM')
+          WHERE "status" = 'SHIPPED'
+            AND COALESCE("shippedAt", "createdAt") >= ${sixMonthsAgo}
+          GROUP BY 1
           ORDER BY month ASC
         `
       ),
@@ -208,9 +206,21 @@ export default async function AdminDashboard() {
   ]
 
   const revenueItems = [
-    { label: t("dashToday"), value: todayRevenue._sum.totalAmount ?? 0 },
-    { label: t("dashThisWeek"), value: weekRevenue._sum.totalAmount ?? 0 },
-    { label: t("dashThisMonth"), value: monthRevenue._sum.totalAmount ?? 0 },
+    {
+      label: t("dashToday"),
+      value: todayRevenue._sum.totalAmount ?? 0,
+      href: "/admin/revenue?preset=today",
+    },
+    {
+      label: t("dashThisWeek"),
+      value: weekRevenue._sum.totalAmount ?? 0,
+      href: "/admin/revenue?preset=week",
+    },
+    {
+      label: t("dashThisMonth"),
+      value: monthRevenue._sum.totalAmount ?? 0,
+      href: "/admin/revenue?preset=month",
+    },
   ]
 
   return (
@@ -246,13 +256,20 @@ export default async function AdminDashboard() {
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* 매출 현황 카드 */}
         <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">{t("dashRevenue")}</h2>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold">{t("dashRevenue")}</h2>
+            <span className="text-xs text-muted-foreground">{t("revenueBasisNote")}</span>
+          </div>
           <div className="mt-4 grid grid-cols-3 gap-4">
             {revenueItems.map((item) => (
-              <div key={item.label}>
+              <Link
+                key={item.label}
+                href={item.href}
+                className="-m-2 rounded-md p-2 transition-colors hover:bg-gray-50"
+              >
                 <p className="text-xs text-muted-foreground">{item.label}</p>
                 <p className="mt-1 text-lg font-bold">{formatPrice(item.value, locale)}</p>
-              </div>
+              </Link>
             ))}
           </div>
           <div className="mt-6">

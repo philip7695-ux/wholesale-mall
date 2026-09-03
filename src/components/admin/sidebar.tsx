@@ -19,6 +19,7 @@ import {
   ImageIcon,
   Tag,
   BookOpen,
+  TrendingUp,
 } from "lucide-react"
 
 export function AdminSidebar() {
@@ -57,6 +58,7 @@ export function AdminSidebar() {
     { href: "/admin", label: t("dashboard"), icon: LayoutDashboard },
     { href: "/admin/products", label: t("productMgmt"), icon: Package },
     { href: "/admin/orders", label: t("orderMgmt"), icon: ShoppingCart, badge: counts.newOrders },
+    { href: "/admin/revenue", label: t("revenueTitle"), icon: TrendingUp },
     { href: "/admin/members", label: t("memberMgmt"), icon: Users, badge: counts.pendingMembers },
     { href: "/admin/settings/exchange-rates", label: t("exchangeRates"), icon: ArrowLeftRight },
     { href: "/admin/settings/grades", label: t("gradeSettings"), icon: Crown },

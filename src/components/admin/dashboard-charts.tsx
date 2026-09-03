@@ -75,3 +75,33 @@ export function GradeDistributionChart({ data }: GradeDistributionChartProps) {
     </ResponsiveContainer>
   )
 }
+
+interface RevenueTrendChartProps {
+  data: { label: string; revenue: number }[]
+  locale: string
+}
+
+/** 매출 상세의 추이 차트. 일별·월별 어느 쪽이든 label 을 그대로 x축에 쓴다. */
+export function RevenueTrendChart({ data, locale }: RevenueTrendChartProps) {
+  const formatRevenue = (value: number) => {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
+    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
+    return String(value)
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <BarChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+        <YAxis tickFormatter={formatRevenue} tick={{ fontSize: 12 }} width={50} />
+        <Tooltip
+          formatter={(value) =>
+            new Intl.NumberFormat(intlLocaleMap[locale] || "ko-KR").format(Number(value))
+          }
+        />
+        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
