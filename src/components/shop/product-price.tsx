@@ -1,8 +1,8 @@
 "use client"
 
-import { formatPriceCross } from "@/lib/utils"
+import { formatCurrencyCross } from "@/lib/currency"
 import { useCurrency } from "@/hooks/use-currency"
-import { useLocale } from "next-intl"
+
 
 /**
  * 바이어에게 보이는 가격.
@@ -21,10 +21,9 @@ export function ProductPrice({
   price: number
   priceCurrency: string
 }) {
-  const locale = useLocale()
-  const { rates } = useCurrency()
+  const { currency, rates } = useCurrency()
 
   if (price <= 0) return <>-</>
 
-  return <>{formatPriceCross(price, priceCurrency, locale, rates)}</>
+  return <>{formatCurrencyCross(price, priceCurrency, currency, rates)}</>
 }

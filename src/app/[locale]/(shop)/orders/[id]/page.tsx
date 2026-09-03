@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { formatPrice, formatDateTime } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
-import { useCurrency } from "@/hooks/use-currency"
+import { formatAmountIn } from "@/lib/currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_TIMESTAMP_FIELD, canBuyerCancel } from "@/lib/order-status"
 import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 import { OrderRevisionTable } from "@/components/order-revision-table"
@@ -24,6 +24,8 @@ interface OrderDetail {
   invoiceNumber: string | null
   status: string
   totalAmount: number
+  /** 주문 시점에 확정된 청구 통화. 저장된 금액이 이 통화 기준이다. */
+  currency: string | null
   gradeDiscount: number
   paymentMethod: string | null
   invoicePaymentMethod: string | null
@@ -82,7 +84,6 @@ export default function OrderDetailPage() {
   const t = useTranslations("order")
   const tc = useTranslations("common")
   const locale = useLocale()
-  const { rate } = useCurrency()
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
@@ -267,6 +268,9 @@ export default function OrderDetailPage() {
   if (!order) {
     return <div className="py-10 text-center text-muted-foreground">{t("notFound")}</div>
   }
+
+  // 주문에 저장된 금액은 이 통화 기준이다. 보는 사람 언어로 환산하면 청구액과 달라진다.
+  const orderCurrency = order.currency || "KRW"
 
   // 타임라인 데이터
   const timelineSteps: { status: string; label: string; timestamp: string | null }[] = ORDER_STATUS_FLOW.map((s) => {
@@ -598,8 +602,7 @@ export default function OrderDetailPage() {
                   orderedQuantity: item.orderedQuantity,
                   price: item.price,
                 }))}
-                locale={locale}
-                rate={rate}
+                currency={orderCurrency}
               />
             </div>
           )}
@@ -615,23 +618,22 @@ export default function OrderDetailPage() {
                 </div>
                 <div>
                   <span>{item.quantity}{tc("items")}</span>
-                  <span className="ml-3 font-medium">{formatPrice(item.price * item.quantity, locale, rate)}</span>
+                  <span className="ml-3 font-medium">{formatAmountIn(item.price * item.quantity, orderCurrency)}</span>
                 </div>
               </div>
             ))}
             {order.gradeDiscount > 0 && (
               <div className="flex justify-between border-t pt-2 text-sm text-muted-foreground">
                 <span>{t("gradeDiscountLabel", { rate: Math.round(order.gradeDiscount * 100) })}</span>
-                <span>-{formatPrice(
+                <span>-{formatAmountIn(
                   Math.round(order.items.reduce((s, i) => s + i.price * i.quantity, 0) * order.gradeDiscount),
-                  locale,
-                  rate,
+                  orderCurrency,
                 )}</span>
               </div>
             )}
             <div className="flex justify-between border-t pt-3 font-bold">
               <span>{t("totalAmount")}</span>
-              <span className="text-primary">{formatPrice(order.totalAmount, locale, rate)}</span>
+              <span className="text-primary">{formatAmountIn(order.totalAmount, orderCurrency)}</span>
             </div>
           </div>
         </CardContent>
@@ -770,7 +772,7 @@ export default function OrderDetailPage() {
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("depositAmountLabel")}</span>
-                <span className="font-medium">{formatPrice(order.totalAmount, locale, rate)}</span>
+                <span className="font-medium">{formatAmountIn(order.totalAmount, orderCurrency)}</span>
               </div>
             </div>
             {paymentConfig.qrCodeUrl && (

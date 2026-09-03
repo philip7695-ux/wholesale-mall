@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatPrice } from "@/lib/utils"
+import { formatCurrencyCross } from "@/lib/currency"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
 import { useSession } from "next-auth/react"
@@ -30,7 +30,9 @@ export default function NewOrderPage() {
   const tc = useTranslations("common")
   const locale = useLocale()
   const { data: session } = useSession()
-  const { rate } = useCurrency()
+  const { currency, rates } = useCurrency()
+  // 아직 주문 전이라 통화가 확정되지 않았다. 이 회원의 거래 통화로 보여준다.
+  const fp = (amount: number) => formatCurrencyCross(amount, "KRW", currency, rates)
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -124,14 +126,14 @@ export default function NewOrderPage() {
                   <div>
                     <span>{item.quantity}{tc("items")}</span>
                     <span className="ml-3 font-medium">
-                      {formatPrice(item.variant.price * item.quantity, locale, rate)}
+                      {fp(item.variant.price * item.quantity)}
                     </span>
                   </div>
                 </div>
               ))}
               <div className="flex justify-between border-t pt-3 font-bold">
                 <span>{t("totalAmount")}</span>
-                <span className="text-primary">{formatPrice(totalAmount, locale, rate)}</span>
+                <span className="text-primary">{fp(totalAmount)}</span>
               </div>
             </div>
           </CardContent>
@@ -206,7 +208,7 @@ export default function NewOrderPage() {
           <p className="text-sm text-destructive text-center">{t("approvalRequired")}</p>
         )}
         <Button type="submit" className="w-full" size="lg" disabled={submitting || session?.user?.approvalStatus !== "APPROVED"}>
-          {submitting ? t("orderProcessing") : t("orderButton", { price: formatPrice(totalAmount, locale, rate) })}
+          {submitting ? t("orderProcessing") : t("orderButton", { price: fp(totalAmount) })}
         </Button>
       </form>
     </div>

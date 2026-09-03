@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, CheckCircle2, Upload, AlertTriangle, Clock } from "lucide-react"
-import { formatPrice } from "@/lib/utils"
+import { formatAmountIn } from "@/lib/currency"
 import { DropZone } from "@/components/ui/drop-zone"
 import { sortSizeNames } from "@/lib/product-sizes"
 
@@ -52,8 +52,7 @@ export function OrderRevisionTable({
   items,
   isAdmin,
   canEdit,
-  locale,
-  rate,
+  currency,
   onDone,
 }: {
   orderId: string
@@ -62,8 +61,8 @@ export function OrderRevisionTable({
   canEdit: boolean
   // 서버 컴포넌트에서도 쓰이므로 포맷 함수를 넘겨받을 수 없다.
   // 함수는 클라이언트 컴포넌트 경계를 넘지 못한다.
-  locale: string
-  rate?: number
+  /** 주문에 확정된 통화. 저장된 금액이 이 통화 기준이라 환산하지 않는다. */
+  currency: string
   // 클라이언트 부모(바이어 상세)가 조정 후 주문을 다시 불러오도록.
   // 서버 컴포넌트(어드민 상세)는 router.refresh() 로 갱신되므로 없어도 된다.
   onDone?: () => void
@@ -87,7 +86,7 @@ export function OrderRevisionTable({
     zeroed: string[]
   } | null>(null)
 
-  const fp = (amount: number) => formatPrice(amount, locale, rate)
+  const fp = (amount: number) => formatAmountIn(amount, currency)
   const qtyOf = (item: RevisionItem) => Number(draft[item.id]) || 0
 
   const changed = items.some((i) => Number(draft[i.id]) !== i.quantity)

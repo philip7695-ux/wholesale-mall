@@ -52,6 +52,22 @@ export function formatCurrency(priceKRW: number, currency: string, rate: number)
   }).format(converted)
 }
 
+/**
+ * 환산 없이 그 통화 형식으로 표시한다.
+ *
+ * 주문·인보이스처럼 통화가 이미 확정된 금액에 쓴다. 저장된 금액은
+ * order.currency 기준이므로, 보는 사람 언어로 환산하면 청구액과 달라진다.
+ */
+export function formatAmountIn(amount: number, currency: string): string {
+  const config = currencyConfig[currency] || currencyConfig.KRW
+  return new Intl.NumberFormat(config.locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: config.minimumFractionDigits,
+    maximumFractionDigits: config.minimumFractionDigits,
+  }).format(amount)
+}
+
 /** 크로스 통화 포맷: 원본 통화 → 대상 통화로 변환 후 포맷 */
 export function formatCurrencyCross(
   amount: number,

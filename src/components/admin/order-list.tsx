@@ -9,9 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Download, Trash2 } from "lucide-react"
-import { formatPrice, formatDateTime } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils"
+import { formatAmountIn } from "@/lib/currency"
 import { toast } from "sonner"
-import { useCurrency } from "@/hooks/use-currency"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
 import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 import {
@@ -36,6 +36,8 @@ interface Order {
   status: string
   paymentStatus: string
   totalAmount: number
+  /** 주문에 확정된 청구 통화 */
+  currency?: string | null
   createdAt: string
   user: { name: string; email: string } | null
   deletedUserName?: string | null
@@ -49,7 +51,6 @@ export function OrderList({ orders }: { orders: Order[] }) {
   const t = useTranslations("admin")
   const tc = useTranslations("common")
   const locale = useLocale()
-  const { rate } = useCurrency()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -326,7 +327,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-lg font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
+                      <p className="text-lg font-bold">{formatAmountIn(order.totalAmount, order.currency || "KRW")}</p>
                       <Button
                         variant="destructive"
                         size="sm"

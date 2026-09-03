@@ -15,7 +15,6 @@ import { FileDown, Package, Truck, Plus, X } from "lucide-react"
 import { cancelOrderWithReason, purgeOrder } from "@/lib/order-cancel.client"
 import { isEditable } from "@/lib/order-revision"
 import { formatPrice, formatDateTime } from "@/lib/utils"
-import { useCurrency } from "@/hooks/use-currency"
 
 interface PaymentConfirmationData {
   id: string
@@ -61,7 +60,6 @@ export function OrderStatusForm({
   const router = useRouter()
   const t = useTranslations("admin")
   const locale = useLocale()
-  const { rate } = useCurrency()
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
   // 인보이스 발행 조립 패널 상태
   const [composing, setComposing] = useState(false)

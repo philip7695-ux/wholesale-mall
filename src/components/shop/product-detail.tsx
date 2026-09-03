@@ -14,7 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { formatPriceCross } from "@/lib/utils"
+import { formatCurrencyCross } from "@/lib/currency"
 import { translateMaterial, translateOrigin } from "@/lib/product-i18n"
 import { translateCategory, translateColor, translateSizeSpecHeader } from "@/lib/translate"
 import { toast } from "sonner"
@@ -62,8 +62,9 @@ export function ProductDetail({ product }: { product: Product }) {
   const tColor = useTranslations("colors")
   const tSpec = useTranslations("sizeSpec")
   const locale = useLocale()
-  const { rates } = useCurrency()
-  const fp = (amount: number) => formatPriceCross(amount, product.priceCurrency, locale, rates)
+  const { currency, rates } = useCurrency()
+  // 통화는 거래 유형이 정한다. 국내 회원은 영어로 봐도 원화다.
+  const fp = (amount: number) => formatCurrencyCross(amount, product.priceCurrency, currency, rates)
   const tProd = useTranslations("product")
   const buyerGrade = session?.user?.buyerGrade || "BRONZE"
   // 가격은 서버에서 시즌·등급 할인을 이미 적용해 넘겨준다.

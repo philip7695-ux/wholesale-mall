@@ -10,7 +10,7 @@ import { OrderStatusForm } from "@/components/admin/order-status-form"
 import { OrderRevisionTable } from "@/components/order-revision-table"
 import { WarehouseSheetButton } from "@/components/admin/warehouse-sheet-button"
 import { isEditable } from "@/lib/order-revision"
-import { getExchangeRate } from "@/lib/currency.server"
+import { formatAmountIn } from "@/lib/currency"
 import { ORDER_STATUS_FLOW, STATUS_COLOR, STATUS_DOT_COLOR, STATUS_TEXT_COLOR, STATUS_TIMESTAMP_FIELD } from "@/lib/order-status"
 import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 import { CheckCircle2 } from "lucide-react"
@@ -24,7 +24,6 @@ export default async function AdminOrderDetailPage({
   const tc = await getTranslations("common")
   const to = await getTranslations("order")
   const locale = await getLocale()
-  const { rate } = await getExchangeRate(locale)
   const { id } = await params
   const order = await prisma.order.findUnique({
     where: { id },
@@ -49,6 +48,9 @@ export default async function AdminOrderDetailPage({
   })
 
   if (!order) notFound()
+
+  // 저장된 금액은 이 통화 기준이다. 관리자 언어로 환산하면 청구액과 달라진다.
+  const orderCurrency = order.currency || "KRW"
 
   // 인보이스 결제수단 모듈: 설정된(계좌/QR 채워진) 수단만 고를 수 있게 한다.
   const payConfigs = await prisma.paymentConfig.findMany({
@@ -148,7 +150,7 @@ export default async function AdminOrderDetailPage({
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("totalAmountLabel")}</span>
-              <span className="font-bold">{formatPrice(order.totalAmount, locale, rate)}</span>
+              <span className="font-bold">{formatAmountIn(order.totalAmount, orderCurrency)}</span>
             </div>
           </CardContent>
         </Card>
@@ -209,8 +211,7 @@ export default async function AdminOrderDetailPage({
                 price: item.price,
                 stock: item.variant ? item.variant.stock : undefined,
               }))}
-                locale={locale}
-                rate={rate}
+                currency={orderCurrency}
               />
             </div>
           ) : (
@@ -225,8 +226,8 @@ export default async function AdminOrderDetailPage({
                   </div>
                   <div>
                     <span>{item.quantity}{tc("items")}</span>
-                    <span className="ml-3">{formatPrice(item.price, locale, rate)}</span>
-                    <span className="ml-3 font-medium">{formatPrice(item.price * item.quantity, locale, rate)}</span>
+                    <span className="ml-3">{formatAmountIn(item.price, orderCurrency)}</span>
+                    <span className="ml-3 font-medium">{formatAmountIn(item.price * item.quantity, orderCurrency)}</span>
                   </div>
                 </div>
               ))}

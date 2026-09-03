@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { formatPrice, formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 import { useTranslations, useLocale } from "next-intl"
-import { useCurrency } from "@/hooks/use-currency"
+import { formatAmountIn } from "@/lib/currency"
 import { canBuyerCancel } from "@/lib/order-status"
 import { OrderStatusStepper } from "@/components/order/order-status-stepper"
 
@@ -16,6 +16,7 @@ interface Order {
   orderNumber: string
   status: string
   totalAmount: number
+  currency: string | null
   createdAt: string
   cancelReason: string | null
   cancelledByAdmin: boolean
@@ -27,7 +28,6 @@ export default function OrdersPage() {
   const t = useTranslations("order")
   const tc = useTranslations("common")
   const locale = useLocale()
-  const { rate } = useCurrency()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -136,7 +136,7 @@ export default function OrdersPage() {
                       )}
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="font-bold">{formatPrice(order.totalAmount, locale, rate)}</p>
+                      <p className="font-bold">{formatAmountIn(order.totalAmount, order.currency || "KRW")}</p>
                       {/* 수정은 창고에 넘어가기 전에만, 취소는 확정 전까지 */}
                       {canBuyerCancel(order.status) && (
                         <div className="mt-2 flex justify-end gap-1">
