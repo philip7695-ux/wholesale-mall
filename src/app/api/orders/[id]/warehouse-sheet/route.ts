@@ -221,10 +221,23 @@ async function POST_impl(
     blankrows: true,
   })
 
+  // 머리글 별칭. 창고가 우리 발주서 대신 자기네 양식(영문 수출 리스트 등)으로
+  // 회신하는 경우가 있어 영어 이름도 받는다. 공백·점을 지우고 비교한다.
+  const HEADER_ALIASES: Record<string, string[]> = {
+    품번: ["품번", "styleno", "stylenumber", "sku", "itemno"],
+    컬러: ["컬러", "color", "colour"],
+    사이즈: ["사이즈", "size"],
+    확인수량: ["확인수량", "quantitypcs", "quantity", "qty"],
+  }
+  const hnorm = (v: unknown) =>
+    String(v ?? "").trim().toLowerCase().replace(/[\s.]/g, "")
+  const matches = (cell: unknown, name: string) =>
+    (HEADER_ALIASES[name] ?? [name]).includes(hnorm(cell))
+
   // 머리글 줄을 찾는다. 창고가 위에 줄을 넣거나 지울 수 있으므로
-  // 4행이라고 못박지 않고 "품번"이 있는 줄을 찾는다.
+  // 4행이라고 못박지 않고 품번(별칭 포함)이 있는 줄을 찾는다.
   const headerRow = grid.findIndex(
-    (r) => Array.isArray(r) && r.some((c) => String(c ?? "").trim() === "품번"),
+    (r) => Array.isArray(r) && r.some((c) => matches(c, "품번")),
   )
   if (headerRow === -1) {
     return NextResponse.json(
@@ -234,12 +247,16 @@ async function POST_impl(
   }
 
   const header = (grid[headerRow] as unknown[]).map((c) => String(c ?? "").trim())
-  const col = (name: string) => header.indexOf(name)
+  const col = (name: string) => header.findIndex((h) => matches(h, name))
   const body = grid.slice(headerRow + 1) as unknown[][]
 
   const iCode = col("품번")
   const iColor = col("컬러")
   const isRows = col("사이즈") !== -1
+  // 영문 머리글이면 창고 자체 양식(수출 리스트)이다. 해석 규칙이 다르다:
+  // 준비 못 한 품목은 줄 자체를 빼고 보내므로 "파일에 없음 = 0"이고,
+  // 같은 품목이 박스별로 여러 줄에 나뉘므로 합산한다.
+  const isExport = hnorm(header[iCode]) !== "품번"
 
   // 사람이 손으로 만진 파일이라 앞뒤 공백과 대소문자가 섞여 들어온다.
   const norm = (v: unknown) => String(v ?? "").trim().toUpperCase()
@@ -268,11 +285,11 @@ async function POST_impl(
     return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
   }
 
-  const changes: { itemId: string; label: string; from: number; to: number }[] = []
   // 주문에 없는데 창고가 수량을 적은 줄. 창고가 다른 상품을 끼워 넣었거나
   // 다른 주문의 발주서를 섞었을 수 있다. 조용히 넘기면 알 방법이 없다.
   const unmatched: { label: string; qty: number }[] = []
-  const seen = new Set<string>()
+  // 파일에서 읽은 항목별 수량. null 은 칸이 비어 있었다는 뜻.
+  const read = new Map<string, number | null>()
 
   // 사이즈로 인정하지 못한 열 중에 숫자가 적힌 것. 창고가 주문에 없는
   // 사이즈를 새로 만들어 적었을 수 있다.
@@ -311,29 +328,50 @@ async function POST_impl(
         if (n) unmatched.push({ label: `${code} / ${color} / ${size}`, qty: n })
         continue
       }
-      if (seen.has(item.id)) continue
-
       const n = num(raw)
-      // 세로 형식에서 확인수량을 비워 두면 "그대로"라는 뜻이다.
-      // 가로 형식에서는 빈 칸이 0 을 뜻하므로 0 으로 읽는다.
-      const to = n === null ? (isRows ? item.quantity : 0) : n
-      seen.add(item.id)
-      if (to !== item.quantity) {
-        changes.push({
-          itemId: item.id,
-          label: `${code} / ${color} / ${size}`,
-          from: item.quantity,
-          to,
-        })
+      if (isExport) {
+        // 박스별로 줄이 나뉘어 같은 품목이 여러 번 나온다. 합산한다.
+        const prev = read.get(item.id)
+        read.set(item.id, n === null ? (prev ?? null) : (typeof prev === "number" ? prev + n : n))
+      } else if (!read.has(item.id)) {
+        read.set(item.id, n)
       }
     }
   }
 
-  if (seen.size === 0) {
+  if (read.size === 0) {
     return NextResponse.json(
       { error: "이 주문과 맞는 줄을 찾지 못했습니다. 다른 주문의 발주서인지 확인해주세요." },
       { status: 400 },
     )
+  }
+
+  const labelOf = (item: (typeof order.items)[number]) =>
+    `${item.variant?.product?.code || item.productName} / ${item.variant?.color?.colorCode || item.colorName} / ${item.sizeName}`
+
+  const changes: { itemId: string; label: string; from: number; to: number }[] = []
+  for (const item of order.items) {
+    if (!read.has(item.id)) continue
+    const n = read.get(item.id)!
+    // 세로 형식에서 확인수량을 비워 두면 "그대로"라는 뜻이다.
+    // 가로 형식에서는 빈 칸이 0 을 뜻하므로 0 으로 읽는다.
+    const to = n === null ? (isRows ? item.quantity : 0) : n
+    if (to !== item.quantity) {
+      changes.push({ itemId: item.id, label: labelOf(item), from: item.quantity, to })
+    }
+  }
+
+  // 수출 리스트는 준비 못 한 품목을 줄에서 아예 뺀다. 그 항목들은 0 으로
+  // 채워서 표에 반영하고, 관리자가 볼 수 있게 따로 알린다.
+  const zeroed: string[] = []
+  if (isExport) {
+    for (const item of order.items) {
+      if (read.has(item.id)) continue
+      zeroed.push(labelOf(item))
+      if (item.quantity !== 0) {
+        changes.push({ itemId: item.id, label: labelOf(item), from: item.quantity, to: 0 })
+      }
+    }
   }
 
   // 같은 줄이 여러 번 나와도 한 번만 알린다
@@ -343,10 +381,12 @@ async function POST_impl(
     changes,
     unmatched: unmatchedUnique,
     strayColumns: [...strayCols],
+    zeroed,
     // 파일에 아예 없던 항목. 창고가 줄을 지웠을 수 있어 그대로 두고 알린다.
-    missing: order.items
-      .filter((i) => !seen.has(i.id))
-      .map((i) => `${i.variant?.product?.code || i.productName} / ${i.colorName} / ${i.sizeName}`),
+    // (수출 리스트는 위에서 0 처리했으므로 여기 남지 않는다.)
+    missing: isExport
+      ? []
+      : order.items.filter((i) => !read.has(i.id)).map(labelOf),
   })
 }
 

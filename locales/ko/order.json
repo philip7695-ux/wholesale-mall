@@ -144,6 +144,7 @@
   "sheetIssueNotInOrder": "주문에 없는 상품에 수량이 적혀 있습니다:",
   "sheetIssueStrayColumn": "사이즈로 알 수 없는 열에 수량이 적혀 있습니다:",
   "sheetIssueMissing": "파일에 없어 그대로 둔 항목:",
+  "sheetIssueZeroed": "회신에 없어 0으로 채운 항목(준비 안 됨):",
   "sheetIssuesHint": "이 부분은 표에 반영되지 않았습니다. 창고에 확인한 뒤 직접 입력하세요.",
   "sheetImportDrop": "창고 회신 엑셀을 여기에 놓으세요",
   "receiptImageDrop": "입금증 이미지를 여기에 놓으세요",

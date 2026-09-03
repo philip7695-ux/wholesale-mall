@@ -144,6 +144,7 @@
   "sheetIssueNotInOrder": "注文にない商品に数量が記入されています:",
   "sheetIssueStrayColumn": "サイズと判別できない列に数量が記入されています:",
   "sheetIssueMissing": "ファイルになく、そのままにした項目:",
+  "sheetIssueZeroed": "回答になく、0を入力した項目（未準備）:",
   "sheetIssuesHint": "これらは表に反映していません。倉庫に確認のうえ直接入力してください。",
   "sheetImportDrop": "倉庫の回答Excelをここにドロップ",
   "receiptImageDrop": "入金証明画像をここにドロップ",

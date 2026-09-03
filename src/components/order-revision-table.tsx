@@ -84,6 +84,7 @@ export function OrderRevisionTable({
     unmatched: { label: string; qty: number }[]
     strayColumns: string[]
     missing: string[]
+    zeroed: string[]
   } | null>(null)
 
   const fp = (amount: number) => formatPrice(amount, locale, rate)
@@ -191,9 +192,13 @@ export function OrderRevisionTable({
         unmatched: data.unmatched ?? [],
         strayColumns: data.strayColumns ?? [],
         missing: data.missing ?? [],
+        zeroed: data.zeroed ?? [],
       }
       const any =
-        issues.unmatched.length || issues.strayColumns.length || issues.missing.length
+        issues.unmatched.length ||
+        issues.strayColumns.length ||
+        issues.missing.length ||
+        issues.zeroed.length
       setSheetIssues(any ? issues : null)
     } catch (e: any) {
       toast.error(e?.message || t("sheetImportFailed"))
@@ -246,10 +251,21 @@ export function OrderRevisionTable({
                 {sheetIssues.missing.join(", ")}
               </li>
             )}
+            {sheetIssues.zeroed.length > 0 && (
+              <li>
+                <span className="font-medium">{t("sheetIssueZeroed")}</span>{" "}
+                {sheetIssues.zeroed.join(", ")}
+              </li>
+            )}
           </ul>
-          <p className="mt-1.5 text-xs text-amber-700/80 dark:text-amber-300/80">
-            {t("sheetIssuesHint")}
-          </p>
+          {/* 0 처리는 표에 이미 반영됐으므로 "반영 안 됨" 안내는 그 외의 문제가 있을 때만 */}
+          {(sheetIssues.unmatched.length > 0 ||
+            sheetIssues.strayColumns.length > 0 ||
+            sheetIssues.missing.length > 0) && (
+            <p className="mt-1.5 text-xs text-amber-700/80 dark:text-amber-300/80">
+              {t("sheetIssuesHint")}
+            </p>
+          )}
         </div>
       )}
 
