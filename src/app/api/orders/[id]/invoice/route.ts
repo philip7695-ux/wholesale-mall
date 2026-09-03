@@ -163,6 +163,8 @@ export async function GET(
     vatAmount: order.vatAmount,
     totalAmountKRW: order.totalAmount,
     formatAmount,
+    distributionNumber: order.distributionNumber,
+    releaseNumber: order.releaseNumber,
     paymentInfo,
     sellerInfo: null as import("@/lib/invoice-pdf").InvoiceSellerInfo | null,
   }

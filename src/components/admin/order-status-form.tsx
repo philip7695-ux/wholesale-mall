@@ -40,6 +40,8 @@ export function OrderStatusForm({
   availablePaymentMethods = ["BANK_TRANSFER", "BANK_TRANSFER_FOREIGN", "ALIPAY", "WECHAT"],
   currentCurrency = "KRW",
   currentInvoiceCurrency = null,
+  currentDistributionNumber = null,
+  currentReleaseNumber = null,
 }: {
   orderId: string
   currentStatus: string
@@ -53,6 +55,8 @@ export function OrderStatusForm({
   availablePaymentMethods?: string[]
   currentCurrency?: string
   currentInvoiceCurrency?: string | null
+  currentDistributionNumber?: string | null
+  currentReleaseNumber?: string | null
 }) {
   const router = useRouter()
   const t = useTranslations("admin")
@@ -68,6 +72,9 @@ export function OrderStatusForm({
   )
   const [invPayMethod, setInvPayMethod] = useState(defaultInvoicePaymentMethod)
   const [invCurrency, setInvCurrency] = useState(currentInvoiceCurrency || currentCurrency)
+  // 사내 배분번호·출고번호. 앞자리 0을 보존해야 하므로 문자열로 다룬다.
+  const [distNumber, setDistNumber] = useState(currentDistributionNumber || "")
+  const [relNumber, setRelNumber] = useState(currentReleaseNumber || "")
 
   // 결제수단을 고르면 통화가 자연스럽게 따라간다(알리페이·위챗→CNY 등).
   // 이후 통화 버튼으로 따로 바꿀 수도 있다.
@@ -143,7 +150,13 @@ export function OrderStatusForm({
       const res = await fetch(`/api/orders/${orderId}/invoice-options`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vatRate, invoicePaymentMethod: invPayMethod, invoiceCurrency: invCurrency }),
+        body: JSON.stringify({
+          vatRate,
+          invoicePaymentMethod: invPayMethod,
+          invoiceCurrency: invCurrency,
+          distributionNumber: distNumber,
+          releaseNumber: relNumber,
+        }),
       })
       if (!res.ok) {
         const d = await res.json()
@@ -481,6 +494,28 @@ export function OrderStatusForm({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* 배분번호·출고번호 모듈 — 사내 관리번호라 비워둘 수 있다 */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t("invoiceNumbersModule")}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    inputMode="numeric"
+                    value={distNumber}
+                    onChange={(e) => setDistNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder={t("invoiceDistributionNumber")}
+                    className="h-9"
+                  />
+                  <Input
+                    inputMode="numeric"
+                    value={relNumber}
+                    onChange={(e) => setRelNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder={t("invoiceReleaseNumber")}
+                    className="h-9"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t("invoiceNumbersHint")}</p>
               </div>
 
               <div className="flex gap-2">

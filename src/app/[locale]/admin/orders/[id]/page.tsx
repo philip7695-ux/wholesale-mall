@@ -248,6 +248,8 @@ export default async function AdminOrderDetailPage({
         availablePaymentMethods={availablePaymentMethods}
         currentCurrency={order.currency}
         currentInvoiceCurrency={order.invoiceCurrency}
+        currentDistributionNumber={order.distributionNumber}
+        currentReleaseNumber={order.releaseNumber}
         paymentConfirmation={
           order.paymentConfirmations[0]
             ? {

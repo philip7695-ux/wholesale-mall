@@ -97,6 +97,10 @@ export interface InvoiceData {
   vatAmount: number
   totalAmountKRW: number
   formatAmount: (amountKRW: number) => string
+  // 사내 배분번호·출고번호. 창고·물류가 대조하는 번호라 품목 표 바로 위에 싣는다.
+  // 없으면 줄 자체를 그리지 않는다.
+  distributionNumber?: string | null
+  releaseNumber?: string | null
   paymentInfo?: InvoicePaymentInfo | null
   sellerInfo?: InvoiceSellerInfo | null
 }
@@ -153,6 +157,23 @@ const styles = StyleSheet.create({
     fontSize: 9,
     marginBottom: 2,
     color: "#444",
+  },
+  refRow: {
+    flexDirection: "row",
+    gap: 24,
+    marginBottom: 10,
+  },
+  refLabel: {
+    fontSize: 8,
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginRight: 4,
+  },
+  refValue: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#1a1a1a",
   },
   tableHeader: {
     flexDirection: "row",
@@ -309,6 +330,24 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
             <Text style={styles.infoLine}>{data.buyer.email}</Text>
           </View>
         </View>
+
+        {/* 사내 관리번호 — 관리자가 발행 옵션에서 넣었을 때만 나온다 */}
+        {(data.distributionNumber || data.releaseNumber) && (
+          <View style={styles.refRow}>
+            {data.distributionNumber ? (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={styles.refLabel}>Distribution No.</Text>
+                <Text style={styles.refValue}>{data.distributionNumber}</Text>
+              </View>
+            ) : null}
+            {data.releaseNumber ? (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={styles.refLabel}>Release No.</Text>
+                <Text style={styles.refValue}>{data.releaseNumber}</Text>
+              </View>
+            ) : null}
+          </View>
+        )}
 
         {/* Items Table Header */}
         <View style={styles.tableHeader}>

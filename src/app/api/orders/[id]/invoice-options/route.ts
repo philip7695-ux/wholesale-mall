@@ -29,6 +29,9 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
   const vatRate = Number(body.vatRate)
   const invoicePaymentMethod = body.invoicePaymentMethod as string | undefined
   const invoiceCurrency = body.invoiceCurrency as string | undefined
+  // 배분번호·출고번호. 숫자만 받는다. 빈 문자열은 "안 넣음"이다.
+  const distributionNumber = String(body.distributionNumber ?? "").trim()
+  const releaseNumber = String(body.releaseNumber ?? "").trim()
 
   if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 1) {
     return NextResponse.json({ error: "세율이 올바르지 않습니다." }, { status: 400 })
@@ -38,6 +41,14 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
   }
   if (invoiceCurrency && !SUPPORTED_CURRENCIES.includes(invoiceCurrency as (typeof SUPPORTED_CURRENCIES)[number])) {
     return NextResponse.json({ error: "통화가 올바르지 않습니다." }, { status: 400 })
+  }
+  for (const [label, value] of [
+    ["배분번호", distributionNumber],
+    ["출고번호", releaseNumber],
+  ] as const) {
+    if (value && !/^\d{1,20}$/.test(value)) {
+      return NextResponse.json({ error: `${label}는 숫자 20자리까지만 넣을 수 있습니다.` }, { status: 400 })
+    }
   }
 
   const order = await prisma.order.findUnique({
@@ -69,6 +80,9 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
       ...(invoicePaymentMethod ? { invoicePaymentMethod } : {}),
       // 통화는 base 금액을 바꾸지 않고 인보이스 표시 통화만 지정한다.
       ...(invoiceCurrency ? { invoiceCurrency } : {}),
+      // 빈 칸으로 보내면 지운다는 뜻이므로 null로 되돌린다.
+      distributionNumber: distributionNumber || null,
+      releaseNumber: releaseNumber || null,
     },
   })
 
