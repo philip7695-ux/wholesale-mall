@@ -101,6 +101,72 @@ export async function notifyCustomerInvoice(customerEmail: string, order: {
     </div>`)
 }
 
+/**
+ * 2-1. 관리자가 수량 조정안을 넘김 → 바이어 확인 요청.
+ *
+ * 이 메일이 없으면 바이어는 몰에 직접 들어와 봐야만 자기 차례인 것을
+ * 안다. 창고 확인이 끝난 뒤 며칠씩 멈춰 있던 이유다.
+ */
+export async function notifyCustomerStockCheck(customerEmail: string, order: {
+  orderNumber: string
+  customerName: string
+  orderedQuantity: number
+  quantity: number
+  cancelledCount: number
+}) {
+  const changed = order.quantity !== order.orderedQuantity
+  await send(customerEmail, `[Action Required] ${order.orderNumber} - Please review quantities`,
+    `<div style="font-family:sans-serif;max-width:600px">
+      <h2>Please Review Your Order</h2>
+      <p>Dear ${order.customerName},</p>
+      <p>We have checked stock for order <strong>${order.orderNumber}</strong>${
+        changed ? " and adjusted some quantities" : ""
+      }. Please review and confirm.</p>
+      <table style="border-collapse:collapse;width:100%">
+        <tr><td style="padding:8px;color:#666">Ordered</td><td style="padding:8px">${order.orderedQuantity} pcs</td></tr>
+        <tr><td style="padding:8px;color:#666">Available</td><td style="padding:8px;font-weight:bold">${order.quantity} pcs</td></tr>
+        ${
+          order.cancelledCount
+            ? `<tr><td style="padding:8px;color:#666">Unavailable items</td><td style="padding:8px;color:#c02626">${order.cancelledCount}</td></tr>`
+            : ""
+        }
+      </table>
+      <p style="margin-top:16px;color:#666">Open your order page to adjust quantities and send it back to us. You may reduce quantities, but cannot increase beyond what you originally ordered.</p>
+    </div>`)
+}
+
+/**
+ * 2-2. 바이어가 확인해 되돌림 → 관리자 알림.
+ *
+ * 관리자 차례가 되었다는 유일한 신호다. 화면에도 메일에도 없어서
+ * 회신이 온 주문이 여드레를 그대로 서 있던 적이 있다.
+ */
+export async function notifyAdminBuyerReviewed(adminEmail: string, order: {
+  orderNumber: string
+  customerName: string
+  orderedQuantity: number
+  quantity: number
+  cancelledCount: number
+}) {
+  await send(adminEmail, `[바이어 확인 완료] ${order.orderNumber} - ${order.customerName}`,
+    `<div style="font-family:sans-serif;max-width:600px">
+      <h2>바이어가 조정안을 확인했습니다</h2>
+      <table style="border-collapse:collapse;width:100%">
+        <tr><td style="padding:8px;color:#666">주문번호</td><td style="padding:8px;font-weight:bold">${order.orderNumber}</td></tr>
+        <tr><td style="padding:8px;color:#666">바이어</td><td style="padding:8px">${order.customerName}</td></tr>
+        <tr><td style="padding:8px;color:#666">수량</td><td style="padding:8px">주문 ${order.orderedQuantity}장 → 확정 ${order.quantity}장</td></tr>
+        ${
+          order.cancelledCount
+            ? `<tr><td style="padding:8px;color:#666">취소 항목</td><td style="padding:8px;color:#c02626;font-weight:bold">${order.cancelledCount}건</td></tr>`
+            : ""
+        }
+      </table>
+      <p style="margin-top:16px;color:#666">관리자 페이지에서 검토 후 확정해주세요.${
+        order.cancelledCount ? " 취소 항목이 있으면 창고에도 알려야 합니다." : ""
+      }</p>
+    </div>`)
+}
+
 // 3. 고객 결제 증빙 제출 → 관리자 알림
 export async function notifyAdminPaymentSubmitted(adminEmail: string, order: {
   orderNumber: string

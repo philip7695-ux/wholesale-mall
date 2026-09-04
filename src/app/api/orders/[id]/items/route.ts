@@ -8,6 +8,8 @@ import {
   adjustReservation,
   refreshProductStock,
 } from "@/lib/order-revision"
+import { notifyCustomerStockCheck, notifyAdminBuyerReviewed } from "@/lib/email"
+import { getAdminNotificationEmail } from "@/lib/payment-setting.server"
 
 /**
  * 확정 전 주문의 수량을 고친다.
@@ -34,7 +36,7 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { items: true },
+    include: { items: true, user: { select: { name: true, email: true } } },
   })
   if (!order) {
     return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
@@ -130,6 +132,26 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
     }
     return result
   })
+
+  // 넘긴 쪽이 아니라 받는 쪽에 알린다. 이 신호가 없으면 상대는 몰에
+  // 들어와 봐야만 자기 차례인 것을 안다. 메일 실패가 조정을 막지는
+  // 않으므로 기다리지 않는다.
+  if (next) {
+    const orderedQuantity = updated.items.reduce((s, i) => s + i.orderedQuantity, 0)
+    const quantity = updated.items.reduce((s, i) => s + i.quantity, 0)
+    const cancelledCount = updated.items.filter((i) => i.quantity === 0).length
+    const customerName = order.user?.name ?? order.deletedUserName ?? "-"
+    const summary = { orderNumber: order.orderNumber, customerName, orderedQuantity, quantity, cancelledCount }
+
+    if (isAdmin && next === "BUYER_REVIEW") {
+      const to = order.user?.email ?? order.deletedUserEmail
+      if (to) void notifyCustomerStockCheck(to, summary)
+    } else if (!isAdmin && next === "STOCK_CHECKING") {
+      void getAdminNotificationEmail().then((to) => {
+        if (to) return notifyAdminBuyerReviewed(to, summary)
+      })
+    }
+  }
 
   return NextResponse.json(updated)
 }
