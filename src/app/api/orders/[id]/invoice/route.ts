@@ -130,8 +130,6 @@ export async function GET(
     (sum, item) => sum + item.price * item.quantity,
     0,
   )
-  const discountAmountKRW = Math.round(subtotalKRW * order.gradeDiscount)
-
   const invoiceData: InvoiceData = {
     invoiceNumber,
     issueDate: new Date().toLocaleDateString("en-US", {
@@ -159,8 +157,6 @@ export async function GET(
     currency,
     exchangeRate,
     subtotalKRW,
-    gradeDiscount: order.gradeDiscount,
-    discountAmountKRW,
     vatRate: order.vatRate,
     vatAmount: order.vatAmount,
     totalAmountKRW: order.totalAmount,

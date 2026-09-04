@@ -90,8 +90,6 @@ export interface InvoiceData {
   currency: string
   exchangeRate: number
   subtotalKRW: number
-  gradeDiscount: number
-  discountAmountKRW: number
   // 국내 거래는 도매가가 부가세 별도이므로 세액을 따로 표기한다
   vatRate: number
   vatAmount: number
@@ -377,16 +375,9 @@ function InvoiceDocument({ data }: { data: InvoiceData }) {
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>{formatAmount(data.subtotalKRW)}</Text>
           </View>
-          {data.gradeDiscount > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>
-                Discount ({Math.round(data.gradeDiscount * 100)}%)
-              </Text>
-              <Text style={styles.totalValue}>
-                -{formatAmount(data.discountAmountKRW)}
-              </Text>
-            </View>
-          )}
+          {/* 등급 할인은 단가에 이미 들어 있다(택가 × (1 − 시즌율 − 등급율)).
+              여기서 다시 줄을 세우면 두 번 깎아준 것처럼 읽히고, 그 값이
+              합계에는 안 들어가 인보이스 안에서 숫자가 맞지 않았다. */}
           {data.vatRate > 0 && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>

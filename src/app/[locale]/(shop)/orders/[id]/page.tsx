@@ -635,15 +635,9 @@ export default function OrderDetailPage() {
               </div>
               )
             })}
-            {order.gradeDiscount > 0 && (
-              <div className="flex justify-between border-t pt-2 text-sm text-muted-foreground">
-                <span>{t("gradeDiscountLabel", { rate: Math.round(order.gradeDiscount * 100) })}</span>
-                <span>-{formatAmountIn(
-                  Math.round(order.items.reduce((s, i) => s + i.price * i.quantity, 0) * order.gradeDiscount),
-                  orderCurrency,
-                )}</span>
-              </div>
-            )}
+            {/* 등급 할인은 단가에 이미 반영돼 있다. 여기서 다시 빼는 줄을
+                세우면 두 번 깎이는 것처럼 보이는데, 정작 합계에는 반영되지
+                않아 화면 안에서 숫자가 맞지 않았다. */}
             <div className="flex justify-between border-t pt-3 font-bold">
               <span>{t("totalAmount")}</span>
               <span className="text-primary">{formatAmountIn(order.totalAmount, orderCurrency)}</span>
