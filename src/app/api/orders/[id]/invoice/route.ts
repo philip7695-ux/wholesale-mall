@@ -146,7 +146,9 @@ export async function GET(
       phone: order.user?.phone ?? null,
       email: order.user?.email ?? order.deletedUserEmail ?? "-",
     },
-    items: order.items.map((item) => ({
+    // 취소된 항목(수량 0)은 청구서에 실리지 않는다. 기록으로는 남지만
+    // 바이어에게 보내는 문서에 0 줄이 섞이면 청구 내역이 어지러워진다.
+    items: order.items.filter((item) => item.quantity > 0).map((item) => ({
       productName: item.productName,
       colorName: item.colorName,
       sizeName: item.sizeName,

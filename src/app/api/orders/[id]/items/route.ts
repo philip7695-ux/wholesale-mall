@@ -93,11 +93,10 @@ async function PUT_impl(request: Request, { params }: { params: Promise<{ id: st
   const updated = await prisma.$transaction(async (tx) => {
     for (const { item, quantity } of changes) {
       await adjustReservation(tx, item.variantId, quantity - item.quantity)
-      if (quantity === 0) {
-        await tx.orderItem.delete({ where: { id: item.id } })
-      } else {
-        await tx.orderItem.update({ where: { id: item.id }, data: { quantity } })
-      }
+      // 0 은 삭제가 아니라 "취소된 항목"으로 남긴다. 지워버리면 그 상품이
+      // 주문에 있었다는 사실까지 사라져, 창고 발주서와 대조가 안 되고
+      // 무엇이 왜 빠졌는지 양쪽 다 알 수 없게 된다. 표시에서만 구분한다.
+      await tx.orderItem.update({ where: { id: item.id }, data: { quantity } })
     }
 
     // 금액을 다시 센다. 단가는 주문 시점 값을 그대로 쓴다.

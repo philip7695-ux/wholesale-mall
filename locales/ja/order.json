@@ -11,6 +11,7 @@
   "statusShipped": "出荷完了",
   "statusDelivered": "配送完了",
   "statusCancelled": "キャンセル",
+  "itemCancelled": "キャンセルされた項目",
   "trackingNumber": "送り状番号",
   "shippingCarrier": "配送業者",
   "trackingInfo": "配送追跡",

@@ -44,6 +44,11 @@ async function GET_impl(
   if (!order) {
     return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 })
   }
+  // 취소된 항목(수량 0)도 발주서에 싣는다. 지워서 보내면 창고는 앞서
+  // 받은 발주서와 견줄 수 없어, 빠진 줄이 취소인지 우리 실수인지 알 수
+  // 없다. 이미 꺼내 놓았을 수도 있으니 "빼라"고 명시해야 한다.
+  const cancelledItems = order.items.filter((i) => i.quantity === 0)
+  const sheetItems = order.items
   if (order.items.length === 0) {
     return NextResponse.json({ error: "품목이 없는 주문입니다." }, { status: 400 })
   }
@@ -63,15 +68,16 @@ async function GET_impl(
   const rows: Record<string, unknown>[] =
     layout === "rows"
       ? // 한 줄에 한 품목. 확인수량 칸을 비워 두고 창고가 채워 보낸다.
-        order.items
+        sheetItems
           .map((item) => ({
             품번: codeOf(item),
             상품명: item.productName,
             컬러: colorOf(item),
             사이즈: item.sizeName,
             주문수량: item.quantity,
-            확인수량: "",
-            비고: "",
+            확인수량: item.quantity === 0 ? 0 : "",
+            비고: item.quantity === 0 ? "바이어 취소 — 준비에서 빼주세요" : "",
+            __cancelled: item.quantity === 0,
           }))
           .sort(
             (a, b) =>
@@ -91,12 +97,12 @@ async function GET_impl(
    */
   function buildGrid(): Record<string, unknown>[] {
     const sizeCols = sortSizeNames([
-      ...new Set(order!.items.map((i) => i.sizeName)),
+      ...new Set(sheetItems.map((i) => i.sizeName)),
     ])
     header = ["품번", "상품명", "컬러", ...sizeCols, "주문합계", "비고"]
 
     const groups = new Map<string, Record<string, unknown>>()
-    for (const item of order!.items) {
+    for (const item of sheetItems) {
       const key = `${codeOf(item)}|${colorOf(item)}`
       if (!groups.has(key)) {
         groups.set(key, {
@@ -111,6 +117,11 @@ async function GET_impl(
       const g = groups.get(key)!
       g[item.sizeName] = ((g[item.sizeName] as number) || 0) + item.quantity
       g.주문합계 = (g.주문합계 as number) + item.quantity
+      // 취소된 사이즈 칸을 적어둔다. 가로형은 줄이 아니라 칸 하나가
+      // 취소되므로 줄 전체를 칠할 수 없다.
+      if (item.quantity === 0) {
+        ((g.__cancelledSizes ??= new Set<string>()) as Set<string>).add(item.sizeName)
+      }
     }
 
     const out = [...groups.values()].sort(
@@ -139,12 +150,16 @@ async function GET_impl(
     subtitle: [
       `바이어: ${order.user?.businessName || order.user?.name || "-"}`,
       `주문일: ${new Date(order.createdAt).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}`,
-      `품목: ${order.items.length}개`,
+      `품목: ${sheetItems.length - cancelledItems.length}개` +
+        (cancelledItems.length ? ` (취소 ${cancelledItems.length}개)` : ""),
     ].join("      "),
     notice:
-      layout === "grid"
+      (layout === "grid"
         ? "실물 확인 후 사이즈 칸의 수량을 고쳐서 회신해 주세요."
-        : "실물 확인 후 확인수량 칸을 채워서 회신해 주세요.",
+        : "실물 확인 후 확인수량 칸을 채워서 회신해 주세요.") +
+      (cancelledItems.length
+        ? "  ※ 붉게 그은 칸은 바이어가 취소한 항목입니다. 준비에서 빼주세요."
+        : ""),
     header,
     rows,
     // 창고가 채워 넣는 칸. 눈에 띄게 칠해 어디를 적어야 하는지 알린다.
@@ -152,6 +167,10 @@ async function GET_impl(
       layout === "grid"
         ? header.filter((h) => !["품번", "상품명", "컬러", "주문합계"].includes(h))
         : ["확인수량", "비고"],
+    cancelled: (row, column) =>
+      layout === "grid"
+        ? ((row.__cancelledSizes as Set<string> | undefined)?.has(column) ?? false)
+        : Boolean(row.__cancelled),
   })
   const filename = `발주서_${order.orderNumber}_${layout === "grid" ? "가로" : "세로"}.xlsx`
 
@@ -367,10 +386,11 @@ async function POST_impl(
   if (isExport) {
     for (const item of order.items) {
       if (read.has(item.id)) continue
+      // 이미 0 인 항목(앞서 취소된 것)은 발주서에 실리지도 않았다.
+      // 다시 알리면 창고가 뺀 것처럼 보여 혼동을 준다.
+      if (item.quantity === 0) continue
       zeroed.push(labelOf(item))
-      if (item.quantity !== 0) {
-        changes.push({ itemId: item.id, label: labelOf(item), from: item.quantity, to: 0 })
-      }
+      changes.push({ itemId: item.id, label: labelOf(item), from: item.quantity, to: 0 })
     }
   }
 
@@ -386,7 +406,7 @@ async function POST_impl(
     // (수출 리스트는 위에서 0 처리했으므로 여기 남지 않는다.)
     missing: isExport
       ? []
-      : order.items.filter((i) => !read.has(i.id)).map(labelOf),
+      : order.items.filter((i) => i.quantity > 0 && !read.has(i.id)).map(labelOf),
   })
 }
 

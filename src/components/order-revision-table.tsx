@@ -355,6 +355,9 @@ export function OrderRevisionTable({
                     }
                     const q = qtyOf(item)
                     const cut = q < item.orderedQuantity
+                    // 0 은 "덜 왔다"가 아니라 "빠졌다"이다. 눈에 띄게 갈라놓아야
+                    // 표를 훑을 때 취소된 칸을 놓치지 않는다.
+                    const dropped = q === 0
                     return (
                       <td key={name} className="px-1 py-1.5 text-center align-top">
                         {canEdit ? (
@@ -368,16 +371,31 @@ export function OrderRevisionTable({
                             }
                             // 바이어는 처음 주문한 수량 안에서만 줄일 수 있다
                             max={isAdmin ? undefined : item.orderedQuantity}
-                            className={`mx-auto h-8 w-14 px-1 text-center ${cut ? "border-amber-400" : ""}`}
+                            className={`mx-auto h-8 w-14 px-1 text-center ${
+                              dropped
+                                ? "border-red-400 bg-red-50 text-red-700"
+                                : cut
+                                  ? "border-amber-400"
+                                  : ""
+                            }`}
                             inputMode="numeric"
                           />
                         ) : (
-                          <span className="tabular-nums">{item.quantity}</span>
+                          <span
+                            className={`tabular-nums ${
+                              dropped ? "font-medium text-red-600" : ""
+                            }`}
+                          >
+                            {item.quantity}
+                          </span>
                         )}
                         {/* 깎이기 전 수량과 재고를 작게 곁들인다 */}
                         <p className="mt-0.5 h-3 text-[10px] leading-tight text-muted-foreground">
                           {cut && (
-                            <span className="text-amber-600" title={t("orderedQty")}>
+                            <span
+                              className={dropped ? "text-red-600 line-through" : "text-amber-600"}
+                              title={t("orderedQty")}
+                            >
                               {item.orderedQuantity}
                             </span>
                           )}

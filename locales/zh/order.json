@@ -11,6 +11,7 @@
   "statusShipped": "已发货",
   "statusDelivered": "已送达",
   "statusCancelled": "已取消",
+  "itemCancelled": "已取消项目",
   "trackingNumber": "快递单号",
   "shippingCarrier": "快递公司",
   "trackingInfo": "物流追踪",

@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Download, Trash2 } from "lucide-react"
+import { CheckCircle2, Download, Trash2 } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import { formatAmountIn } from "@/lib/currency"
 import { toast } from "sonner"
@@ -20,6 +20,10 @@ import {
   STATUS_COLOR,
   STATUS_COLOR_FALLBACK,
 } from "@/lib/order-status"
+import { isEditable } from "@/lib/order-revision"
+
+/** 상태 칩과 같은 자리에 놓는 가상 필터. 실제 상태값과 겹치지 않는 이름이어야 한다. */
+const BUYER_REVIEWED_FILTER = "BUYER_REVIEWED"
 
 interface OrderItem {
   id: string
@@ -44,6 +48,8 @@ interface Order {
   deletedUserEmail?: string | null
   items: OrderItem[]
   hasPaymentRequest?: boolean
+  /** 바이어가 조정안을 확인해 돌려보낸 시각. 관리자 차례라는 뜻이다. */
+  buyerReviewedAt?: string | null
 }
 
 export function OrderList({ orders }: { orders: Order[] }) {
@@ -58,14 +64,22 @@ export function OrderList({ orders }: { orders: Order[] }) {
   // 새로고침하거나 링크를 넘겨도 같은 화면이 열려야 한다.
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get("status") ?? ""
-  const visibleOrders = statusFilter
-    ? orders.filter((o) => o.status === statusFilter)
-    : orders
+
+  // 바이어가 확인해 돌려보낸 주문. 상태로는 재고확인중과 구별되지 않아
+  // 목록에서 묻혀 있었다. 관리자가 지금 손대야 할 것들이므로 따로 센다.
+  const awaitsAdmin = (o: Order) => Boolean(o.buyerReviewedAt) && isEditable(o.status)
+
+  const visibleOrders = !statusFilter
+    ? orders
+    : statusFilter === BUYER_REVIEWED_FILTER
+      ? orders.filter(awaitsAdmin)
+      : orders.filter((o) => o.status === statusFilter)
 
   const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
     acc[o.status] = (acc[o.status] ?? 0) + 1
     return acc
   }, {})
+  const buyerReviewedCount = orders.filter(awaitsAdmin).length
 
   function applyStatusFilter(status: string) {
     // 이미 켜진 칩을 다시 누르면 해제한다.
@@ -278,6 +292,19 @@ export function OrderList({ orders }: { orders: Order[] }) {
             {t(ORDER_STATUS_LABEL_KEYS[status])} {statusCounts[status] ?? 0}
           </button>
         ))}
+        {/* 상태가 아니라 "내 차례" 표시. 상태 칩과 나란히 두되 색을 갈라둔다. */}
+        <button
+          type="button"
+          onClick={() => applyStatusFilter(BUYER_REVIEWED_FILTER)}
+          className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            statusFilter === BUYER_REVIEWED_FILTER
+              ? "border-transparent ring-2 ring-primary ring-offset-1"
+              : "hover:opacity-80"
+          } border-emerald-300 bg-emerald-50 text-emerald-800`}
+        >
+          <CheckCircle2 className="h-3 w-3" />
+          {t("buyerReviewedFilter")} {buyerReviewedCount}
+        </button>
       </div>
 
       {/* Select All */}
@@ -315,6 +342,12 @@ export function OrderList({ orders }: { orders: Order[] }) {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{order.orderNumber}</span>
                         <Badge variant="secondary">{paymentLabels[order.paymentStatus]}</Badge>
+                        {awaitsAdmin(order) && (
+                          <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {t("buyerReviewedBadge")}
+                          </Badge>
+                        )}
                         {order.hasPaymentRequest && (
                           <Badge variant="default" className="bg-yellow-500 text-white">{t("pendingPaymentBadge")}</Badge>
                         )}
@@ -340,7 +373,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
                     </div>
                   </div>
                   {/* 바이어 화면과 같은 스텝퍼. 관리자도 진행 흐름을 한눈에 본다 */}
-                  <OrderStatusStepper status={order.status} size="sm" className="mt-4" />
+                  <OrderStatusStepper status={order.status} size="sm" className="mt-4" split />
                 </CardContent>
               </Card>
             </Link>

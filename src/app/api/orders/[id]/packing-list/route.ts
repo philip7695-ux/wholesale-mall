@@ -54,6 +54,8 @@ async function GET_impl(
   // 확인할 곳은 여기뿐이다. 출현 순서가 아니라 치수 순서로 늘어놓는다.
   const sizeSet = new Set<string>()
   for (const item of order.items) {
+    // 취소된 항목만 있는 치수는 열을 만들지 않는다. 빈 칸만 남는다.
+    if (item.quantity === 0) continue
     sizeSet.add(item.sizeName)
   }
   const allSizes = sortSizeNames(Array.from(sizeSet))
@@ -104,6 +106,11 @@ async function GET_impl(
       row[size] = qty || ""
       rowTotal += qty
     }
+
+    // 패킹리스트는 박스에 실제로 들어가는 것을 적는 문서다. 통째로
+    // 취소된 품번·컬러는 실리지 않는다. (창고에 취소를 알리는 자리는
+    // 발주서다. 거기서는 붉게 그어 명시한다.)
+    if (rowTotal === 0) continue
 
     row["합계"] = rowTotal
     row["단가"] = group.unitPrice

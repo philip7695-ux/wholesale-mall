@@ -11,6 +11,7 @@
   "statusShipped": "Shipped",
   "statusDelivered": "Delivered",
   "statusCancelled": "Cancelled",
+  "itemCancelled": "Cancelled item",
   "trackingNumber": "Tracking Number",
   "shippingCarrier": "Carrier",
   "trackingInfo": "Tracking Info",

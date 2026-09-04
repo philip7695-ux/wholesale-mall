@@ -108,9 +108,16 @@ export function canBuyerCancel(status: string): boolean {
   return (BUYER_CANCELABLE_STATUSES as readonly string[]).includes(status)
 }
 
-/** 상태 → 타임스탬프 필드 매핑 */
+/**
+ * 상태 → 타임스탬프 필드 매핑.
+ *
+ * 재고확인중은 남는 시각이 없다(조정이 여러 번 오가므로 "언제 시작했나"가
+ * 한 점으로 정해지지 않는다). 바이어확인중은 바이어가 확인해 돌려보낸
+ * 시각을 쓴다 — 관리자가 기다리던 바로 그 신호다.
+ */
 export const STATUS_TIMESTAMP_FIELD: Record<string, string> = {
   ORDER_PLACED: "createdAt",
+  BUYER_REVIEW: "buyerReviewedAt",
   CONFIRMED: "confirmedAt",
   INVOICE_SENT: "invoiceSentAt",
   PAYMENT_CONFIRMED: "paymentConfirmedAt",

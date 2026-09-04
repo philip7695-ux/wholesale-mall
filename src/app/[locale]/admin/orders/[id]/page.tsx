@@ -69,25 +69,46 @@ export default async function AdminOrderDetailPage({
       ? "BANK_TRANSFER_FOREIGN"
       : availablePaymentMethods[0] || "BANK_TRANSFER"
 
+  // 흐름의 모든 상태를 덮어야 한다. 빠뜨리면 타임라인에 이름 없는
+  // 빈 줄이 생겨, 조정 단계가 통째로 안 보이던 일이 다시 난다.
   const statusLabels: Record<string, string> = {
     ORDER_PLACED: t("orderStatusOrderPlaced"),
+    STOCK_CHECKING: t("orderStatusStockChecking"),
+    BUYER_REVIEW: t("orderStatusBuyerReview"),
+    CONFIRMED: t("orderStatusConfirmed"),
     INVOICE_SENT: t("orderStatusInvoiceSent"),
     PAYMENT_CONFIRMED: t("orderStatusPaymentConfirmed"),
     SHIPPED: t("orderStatusShipped"),
     CANCELLED: t("orderStatusCancelled"),
   }
 
-  // 타임라인 데이터 구성
-  const timelineSteps: { status: string; label: string; timestamp: Date | null }[] = ORDER_STATUS_FLOW.map((s) => {
-    const field = STATUS_TIMESTAMP_FIELD[s] as keyof typeof order
-    const ts = order[field] as Date | null
-    return { status: s, label: statusLabels[s], timestamp: ts }
+  // 타임라인 데이터 구성.
+  // 지나온 단계는 시각이 없어도 컬러로 켠다. 재고확인중처럼 시각을
+  // 남기지 않는 단계가 회색으로 남으면 "아직 안 왔다"로 잘못 읽힌다.
+  const currentFlowIndex = ORDER_STATUS_FLOW.indexOf(
+    order.status as (typeof ORDER_STATUS_FLOW)[number],
+  )
+  const timelineSteps: {
+    status: string
+    label: string
+    timestamp: Date | null
+    reached: boolean
+  }[] = ORDER_STATUS_FLOW.map((s, i) => {
+    const field = STATUS_TIMESTAMP_FIELD[s] as keyof typeof order | undefined
+    const ts = field ? ((order[field] as Date | null) ?? null) : null
+    return {
+      status: s,
+      label: statusLabels[s],
+      timestamp: ts,
+      reached: Boolean(ts) || (currentFlowIndex >= 0 && i <= currentFlowIndex),
+    }
   })
   if (order.status === "CANCELLED") {
     timelineSteps.push({
       status: "CANCELLED",
       label: statusLabels["CANCELLED"],
       timestamp: order.cancelledAt,
+      reached: true,
     })
   }
 
@@ -103,11 +124,11 @@ export default async function AdminOrderDetailPage({
         </div>
       </div>
 
-      {/* 바이어 화면과 같은 진행 스텝퍼 */}
+      {/* 진행 스텝퍼. 관리자에게는 조정 왕복을 두 칸으로 갈라 보여준다. */}
       {order.status !== "CANCELLED" && (
         <Card>
           <CardContent className="py-5">
-            <OrderStatusStepper status={order.status} size="md" />
+            <OrderStatusStepper status={order.status} size="md" split />
           </CardContent>
         </Card>
       )}
@@ -216,13 +237,25 @@ export default async function AdminOrderDetailPage({
             </div>
           ) : (
             <div className="space-y-3">
-              {order.items.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between text-sm">
+              {order.items.map((item: any) => {
+                // 취소된 항목도 지우지 않고 남긴다. 창고 발주서와 대조하려면
+                // 무엇이 빠졌는지가 목록에 그대로 보여야 한다.
+                const dropped = item.quantity === 0
+                return (
+                <div
+                  key={item.id}
+                  className={`flex items-center justify-between text-sm ${dropped ? "text-red-600" : ""}`}
+                >
                   <div>
-                    <span className="font-medium">{item.productName}</span>
-                    <span className="ml-2 text-muted-foreground">
+                    <span className={`font-medium ${dropped ? "line-through" : ""}`}>{item.productName}</span>
+                    <span className={`ml-2 ${dropped ? "line-through" : "text-muted-foreground"}`}>
                       {item.colorName} / {item.sizeName}
                     </span>
+                    {dropped && (
+                      <span className="ml-2 rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium">
+                        {to("itemCancelled")}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <span>{item.quantity}{tc("items")}</span>
@@ -230,7 +263,8 @@ export default async function AdminOrderDetailPage({
                     <span className="ml-3 font-medium">{formatAmountIn(item.price * item.quantity, orderCurrency)}</span>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>
@@ -271,8 +305,8 @@ export default async function AdminOrderDetailPage({
           <div className="space-y-3">
             {timelineSteps.map((step) => (
               <div key={step.status} className="flex items-center gap-3">
-                <div className={`h-3 w-3 rounded-full shrink-0 ${step.timestamp ? (STATUS_DOT_COLOR[step.status] || "bg-gray-300") : "bg-gray-200"}`} />
-                <span className={`text-sm font-medium ${step.timestamp ? (STATUS_TEXT_COLOR[step.status] || "") : "text-muted-foreground"}`}>
+                <div className={`h-3 w-3 rounded-full shrink-0 ${step.reached ? (STATUS_DOT_COLOR[step.status] || "bg-gray-300") : "bg-gray-200"}`} />
+                <span className={`text-sm font-medium ${step.reached ? (STATUS_TEXT_COLOR[step.status] || "") : "text-muted-foreground"}`}>
                   {step.label}
                 </span>
                 {step.timestamp && (

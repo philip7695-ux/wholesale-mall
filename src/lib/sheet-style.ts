@@ -20,6 +20,8 @@ const GRAY_LINE = "FFD0D0D0"
 const HEADER_BG = "FFEFEFEF"
 const FILLABLE_BG = "FFFFF9E6"
 const TOTAL_BG = "FFF5F5F5"
+const CANCELLED_BG = "FFFDECEC"
+const CANCELLED_FG = "FFC02626"
 
 const thin: ExcelJS.Border = { style: "thin", color: { argb: GRAY_LINE } }
 const boxed: Partial<ExcelJS.Borders> = {
@@ -37,6 +39,7 @@ export async function renderSheet({
   header,
   rows,
   fillableColumns = [],
+  cancelled,
   summary,
 }: {
   sheetName: string
@@ -47,6 +50,12 @@ export async function renderSheet({
   rows: Record<string, unknown>[]
   /** 상대가 채워 넣어야 하는 열. 옅게 칠해 표시한다. */
   fillableColumns?: string[]
+  /**
+   * 취소된 칸. 붉게 칠하고 줄을 그어 창고가 "이건 빼야 한다"를 바로 본다.
+   * 지워서 보내면 앞서 받은 발주서와 견줄 수 없어, 빠진 것이 취소인지
+   * 누락인지 창고가 알 수 없다.
+   */
+  cancelled?: (row: Record<string, unknown>, column: string) => boolean
   /** 앞에 붙일 요약 시트. 항목과 값을 두 열로 늘어놓는다. */
   summary?: { sheetName: string; title: string; rows: [string, string | number][] }
 }): Promise<ArrayBuffer> {
@@ -119,6 +128,9 @@ export async function renderSheet({
       if (isTotal) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: TOTAL_BG } }
         cell.border = { ...boxed, top: { style: "medium", color: { argb: "FF999999" } } }
+      } else if (cancelled?.(r, name)) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: CANCELLED_BG } }
+        cell.font = { size: 10, strike: true, color: { argb: CANCELLED_FG } }
       } else if (fillable.has(name)) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILLABLE_BG } }
       }

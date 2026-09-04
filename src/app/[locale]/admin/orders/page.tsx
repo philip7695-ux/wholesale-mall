@@ -38,6 +38,7 @@ export default async function AdminOrdersPage() {
     ...o,
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
+    buyerReviewedAt: o.buyerReviewedAt?.toISOString() ?? null,
     hasPaymentRequest: o.paymentConfirmations.length > 0,
     paymentConfirmations: undefined,
     items: o.items.map((item) => ({

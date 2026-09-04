@@ -608,20 +608,33 @@ export default function OrderDetailPage() {
           )}
           <div className="space-y-3">
             {!["STOCK_CHECKING", "BUYER_REVIEW"].includes(order.status) &&
-              order.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-sm">
+              order.items.map((item) => {
+              // 취소한 항목도 남겨서 보여준다. 목록에서 조용히 사라지면
+              // 바이어는 자기가 뺀 것인지 판매자가 뺀 것인지 알 수 없다.
+              const dropped = item.quantity === 0
+              return (
+              <div
+                key={item.id}
+                className={`flex items-center justify-between text-sm ${dropped ? "text-red-600" : ""}`}
+              >
                 <div>
-                  <span className="font-medium">{item.productName}</span>
-                  <span className="ml-2 text-muted-foreground">
+                  <span className={`font-medium ${dropped ? "line-through" : ""}`}>{item.productName}</span>
+                  <span className={`ml-2 ${dropped ? "line-through" : "text-muted-foreground"}`}>
                     {item.colorName} / {item.sizeName}
                   </span>
+                  {dropped && (
+                    <span className="ml-2 rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium">
+                      {t("itemCancelled")}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span>{item.quantity}{tc("items")}</span>
                   <span className="ml-3 font-medium">{formatAmountIn(item.price * item.quantity, orderCurrency)}</span>
                 </div>
               </div>
-            ))}
+              )
+            })}
             {order.gradeDiscount > 0 && (
               <div className="flex justify-between border-t pt-2 text-sm text-muted-foreground">
                 <span>{t("gradeDiscountLabel", { rate: Math.round(order.gradeDiscount * 100) })}</span>

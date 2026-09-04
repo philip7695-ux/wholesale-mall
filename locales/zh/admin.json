@@ -501,6 +501,8 @@
   "invoiceReleaseNumber": "出库号",
   "invoiceNumbersHint": "仅限数字。留空则不显示在发票上。",
   "buyerReviewedBanner": "买家已确认调整方案 — 请检查后确定。",
+  "buyerReviewedBadge": "买家已确认",
+  "buyerReviewedFilter": "买家已确认",
   "sortNoPhoto": "无图片商品",
   "templateLayoutGrid": "横向（尺码为列）",
   "templateLayoutRows": "纵向（每行一个尺码）",

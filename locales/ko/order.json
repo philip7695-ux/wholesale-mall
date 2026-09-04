@@ -11,6 +11,7 @@
   "statusShipped": "출하완료",
   "statusDelivered": "배송완료",
   "statusCancelled": "취소",
+  "itemCancelled": "취소된 항목",
   "trackingNumber": "운송장 번호",
   "shippingCarrier": "배송사",
   "trackingInfo": "배송 추적",

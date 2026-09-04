@@ -501,6 +501,8 @@
   "invoiceReleaseNumber": "Release No.",
   "invoiceNumbersHint": "Digits only. Leave blank to omit from the invoice.",
   "buyerReviewedBanner": "The buyer has reviewed the adjustment — review and confirm.",
+  "buyerReviewedBadge": "Buyer reviewed",
+  "buyerReviewedFilter": "Buyer reviewed",
   "sortNoPhoto": "No photo",
   "templateLayoutGrid": "Horizontal (sizes as columns)",
   "templateLayoutRows": "Vertical (one size per row)",
