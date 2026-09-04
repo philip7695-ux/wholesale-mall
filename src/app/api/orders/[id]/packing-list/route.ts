@@ -54,8 +54,6 @@ async function GET_impl(
   // 확인할 곳은 여기뿐이다. 출현 순서가 아니라 치수 순서로 늘어놓는다.
   const sizeSet = new Set<string>()
   for (const item of order.items) {
-    // 취소된 항목만 있는 치수는 열을 만들지 않는다. 빈 칸만 남는다.
-    if (item.quantity === 0) continue
     sizeSet.add(item.sizeName)
   }
   const allSizes = sortSizeNames(Array.from(sizeSet))
@@ -67,6 +65,8 @@ async function GET_impl(
     colorName: string
     unitPrice: number
     sizeQty: Record<string, number>
+    /** 바이어가 취소한 치수. 칸 하나만 그어야 하므로 따로 센다. */
+    cancelledSizes: Set<string>
   }>()
 
   for (const item of order.items) {
@@ -80,11 +80,13 @@ async function GET_impl(
         colorName: item.colorName,
         unitPrice: item.price,
         sizeQty: {},
+        cancelledSizes: new Set(),
       })
     }
 
     const group = groupMap.get(key)!
     group.sizeQty[item.sizeName] = (group.sizeQty[item.sizeName] || 0) + item.quantity
+    if (item.quantity === 0) group.cancelledSizes.add(item.sizeName)
   }
 
   // 열 순서를 직접 정한다. "85", "90" 같은 숫자꼴 키를 객체에 담으면
@@ -92,9 +94,9 @@ async function GET_impl(
   const headers = ["상품코드", "상품명", "컬러", ...allSizes, "합계", "단가", "소계"]
 
   // 피벗 테이블 rows 생성
-  const rows: Record<string, string | number>[] = []
+  const rows: Record<string, unknown>[] = []
   for (const group of groupMap.values()) {
-    const row: Record<string, string | number> = {
+    const row: Record<string, unknown> = {
       "상품코드": group.productCode,
       "상품명": group.productName,
       "컬러": group.colorName,
@@ -103,14 +105,16 @@ async function GET_impl(
     let rowTotal = 0
     for (const size of allSizes) {
       const qty = group.sizeQty[size] || 0
-      row[size] = qty || ""
+      // 빈 칸은 "이 스타일에 없는 치수", 0 은 "취소된 치수"다. 창고가
+      // 앞서 받은 발주서와 줄을 맞춰 보려면 이 둘이 갈라져야 한다.
+      row[size] = qty || (group.cancelledSizes.has(size) ? 0 : "")
       rowTotal += qty
     }
 
-    // 패킹리스트는 박스에 실제로 들어가는 것을 적는 문서다. 통째로
-    // 취소된 품번·컬러는 실리지 않는다. (창고에 취소를 알리는 자리는
-    // 발주서다. 거기서는 붉게 그어 명시한다.)
-    if (rowTotal === 0) continue
+    // 취소된 항목도 붉게 그어 싣는다. 지워서 보내면 창고는 앞서 받은
+    // 발주서와 견줄 수 없어, 빠진 줄이 취소인지 우리 실수인지 모른다.
+    row.__cancelledSizes = group.cancelledSizes
+    row.__cancelled = rowTotal === 0
 
     row["합계"] = rowTotal
     row["단가"] = group.unitPrice
@@ -120,6 +124,8 @@ async function GET_impl(
   }
 
   const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0)
+  const orderedQty = order.items.reduce((sum, item) => sum + item.orderedQuantity, 0)
+  const cancelledCount = order.items.filter((item) => item.quantity === 0).length
 
   const buf = await renderSheet({
     summary: {
@@ -142,6 +148,11 @@ async function GET_impl(
         ["", ""],
         ["총 금액", order.totalAmount],
         ["총 수량", totalQty],
+        ...(cancelledCount
+          ? ([
+              ["취소 항목", `${cancelledCount}건 (주문 ${orderedQty}장 → 출고 ${totalQty}장)`],
+            ] as [string, string][])
+          : []),
       ],
     },
     sheetName: "상품목록",
@@ -151,9 +162,16 @@ async function GET_impl(
       `총 ${rows.length}개 스타일`,
       `총 ${totalQty}장`,
     ].join("      "),
-    notice: "사이즈별 수량은 아래 표에서 확인하세요.",
+    notice:
+      "사이즈별 수량은 아래 표에서 확인하세요." +
+      (cancelledCount
+        ? "  ※ 붉게 그은 칸은 바이어가 취소한 항목입니다. 출고에서 빼주세요."
+        : ""),
     header: headers,
     rows,
+    cancelled: (row, column) =>
+      Boolean(row.__cancelled) ||
+      ((row.__cancelledSizes as Set<string> | undefined)?.has(column) ?? false),
   })
 
   const filename = `패킹리스트_${order.orderNumber}.xlsx`
